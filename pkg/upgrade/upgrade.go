@@ -4,19 +4,15 @@ import (
 	"fmt"
 	"unicode"
 
+	"github.com/Jguer/yay/v10/pkg/db"
 	"github.com/Jguer/yay/v10/pkg/intrange"
 	"github.com/Jguer/yay/v10/pkg/text"
 )
 
 // Upgrade type describes a system upgrade.
-type Upgrade struct {
-	Name          string
-	Repository    string
-	LocalVersion  string
-	RemoteVersion string
-}
+type Upgrade = db.Upgrade
 
-func (u *Upgrade) StylizedNameWithRepository() string {
+func StylizedNameWithRepository(u *Upgrade) string {
 	return text.Bold(text.ColorHash(u.Repository)) + "/" + text.Bold(u.Name)
 }
 
@@ -88,7 +84,7 @@ func GetVersionDiff(oldVersion, newVersion string) (left, right string) {
 func (u UpSlice) Print() {
 	longestName, longestVersion := 0, 0
 	for _, pack := range u {
-		packNameLen := len(pack.StylizedNameWithRepository())
+		packNameLen := len(StylizedNameWithRepository(&pack))
 		packVersion, _ := GetVersionDiff(pack.LocalVersion, pack.RemoteVersion)
 		packVersionLen := len(packVersion)
 		longestName = intrange.Max(packNameLen, longestName)
@@ -104,7 +100,7 @@ func (u UpSlice) Print() {
 
 		fmt.Print(text.Magenta(fmt.Sprintf(numberPadding, len(u)-k)))
 
-		fmt.Printf(namePadding, i.StylizedNameWithRepository())
+		fmt.Printf(namePadding, StylizedNameWithRepository(&i))
 
 		fmt.Printf("%s -> %s\n", fmt.Sprintf(versionPadding, left), right)
 	}

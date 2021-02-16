@@ -46,7 +46,7 @@ Step 1
 
   most dependencies on gotext (move functionality into pkg/text)
 
-  pkg/upgrade -> alpm (add VerComp method to db)
+  pkg/upgrade -> alpm (add VerComp method to db) [done]
 
 * Reduce standard library dependencies
 
