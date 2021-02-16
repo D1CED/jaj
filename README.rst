@@ -28,7 +28,7 @@ Step 1
 
 * Reduce intra module dependencies
 
-  completion -> db (not possible, but use a smaller interface)
+  completion -> db (not possible, but use a smaller interface) [done]
 
   dep -> settings
 
