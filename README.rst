@@ -40,7 +40,7 @@ Step 1
 
 * Reduce extra module dependencies
 
-  pkg/dep -> aur (via query)
+  pkg/dep -> aur (via query) [done]
 
   most dependencies on alpm (via type alias in db) [done]
 
