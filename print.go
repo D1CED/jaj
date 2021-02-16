@@ -8,7 +8,6 @@ import (
 	"strings"
 
 	"github.com/leonelquinteros/gotext"
-	rpc "github.com/mikkeloscar/aur"
 
 	"github.com/Jguer/yay/v10/pkg/db"
 	"github.com/Jguer/yay/v10/pkg/download"
@@ -106,7 +105,7 @@ func (s repoQuery) printSearch(dbExecutor db.Executor) {
 // Pretty print a set of packages from the same package base.
 
 // PrintInfo prints package info like pacman -Si.
-func PrintInfo(a *rpc.Pkg, extendedInfo bool) {
+func PrintInfo(a *query.Pkg, extendedInfo bool) {
 	text.PrintInfoValue(gotext.Get("Repository"), "aur")
 	text.PrintInfoValue(gotext.Get("Name"), a.Name)
 	text.PrintInfoValue(gotext.Get("Keywords"), a.Keywords...)

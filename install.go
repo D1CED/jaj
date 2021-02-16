@@ -17,7 +17,6 @@ import (
 	"github.com/Jguer/yay/v10/pkg/completion"
 	"github.com/Jguer/yay/v10/pkg/db"
 	"github.com/Jguer/yay/v10/pkg/dep"
-	"github.com/Jguer/yay/v10/pkg/intrange"
 	"github.com/Jguer/yay/v10/pkg/multierror"
 	"github.com/Jguer/yay/v10/pkg/pgp"
 	"github.com/Jguer/yay/v10/pkg/query"
@@ -588,7 +587,7 @@ func cleanNumberMenu(bases []dep.Base, installed stringset.StringSet, hasClean b
 		return nil, err
 	}
 
-	cInclude, cExclude, cOtherInclude, cOtherExclude := intrange.ParseNumberMenu(cleanInput)
+	cInclude, cExclude, cOtherInclude, cOtherExclude := ParseNumberMenu(cleanInput)
 	cIsInclude := len(cExclude) == 0 && len(cOtherExclude) == 0
 
 	if cOtherInclude.Get("abort") || cOtherInclude.Get("ab") {
@@ -671,7 +670,7 @@ func editDiffNumberMenu(bases []dep.Base, installed stringset.StringSet, diff bo
 		}
 	}
 
-	eInclude, eExclude, eOtherInclude, eOtherExclude := intrange.ParseNumberMenu(editInput)
+	eInclude, eExclude, eOtherInclude, eOtherExclude := ParseNumberMenu(editInput)
 	eIsInclude := len(eExclude) == 0 && len(eOtherExclude) == 0
 
 	if eOtherInclude.Get("abort") || eOtherInclude.Get("ab") {
