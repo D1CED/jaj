@@ -65,7 +65,3 @@ main
 settings
 
   rpc.AURURL
-
-intrange
-
-  ParseNumberMenu (move to main)
