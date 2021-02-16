@@ -42,7 +42,7 @@ Step 1
 
   pkg/dep -> aur (via query)
 
-  most dependencies on alpm (via type alias in db)
+  most dependencies on alpm (via type alias in db) [done]
 
   most dependencies on gotext (move functionality into pkg/text)
 
