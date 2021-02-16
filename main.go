@@ -5,7 +5,6 @@ import (
 	"os"
 
 	pacmanconf "github.com/Morganamilo/go-pacmanconf"
-	"github.com/leonelquinteros/gotext"
 	"golang.org/x/term"
 
 	"github.com/Jguer/yay/v10/pkg/db"
@@ -13,14 +12,6 @@ import (
 	"github.com/Jguer/yay/v10/pkg/settings"
 	"github.com/Jguer/yay/v10/pkg/text"
 )
-
-func initGotext() {
-	if envLocalePath := os.Getenv("LOCALE_PATH"); envLocalePath != "" {
-		localePath = envLocalePath
-	}
-
-	gotext.Configure(localePath, os.Getenv("LANG"), "yay")
-}
 
 func initAlpm(cmdArgs *settings.Arguments, pacmanConfigPath string) (*pacmanconf.Config, bool, error) {
 	root := "/"
@@ -74,9 +65,9 @@ func main() {
 	var err error
 	ret := 0
 	defer func() { os.Exit(ret) }()
-	initGotext()
+	text.Init(localePath)
 	if os.Geteuid() == 0 {
-		text.Warnln(gotext.Get("Avoid running yay as root/sudo."))
+		text.Warnln(text.T("Avoid running yay as root/sudo."))
 	}
 
 	config, err = settings.NewConfig()

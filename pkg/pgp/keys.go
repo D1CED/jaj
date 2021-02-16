@@ -9,7 +9,6 @@ import (
 	"strings"
 
 	gosrc "github.com/Morganamilo/go-srcinfo"
-	"github.com/leonelquinteros/gotext"
 
 	"github.com/Jguer/yay/v10/pkg/dep"
 	"github.com/Jguer/yay/v10/pkg/text"
@@ -83,7 +82,7 @@ func CheckPgpKeys(bases []dep.Base, srcinfos map[string]*gosrc.Srcinfo,
 	fmt.Println()
 	fmt.Println(str)
 
-	if text.ContinueTask(gotext.Get("Import?"), true, noConfirm) {
+	if text.ContinueTask(text.T("Import?"), true, noConfirm) {
 		return importKeys(problematic.toSlice(), gpgBin, gpgFlags)
 	}
 
@@ -96,10 +95,10 @@ func importKeys(keys []string, gpgBin, gpgFlags string) error {
 	cmd := exec.Command(gpgBin, append(args, keys...)...)
 	cmd.Stdin, cmd.Stdout, cmd.Stderr = os.Stdin, os.Stdout, os.Stderr
 
-	text.OperationInfoln(gotext.Get("Importing keys with gpg..."))
+	text.OperationInfoln(text.T("Importing keys with gpg..."))
 	err := cmd.Run()
 	if err != nil {
-		return errors.New(gotext.Get("problem importing keys"))
+		return errors.New(text.T("problem importing keys"))
 	}
 	return nil
 }
@@ -108,18 +107,18 @@ func importKeys(keys []string, gpgBin, gpgFlags string) error {
 // question asking the user wants to import the problematic keys.
 func formatKeysToImport(keys pgpKeySet) (string, error) {
 	if len(keys) == 0 {
-		return "", errors.New(gotext.Get("no keys to import"))
+		return "", errors.New(text.T("no keys to import"))
 	}
 
 	var buffer bytes.Buffer
-	buffer.WriteString(text.SprintOperationInfo(gotext.Get("PGP keys need importing:")))
+	buffer.WriteString(text.SprintOperationInfo(text.T("PGP keys need importing:")))
 	for key, bases := range keys {
 		pkglist := ""
 		for _, base := range bases {
 			pkglist += base.String() + "  "
 		}
 		pkglist = strings.TrimRight(pkglist, " ")
-		buffer.WriteString("\n" + text.SprintWarn(gotext.Get("%s, required by: %s", text.Cyan(key), text.Cyan(pkglist))))
+		buffer.WriteString("\n" + text.SprintWarn(text.Tf("%s, required by: %s", text.Cyan(key), text.Cyan(pkglist))))
 	}
 	return buffer.String(), nil
 }

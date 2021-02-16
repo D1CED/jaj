@@ -8,7 +8,6 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/leonelquinteros/gotext"
 	"github.com/pkg/errors"
 
 	"github.com/Jguer/yay/v10/pkg/db"
@@ -89,18 +88,18 @@ func gitDownloadABS(url, path, name string) (bool, error) {
 			"-b", "packages/"+name, url, name)
 		_, stderr, err := config.Runtime.CmdRunner.Capture(cmd, 0)
 		if err != nil {
-			return false, fmt.Errorf(gotext.Get("error cloning %s: %s", name, stderr))
+			return false, fmt.Errorf(text.Tf("error cloning %s: %s", name, stderr))
 		}
 
 		return true, nil
 	} else if errExist != nil {
-		return false, fmt.Errorf(gotext.Get("error reading %s", filepath.Join(path, name, ".git")))
+		return false, fmt.Errorf(text.Tf("error reading %s", filepath.Join(path, name, ".git")))
 	}
 
 	cmd := config.Runtime.CmdBuilder.BuildGitCmd(filepath.Join(path, name), "pull", "--ff-only")
 	_, stderr, err := config.Runtime.CmdRunner.Capture(cmd, 0)
 	if err != nil {
-		return false, fmt.Errorf(gotext.Get("error fetching %s: %s", name, stderr))
+		return false, fmt.Errorf(text.Tf("error fetching %s: %s", name, stderr))
 	}
 
 	return true, nil
@@ -112,18 +111,18 @@ func gitDownload(url, path, name string) (bool, error) {
 		cmd := config.Runtime.CmdBuilder.BuildGitCmd(path, "clone", "--no-progress", url, name)
 		_, stderr, errCapture := config.Runtime.CmdRunner.Capture(cmd, 0)
 		if errCapture != nil {
-			return false, fmt.Errorf(gotext.Get("error cloning %s: %s", name, stderr))
+			return false, fmt.Errorf(text.Tf("error cloning %s: %s", name, stderr))
 		}
 
 		return true, nil
 	} else if err != nil {
-		return false, fmt.Errorf(gotext.Get("error reading %s", filepath.Join(path, name, ".git")))
+		return false, fmt.Errorf(text.Tf("error reading %s", filepath.Join(path, name, ".git")))
 	}
 
 	cmd := config.Runtime.CmdBuilder.BuildGitCmd(filepath.Join(path, name), "fetch")
 	_, stderr, err := config.Runtime.CmdRunner.Capture(cmd, 0)
 	if err != nil {
-		return false, fmt.Errorf(gotext.Get("error fetching %s: %s", name, stderr))
+		return false, fmt.Errorf(text.Tf("error fetching %s: %s", name, stderr))
 	}
 
 	return false, nil
@@ -134,14 +133,14 @@ func gitMerge(path, name string) error {
 		config.Runtime.CmdBuilder.BuildGitCmd(
 			filepath.Join(path, name), "reset", "--hard", "HEAD"), 0)
 	if err != nil {
-		return fmt.Errorf(gotext.Get("error resetting %s: %s", name, stderr))
+		return fmt.Errorf(text.Tf("error resetting %s: %s", name, stderr))
 	}
 
 	_, stderr, err = config.Runtime.CmdRunner.Capture(
 		config.Runtime.CmdBuilder.BuildGitCmd(
 			filepath.Join(path, name), "merge", "--no-edit", "--ff"), 0)
 	if err != nil {
-		return fmt.Errorf(gotext.Get("error merging %s: %s", name, stderr))
+		return fmt.Errorf(text.Tf("error merging %s: %s", name, stderr))
 	}
 
 	return nil
@@ -195,7 +194,7 @@ func getPkgbuilds(pkgs []string, dbExecutor db.Executor, force bool) error {
 					}
 					bases = append(bases, base)
 				} else {
-					text.Warnln(gotext.Get("%s already exists. Use -f/--force to overwrite", pkgDest))
+					text.Warnln(text.Tf("%s already exists. Use -f/--force to overwrite", pkgDest))
 					continue
 				}
 			}
@@ -269,7 +268,7 @@ func getPkgbuildsfromABS(pkgs []string, path string, dbExecutor db.Executor, for
 				continue
 			}
 		default:
-			text.Warn(gotext.Get("%s already downloaded -- use -f to overwrite", text.Cyan(name)))
+			text.Warn(text.Tf("%s already downloaded -- use -f to overwrite", text.Cyan(name)))
 			continue
 		}
 
@@ -277,14 +276,14 @@ func getPkgbuildsfromABS(pkgs []string, path string, dbExecutor db.Executor, for
 	}
 
 	if len(missing) != 0 {
-		text.Warnln(gotext.Get("Missing ABS packages:"),
+		text.Warnln(text.T("Missing ABS packages:"),
 			text.Cyan(strings.Join(missing, ", ")))
 	}
 
 	download := func(pkg string, url string) {
 		defer wg.Done()
 		if _, err := gitDownloadABS(url, config.ABSDir, pkg); err != nil {
-			errs.Add(errors.New(gotext.Get("failed to get pkgbuild: %s: %s", text.Cyan(pkg), err.Error())))
+			errs.Add(errors.New(text.Tf("failed to get pkgbuild: %s: %s", text.Cyan(pkg), err.Error())))
 			return
 		}
 
@@ -296,9 +295,9 @@ func getPkgbuildsfromABS(pkgs []string, path string, dbExecutor db.Executor, for
 		mux.Lock()
 		downloaded++
 		if err != nil {
-			errs.Add(errors.New(gotext.Get("failed to link %s: %s", text.Cyan(pkg), stderr)))
+			errs.Add(errors.New(text.Tf("failed to link %s: %s", text.Cyan(pkg), stderr)))
 		} else {
-			fmt.Fprintln(os.Stdout, gotext.Get("(%d/%d) Downloaded PKGBUILD from ABS: %s", downloaded, len(names), text.Cyan(pkg)))
+			fmt.Fprintln(os.Stdout, text.Tf("(%d/%d) Downloaded PKGBUILD from ABS: %s", downloaded, len(names), text.Cyan(pkg)))
 		}
 		mux.Unlock()
 	}

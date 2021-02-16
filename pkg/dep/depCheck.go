@@ -6,8 +6,6 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/leonelquinteros/gotext"
-
 	"github.com/Jguer/yay/v10/pkg/stringset"
 	"github.com/Jguer/yay/v10/pkg/text"
 )
@@ -125,14 +123,14 @@ func (dp *Pool) CheckConflicts(useAsk, noConfirm bool) (stringset.MapStringSet, 
 	conflicts := make(stringset.MapStringSet)
 	wg.Add(2)
 
-	text.OperationInfoln(gotext.Get("Checking for conflicts..."))
+	text.OperationInfoln(text.T("Checking for conflicts..."))
 	go func() {
 		dp.checkForwardConflicts(conflicts)
 		dp.checkReverseConflicts(conflicts)
 		wg.Done()
 	}()
 
-	text.OperationInfoln(gotext.Get("Checking for inner conflicts..."))
+	text.OperationInfoln(text.T("Checking for inner conflicts..."))
 	go func() {
 		dp.checkInnerConflicts(innerConflicts)
 		wg.Done()
@@ -141,7 +139,7 @@ func (dp *Pool) CheckConflicts(useAsk, noConfirm bool) (stringset.MapStringSet, 
 	wg.Wait()
 
 	if len(innerConflicts) != 0 {
-		text.Errorln(gotext.Get("\nInner conflicts found:"))
+		text.Errorln(text.T("\nInner conflicts found:"))
 
 		for name, pkgs := range innerConflicts {
 			str := text.SprintError(name + ":")
@@ -155,10 +153,10 @@ func (dp *Pool) CheckConflicts(useAsk, noConfirm bool) (stringset.MapStringSet, 
 	}
 
 	if len(conflicts) != 0 {
-		text.Errorln(gotext.Get("\nPackage conflicts found:"))
+		text.Errorln(text.T("\nPackage conflicts found:"))
 
 		for name, pkgs := range conflicts {
-			str := text.SprintError(gotext.Get("Installing %s will remove:", text.Cyan(name)))
+			str := text.SprintError(text.Tf("Installing %s will remove:", text.Cyan(name)))
 			for pkg := range pkgs {
 				str += " " + text.Cyan(pkg) + ","
 			}
@@ -181,10 +179,10 @@ func (dp *Pool) CheckConflicts(useAsk, noConfirm bool) (stringset.MapStringSet, 
 	if len(conflicts) > 0 {
 		if !useAsk {
 			if noConfirm {
-				return nil, fmt.Errorf(gotext.Get("package conflicts can not be resolved with noconfirm, aborting"))
+				return nil, fmt.Errorf(text.T("package conflicts can not be resolved with noconfirm, aborting"))
 			}
 
-			text.Errorln(gotext.Get("Conflicting packages will have to be confirmed manually"))
+			text.Errorln(text.T("Conflicting packages will have to be confirmed manually"))
 		}
 	}
 
@@ -282,15 +280,15 @@ func (dp *Pool) CheckMissing() error {
 		return nil
 	}
 
-	text.Errorln(gotext.Get("Could not find all required packages:"))
+	text.Errorln(text.T("Could not find all required packages:"))
 	for dep, trees := range missing.Missing {
 		for _, tree := range trees {
 			fmt.Fprintf(os.Stderr, "\t%s", text.Cyan(dep))
 
 			if len(tree) == 0 {
-				fmt.Fprint(os.Stderr, gotext.Get(" (Target"))
+				fmt.Fprint(os.Stderr, text.T(" (Target"))
 			} else {
-				fmt.Fprint(os.Stderr, gotext.Get(" (Wanted by: "))
+				fmt.Fprint(os.Stderr, text.T(" (Wanted by: "))
 				for n := 0; n < len(tree)-1; n++ {
 					fmt.Fprint(os.Stderr, text.Cyan(tree[n]), " -> ")
 				}

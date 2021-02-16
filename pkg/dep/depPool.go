@@ -9,8 +9,6 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/leonelquinteros/gotext"
-
 	"github.com/Jguer/yay/v10/pkg/db"
 	"github.com/Jguer/yay/v10/pkg/query"
 	"github.com/Jguer/yay/v10/pkg/settings"
@@ -477,10 +475,10 @@ func (dp *Pool) hasPackage(name string) bool {
 func providerMenu(dep string, providers providers, noConfirm bool) *query.Pkg {
 	size := providers.Len()
 
-	str := text.Bold(gotext.Get("There are %d providers available for %s:\n", size, dep))
+	str := text.Bold(text.Tf("There are %d providers available for %s:\n", size, dep))
 
 	size = 1
-	str += text.SprintOperationInfo(gotext.Get("Repository AUR"), "\n    ")
+	str += text.SprintOperationInfo(text.T("Repository AUR"), "\n    ")
 
 	for _, pkg := range providers.Pkgs {
 		str += fmt.Sprintf("%d) %s ", size, pkg.Name)
@@ -490,7 +488,7 @@ func providerMenu(dep string, providers providers, noConfirm bool) *query.Pkg {
 	text.OperationInfoln(str)
 
 	for {
-		fmt.Print(gotext.Get("\nEnter a number (default=1): "))
+		fmt.Print(text.T("\nEnter a number (default=1): "))
 
 		if noConfirm {
 			fmt.Println("1")
@@ -505,7 +503,7 @@ func providerMenu(dep string, providers providers, noConfirm bool) *query.Pkg {
 		}
 
 		if overflow {
-			text.Errorln(gotext.Get("input too long"))
+			text.Errorln(text.T("input too long"))
 			continue
 		}
 
@@ -515,12 +513,12 @@ func providerMenu(dep string, providers providers, noConfirm bool) *query.Pkg {
 
 		num, err := strconv.Atoi(string(numberBuf))
 		if err != nil {
-			text.Errorln(gotext.Get("invalid number: %s", string(numberBuf)))
+			text.Errorln(text.Tf("invalid number: %s", string(numberBuf)))
 			continue
 		}
 
 		if num < 1 || num >= size {
-			text.Errorln(gotext.Get("invalid value: %d is not between %d and %d", num, 1, size-1))
+			text.Errorln(text.Tf("invalid value: %d is not between %d and %d", num, 1, size-1))
 			continue
 		}
 

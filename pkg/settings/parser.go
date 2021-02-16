@@ -7,9 +7,10 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/leonelquinteros/gotext"
 	rpc "github.com/mikkeloscar/aur"
 	"github.com/pkg/errors"
+
+	"github.com/Jguer/yay/v10/pkg/text"
 )
 
 type Option struct {
@@ -160,7 +161,7 @@ func (a *Arguments) NeedRoot(runtime *Runtime) bool {
 
 func (a *Arguments) addOP(op string) error {
 	if a.Op != "" {
-		return errors.New(gotext.Get("only one operation may be used at a time"))
+		return errors.New(text.T("only one operation may be used at a time"))
 	}
 
 	a.Op = op
@@ -169,7 +170,7 @@ func (a *Arguments) addOP(op string) error {
 
 func (a *Arguments) addParam(option, arg string) error {
 	if !isArg(option) {
-		return errors.New(gotext.Get("invalid option '%s'", option))
+		return errors.New(text.Tf("invalid option '%s'", option))
 	}
 
 	if isOp(option) {

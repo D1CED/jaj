@@ -40,9 +40,11 @@ Step 1
 
   most dependencies on alpm (via type alias in db) [done]
 
-  most dependencies on gotext (move functionality into pkg/text)
+  most dependencies on gotext (move functionality into pkg/text) [done]
 
   pkg/upgrade -> alpm (add VerComp method to db) [done]
+
+  pkg/errors -> errors
 
 * Reduce standard library dependencies
 

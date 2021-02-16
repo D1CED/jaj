@@ -7,7 +7,6 @@ import (
 	"os"
 
 	alpm "github.com/Jguer/go-alpm/v2"
-	"github.com/leonelquinteros/gotext"
 
 	"github.com/Jguer/yay/v10/pkg/completion"
 	"github.com/Jguer/yay/v10/pkg/db"
@@ -174,7 +173,7 @@ func handleCmd(cmdArgs *settings.Arguments, dbExecutor db.Executor) error {
 		return handleYay(cmdArgs, dbExecutor)
 	}
 
-	return fmt.Errorf(gotext.Get("unhandled operation"))
+	return fmt.Errorf(text.T("unhandled operation"))
 }
 
 func handleQuery(cmdArgs *settings.Arguments, dbExecutor db.Executor) error {
@@ -317,7 +316,7 @@ func displayNumberMenu(pkgS []string, dbExecutor db.Executor, cmdArgs *settings.
 	}
 
 	if lenpq == 0 && lenaq == 0 {
-		return fmt.Errorf(gotext.Get("no packages match search"))
+		return fmt.Errorf(text.T("no packages match search"))
 	}
 
 	switch config.SortMode {
@@ -336,15 +335,15 @@ func displayNumberMenu(pkgS []string, dbExecutor db.Executor, cmdArgs *settings.
 			pq.printSearch(dbExecutor)
 		}
 	default:
-		return fmt.Errorf(gotext.Get("invalid sort mode. Fix with yay -Y --bottomup --save"))
+		return fmt.Errorf(text.T("invalid sort mode. Fix with yay -Y --bottomup --save"))
 	}
 
 	if aurErr != nil {
-		text.Errorln(gotext.Get("Error during AUR search: %s\n", aurErr))
-		text.Warnln(gotext.Get("Showing repo packages only"))
+		text.Errorln(text.Tf("Error during AUR search: %s\n", aurErr))
+		text.Warnln(text.T("Showing repo packages only"))
 	}
 
-	text.Infoln(gotext.Get("Packages to install (eg: 1 2 3, 1-3 or ^4)"))
+	text.Infoln(text.T("Packages to install (eg: 1 2 3, 1-3 or ^4)"))
 	text.Info()
 
 	reader := bufio.NewReader(os.Stdin)
@@ -354,7 +353,7 @@ func displayNumberMenu(pkgS []string, dbExecutor db.Executor, cmdArgs *settings.
 		return err
 	}
 	if overflow {
-		return fmt.Errorf(gotext.Get("input too long"))
+		return fmt.Errorf(text.T("input too long"))
 	}
 
 	include, exclude, _, otherExclude := ParseNumberMenu(string(numberBuf))
@@ -370,7 +369,7 @@ func displayNumberMenu(pkgS []string, dbExecutor db.Executor, cmdArgs *settings.
 		case settings.BottomUp:
 			target = len(pq) - i
 		default:
-			return fmt.Errorf(gotext.Get("invalid sort mode. Fix with yay -Y --bottomup --save"))
+			return fmt.Errorf(text.T("invalid sort mode. Fix with yay -Y --bottomup --save"))
 		}
 
 		if (isInclude && include.Get(target)) || (!isInclude && !exclude.Get(target)) {
@@ -387,7 +386,7 @@ func displayNumberMenu(pkgS []string, dbExecutor db.Executor, cmdArgs *settings.
 		case settings.BottomUp:
 			target = len(aq) - i + len(pq)
 		default:
-			return fmt.Errorf(gotext.Get("invalid sort mode. Fix with yay -Y --bottomup --save"))
+			return fmt.Errorf(text.T("invalid sort mode. Fix with yay -Y --bottomup --save"))
 		}
 
 		if (isInclude && include.Get(target)) || (!isInclude && !exclude.Get(target)) {
@@ -396,7 +395,7 @@ func displayNumberMenu(pkgS []string, dbExecutor db.Executor, cmdArgs *settings.
 	}
 
 	if len(arguments.Targets) == 0 {
-		fmt.Println(gotext.Get(" there is nothing to do"))
+		fmt.Println(text.T(" there is nothing to do"))
 		return nil
 	}
 
@@ -432,10 +431,10 @@ func syncList(cmdArgs *settings.Arguments, dbExecutor db.Executor) error {
 			if cmdArgs.ExistsArg("q", "quiet") {
 				fmt.Println(name)
 			} else {
-				fmt.Printf("%s %s %s", text.Magenta("aur"), text.Bold(name), text.Bold(text.Green(gotext.Get("unknown-version"))))
+				fmt.Printf("%s %s %s", text.Magenta("aur"), text.Bold(name), text.Bold(text.Green(text.T("unknown-version"))))
 
 				if dbExecutor.LocalPackage(name) != nil {
-					fmt.Print(text.Bold(text.Blue(gotext.Get(" [Installed]"))))
+					fmt.Print(text.Bold(text.Blue(text.T(" [Installed]"))))
 				}
 
 				fmt.Println()

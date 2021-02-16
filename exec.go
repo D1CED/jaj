@@ -8,8 +8,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/leonelquinteros/gotext"
-
 	"github.com/Jguer/yay/v10/pkg/settings"
 	"github.com/Jguer/yay/v10/pkg/text"
 )
@@ -46,8 +44,8 @@ func waitLock(dbPath string) {
 		return
 	}
 
-	text.Warnln(gotext.Get("%s is present.", lockDBPath))
-	text.Warn(gotext.Get("There may be another Pacman instance running. Waiting..."))
+	text.Warnln(text.Tf("%s is present.", lockDBPath))
+	text.Warn(text.T("There may be another Pacman instance running. Waiting..."))
 
 	for {
 		time.Sleep(3 * time.Second)

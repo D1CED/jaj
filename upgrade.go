@@ -6,8 +6,6 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/leonelquinteros/gotext"
-
 	"github.com/Jguer/yay/v10/pkg/db"
 	"github.com/Jguer/yay/v10/pkg/multierror"
 	"github.com/Jguer/yay/v10/pkg/query"
@@ -34,7 +32,7 @@ func upList(warnings *query.AURWarnings, dbExecutor db.Executor, enableDowngrade
 	}
 
 	if config.Runtime.Mode == settings.ModeAny || config.Runtime.Mode == settings.ModeRepo {
-		text.OperationInfoln(gotext.Get("Searching databases for updates..."))
+		text.OperationInfoln(text.T("Searching databases for updates..."))
 		wg.Add(1)
 		go func() {
 			repoUp, err = dbExecutor.RepoUpgrades(enableDowngrade)
@@ -44,7 +42,7 @@ func upList(warnings *query.AURWarnings, dbExecutor db.Executor, enableDowngrade
 	}
 
 	if config.Runtime.Mode == settings.ModeAny || config.Runtime.Mode == settings.ModeAUR {
-		text.OperationInfoln(gotext.Get("Searching AUR for updates..."))
+		text.OperationInfoln(text.T("Searching AUR for updates..."))
 
 		var _aurdata []*query.Pkg
 		_aurdata, err = query.AURInfo(remoteNames, warnings, config.RequestSplitN)
@@ -61,7 +59,7 @@ func upList(warnings *query.AURWarnings, dbExecutor db.Executor, enableDowngrade
 			}()
 
 			if config.Devel {
-				text.OperationInfoln(gotext.Get("Checking development packages..."))
+				text.OperationInfoln(text.T("Checking development packages..."))
 				wg.Add(1)
 				go func() {
 					develUp = upgrade.UpDevel(remote, aurdata, config.Runtime.VCSStore)
@@ -103,7 +101,7 @@ func printLocalNewerThanAUR(
 		left, right := upgrade.GetVersionDiff(pkg.Version(), aurPkg.Version)
 
 		if !isDevelPackage(pkg) && db.VerCmp(pkg.Version(), aurPkg.Version) > 0 {
-			text.Warnln(gotext.Get("%s: local (%s) is newer than AUR (%s)",
+			text.Warnln(text.Tf("%s: local (%s) is newer than AUR (%s)",
 				text.Cyan(pkg.Name()),
 				left, right,
 			))
@@ -146,10 +144,10 @@ func upgradePkgs(aurUp, repoUp upgrade.UpSlice) (ignore, aurNames stringset.Stri
 	sort.Sort(repoUp)
 	sort.Sort(aurUp)
 	allUp := append(repoUp, aurUp...)
-	fmt.Printf("%s"+text.Bold(" %d ")+"%s\n", text.Bold(text.Cyan("::")), allUpLen, text.Bold(gotext.Get("Packages to upgrade.")))
+	fmt.Printf("%s"+text.Bold(" %d ")+"%s\n", text.Bold(text.Cyan("::")), allUpLen, text.Bold(text.T("Packages to upgrade.")))
 	allUp.Print()
 
-	text.Infoln(gotext.Get("Packages to exclude: (eg: \"1 2 3\", \"1-3\", \"^4\" or repo name)"))
+	text.Infoln(text.T("Packages to exclude: (eg: \"1 2 3\", \"1-3\", \"^4\" or repo name)"))
 
 	numbers, err := getInput(config.AnswerUpgrade)
 	if err != nil {

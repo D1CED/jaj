@@ -3,7 +3,6 @@ package query
 import (
 	"sync"
 
-	"github.com/leonelquinteros/gotext"
 	rpc "github.com/mikkeloscar/aur"
 
 	"github.com/Jguer/yay/v10/pkg/intrange"
@@ -81,7 +80,7 @@ func AURInfo(names []string, warnings *AURWarnings, splitN int) ([]*Pkg, error) 
 }
 
 func AURInfoPrint(names []string, splitN int) ([]*Pkg, error) {
-	text.OperationInfoln(gotext.Get("Querying AUR..."))
+	text.OperationInfoln(text.T("Querying AUR..."))
 
 	warnings := &AURWarnings{}
 	info, err := AURInfo(names, warnings, splitN)

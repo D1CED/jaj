@@ -8,7 +8,6 @@ import (
 	"sync"
 
 	gosrc "github.com/Morganamilo/go-srcinfo"
-	"github.com/leonelquinteros/gotext"
 
 	"github.com/Jguer/yay/v10/pkg/settings/exe"
 	"github.com/Jguer/yay/v10/pkg/text"
@@ -101,7 +100,7 @@ func (v *InfoStore) Update(pkgName string, sources []gosrc.ArchString, mux sync.
 		}
 
 		v.OriginsByPackage[pkgName] = info
-		text.Warnln(gotext.Get("Found git repo: %s", text.Cyan(url)))
+		text.Warnln(text.Tf("Found git repo: %s", text.Cyan(url)))
 
 		if err := v.Save(); err != nil {
 			fmt.Fprintln(os.Stderr, err)

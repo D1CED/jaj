@@ -3,8 +3,6 @@ package upgrade
 import (
 	"sync"
 
-	"github.com/leonelquinteros/gotext"
-
 	"github.com/Jguer/yay/v10/pkg/db"
 	"github.com/Jguer/yay/v10/pkg/query"
 	"github.com/Jguer/yay/v10/pkg/text"
@@ -71,7 +69,7 @@ func UpDevel(
 func printIgnoringPackage(pkg db.IPackage, newPkgVersion string) {
 	left, right := GetVersionDiff(pkg.Version(), newPkgVersion)
 
-	text.Warnln(gotext.Get("%s: ignoring package upgrade (%s => %s)",
+	text.Warnln(text.Tf("%s: ignoring package upgrade (%s => %s)",
 		text.Cyan(pkg.Name()),
 		left, right,
 	))

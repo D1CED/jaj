@@ -5,8 +5,6 @@ import (
 	"os"
 	"strconv"
 
-	"github.com/leonelquinteros/gotext"
-
 	"github.com/Jguer/yay/v10/pkg/db"
 	"github.com/Jguer/yay/v10/pkg/query"
 	"github.com/Jguer/yay/v10/pkg/settings"
@@ -25,7 +23,7 @@ func (q aurQuery) printSearch(start int, dbExecutor db.Executor) {
 			case settings.BottomUp:
 				toprint += text.Magenta(strconv.Itoa(len(q)+start-i-1) + " ")
 			default:
-				text.Warnln(gotext.Get("invalid sort mode. Fix with yay -Y --bottomup --save"))
+				text.Warnln(text.T("invalid sort mode. Fix with yay -Y --bottomup --save"))
 			}
 		} else if config.SearchMode == minimal {
 			fmt.Println(q[i].Name)
@@ -38,18 +36,18 @@ func (q aurQuery) printSearch(start int, dbExecutor db.Executor) {
 			" " + text.Bold(strconv.FormatFloat(q[i].Popularity, 'f', 2, 64)+") ")
 
 		if q[i].Maintainer == "" {
-			toprint += text.Bold(text.Red(gotext.Get("(Orphaned)"))) + " "
+			toprint += text.Bold(text.Red(text.T("(Orphaned)"))) + " "
 		}
 
 		if q[i].OutOfDate != 0 {
-			toprint += text.Bold(text.Red(gotext.Get("(Out-of-date: %s)", text.FormatTime(q[i].OutOfDate)))) + " "
+			toprint += text.Bold(text.Red(text.Tf("(Out-of-date: %s)", text.FormatTime(q[i].OutOfDate)))) + " "
 		}
 
 		if pkg := dbExecutor.LocalPackage(q[i].Name); pkg != nil {
 			if pkg.Version() != q[i].Version {
-				toprint += text.Bold(text.Green(gotext.Get("(Installed: %s)", pkg.Version())))
+				toprint += text.Bold(text.Green(text.Tf("(Installed: %s)", pkg.Version())))
 			} else {
-				toprint += text.Bold(text.Green(gotext.Get("(Installed)")))
+				toprint += text.Bold(text.Green(text.T("(Installed)")))
 			}
 		}
 		toprint += "\n    " + q[i].Description
@@ -68,7 +66,7 @@ func (s repoQuery) printSearch(dbExecutor db.Executor) {
 			case settings.BottomUp:
 				toprint += text.Magenta(strconv.Itoa(len(s)-i) + " ")
 			default:
-				text.Warnln(gotext.Get("invalid sort mode. Fix with yay -Y --bottomup --save"))
+				text.Warnln(text.T("invalid sort mode. Fix with yay -Y --bottomup --save"))
 			}
 		} else if config.SearchMode == minimal {
 			fmt.Println(res.Name())
@@ -87,9 +85,9 @@ func (s repoQuery) printSearch(dbExecutor db.Executor) {
 
 		if pkg := dbExecutor.LocalPackage(res.Name()); pkg != nil {
 			if pkg.Version() != res.Version() {
-				toprint += text.Bold(text.Green(gotext.Get("(Installed: %s)", pkg.Version())))
+				toprint += text.Bold(text.Green(text.Tf("(Installed: %s)", pkg.Version())))
 			} else {
-				toprint += text.Bold(text.Green(gotext.Get("(Installed)")))
+				toprint += text.Bold(text.Green(text.T("(Installed)")))
 			}
 		}
 
@@ -102,38 +100,38 @@ func (s repoQuery) printSearch(dbExecutor db.Executor) {
 
 // PrintInfo prints package info like pacman -Si.
 func PrintInfo(a *query.Pkg, extendedInfo bool) {
-	text.PrintInfoValue(gotext.Get("Repository"), "aur")
-	text.PrintInfoValue(gotext.Get("Name"), a.Name)
-	text.PrintInfoValue(gotext.Get("Keywords"), a.Keywords...)
-	text.PrintInfoValue(gotext.Get("Version"), a.Version)
-	text.PrintInfoValue(gotext.Get("Description"), a.Description)
-	text.PrintInfoValue(gotext.Get("URL"), a.URL)
-	text.PrintInfoValue(gotext.Get("AUR URL"), config.AURURL+"/packages/"+a.Name)
-	text.PrintInfoValue(gotext.Get("Groups"), a.Groups...)
-	text.PrintInfoValue(gotext.Get("Licenses"), a.License...)
-	text.PrintInfoValue(gotext.Get("Provides"), a.Provides...)
-	text.PrintInfoValue(gotext.Get("Depends On"), a.Depends...)
-	text.PrintInfoValue(gotext.Get("Make Deps"), a.MakeDepends...)
-	text.PrintInfoValue(gotext.Get("Check Deps"), a.CheckDepends...)
-	text.PrintInfoValue(gotext.Get("Optional Deps"), a.OptDepends...)
-	text.PrintInfoValue(gotext.Get("Conflicts With"), a.Conflicts...)
-	text.PrintInfoValue(gotext.Get("Maintainer"), a.Maintainer)
-	text.PrintInfoValue(gotext.Get("Votes"), fmt.Sprintf("%d", a.NumVotes))
-	text.PrintInfoValue(gotext.Get("Popularity"), fmt.Sprintf("%f", a.Popularity))
-	text.PrintInfoValue(gotext.Get("First Submitted"), text.FormatTimeQuery(a.FirstSubmitted))
-	text.PrintInfoValue(gotext.Get("Last Modified"), text.FormatTimeQuery(a.LastModified))
+	text.PrintInfoValue(text.T("Repository"), "aur")
+	text.PrintInfoValue(text.T("Name"), a.Name)
+	text.PrintInfoValue(text.T("Keywords"), a.Keywords...)
+	text.PrintInfoValue(text.T("Version"), a.Version)
+	text.PrintInfoValue(text.T("Description"), a.Description)
+	text.PrintInfoValue(text.T("URL"), a.URL)
+	text.PrintInfoValue(text.T("AUR URL"), config.AURURL+"/packages/"+a.Name)
+	text.PrintInfoValue(text.T("Groups"), a.Groups...)
+	text.PrintInfoValue(text.T("Licenses"), a.License...)
+	text.PrintInfoValue(text.T("Provides"), a.Provides...)
+	text.PrintInfoValue(text.T("Depends On"), a.Depends...)
+	text.PrintInfoValue(text.T("Make Deps"), a.MakeDepends...)
+	text.PrintInfoValue(text.T("Check Deps"), a.CheckDepends...)
+	text.PrintInfoValue(text.T("Optional Deps"), a.OptDepends...)
+	text.PrintInfoValue(text.T("Conflicts With"), a.Conflicts...)
+	text.PrintInfoValue(text.T("Maintainer"), a.Maintainer)
+	text.PrintInfoValue(text.T("Votes"), fmt.Sprintf("%d", a.NumVotes))
+	text.PrintInfoValue(text.T("Popularity"), fmt.Sprintf("%f", a.Popularity))
+	text.PrintInfoValue(text.T("First Submitted"), text.FormatTimeQuery(a.FirstSubmitted))
+	text.PrintInfoValue(text.T("Last Modified"), text.FormatTimeQuery(a.LastModified))
 
 	if a.OutOfDate != 0 {
-		text.PrintInfoValue(gotext.Get("Out-of-date"), text.FormatTimeQuery(a.OutOfDate))
+		text.PrintInfoValue(text.T("Out-of-date"), text.FormatTimeQuery(a.OutOfDate))
 	} else {
-		text.PrintInfoValue(gotext.Get("Out-of-date"), "No")
+		text.PrintInfoValue(text.T("Out-of-date"), "No")
 	}
 
 	if extendedInfo {
 		text.PrintInfoValue("ID", fmt.Sprintf("%d", a.ID))
-		text.PrintInfoValue(gotext.Get("Package Base ID"), fmt.Sprintf("%d", a.PackageBaseID))
-		text.PrintInfoValue(gotext.Get("Package Base"), a.PackageBase)
-		text.PrintInfoValue(gotext.Get("Snapshot URL"), config.AURURL+a.URLPath)
+		text.PrintInfoValue(text.T("Package Base ID"), fmt.Sprintf("%d", a.PackageBaseID))
+		text.PrintInfoValue(text.T("Package Base"), a.PackageBase)
+		text.PrintInfoValue(text.T("Snapshot URL"), config.AURURL+a.URLPath)
 	}
 
 	fmt.Println()
@@ -162,14 +160,14 @@ func localStatistics(dbExecutor db.Executor) error {
 		return err
 	}
 
-	text.Infoln(gotext.Get("Yay version v%s", yayVersion))
+	text.Infoln(text.Tf("Yay version v%s", yayVersion))
 	fmt.Println(text.Bold(text.Cyan("===========================================")))
-	text.Infoln(gotext.Get("Total installed packages: %s", text.Cyan(strconv.Itoa(info.Totaln))))
-	text.Infoln(gotext.Get("Total foreign installed packages: %s", text.Cyan(strconv.Itoa(len(remoteNames)))))
-	text.Infoln(gotext.Get("Explicitly installed packages: %s", text.Cyan(strconv.Itoa(info.Expln))))
-	text.Infoln(gotext.Get("Total Size occupied by packages: %s", text.Cyan(text.Human(info.TotalSize))))
+	text.Infoln(text.Tf("Total installed packages: %s", text.Cyan(strconv.Itoa(info.Totaln))))
+	text.Infoln(text.Tf("Total foreign installed packages: %s", text.Cyan(strconv.Itoa(len(remoteNames)))))
+	text.Infoln(text.Tf("Explicitly installed packages: %s", text.Cyan(strconv.Itoa(info.Expln))))
+	text.Infoln(text.Tf("Total Size occupied by packages: %s", text.Cyan(text.Human(info.TotalSize))))
 	fmt.Println(text.Bold(text.Cyan("===========================================")))
-	text.Infoln(gotext.Get("Ten biggest packages:"))
+	text.Infoln(text.T("Ten biggest packages:"))
 	biggestPackages(dbExecutor)
 	fmt.Println(text.Bold(text.Cyan("===========================================")))
 
@@ -254,7 +252,7 @@ outer:
 			}
 		}
 
-		text.Errorln(gotext.Get("package '%s' was not found", pkg))
+		text.Errorln(text.Tf("package '%s' was not found", pkg))
 		missing = true
 	}
 

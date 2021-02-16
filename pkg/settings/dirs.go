@@ -4,8 +4,9 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/leonelquinteros/gotext"
 	"github.com/pkg/errors"
+
+	"github.com/Jguer/yay/v10/pkg/text"
 )
 
 // configFileName holds the name of the config file.
@@ -51,7 +52,7 @@ func getCacheHome() string {
 func initDir(dir string) error {
 	if _, err := os.Stat(dir); os.IsNotExist(err) {
 		if err = os.MkdirAll(dir, 0o755); err != nil {
-			return errors.New(gotext.Get("failed to create config directory '%s': %s", dir, err))
+			return errors.New(text.Tf("failed to create config directory '%s': %s", dir, err))
 		}
 	} else if err != nil {
 		return err

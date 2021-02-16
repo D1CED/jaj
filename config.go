@@ -7,8 +7,6 @@ import (
 	"os/exec"
 	"strings"
 
-	"github.com/leonelquinteros/gotext"
-
 	"github.com/Jguer/yay/v10/pkg/settings"
 	"github.com/Jguer/yay/v10/pkg/text"
 )
@@ -60,11 +58,11 @@ func editor() (editor string, args []string) {
 		fallthrough
 	default:
 		fmt.Fprintln(os.Stderr)
-		text.Errorln(gotext.Get("%s is not set", text.Bold(text.Cyan("$EDITOR"))))
-		text.Warnln(gotext.Get("Add %s or %s to your environment variables", text.Bold(text.Cyan("$EDITOR")), text.Bold(text.Cyan("$VISUAL"))))
+		text.Errorln(text.Tf("%s is not set", text.Bold(text.Cyan("$EDITOR"))))
+		text.Warnln(text.Tf("Add %s or %s to your environment variables", text.Bold(text.Cyan("$EDITOR")), text.Bold(text.Cyan("$VISUAL"))))
 
 		for {
-			text.Infoln(gotext.Get("Edit PKGBUILD with?"))
+			text.Infoln(text.T("Edit PKGBUILD with?"))
 			editorInput, err := getInput("")
 			if err != nil {
 				fmt.Fprintln(os.Stderr, err)
@@ -101,7 +99,7 @@ func getInput(defaultValue string) (string, error) {
 	}
 
 	if overflow {
-		return "", fmt.Errorf(gotext.Get("input too long"))
+		return "", fmt.Errorf(text.T("input too long"))
 	}
 
 	return string(buf), nil

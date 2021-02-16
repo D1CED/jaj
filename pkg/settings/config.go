@@ -8,9 +8,8 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/leonelquinteros/gotext"
-
 	"github.com/Jguer/yay/v10/pkg/settings/exe"
+	"github.com/Jguer/yay/v10/pkg/text"
 	"github.com/Jguer/yay/v10/pkg/vcs"
 )
 
@@ -231,7 +230,7 @@ func (c *Configuration) load(configPath string) {
 	cfile, err := os.Open(configPath)
 	if !os.IsNotExist(err) && err != nil {
 		fmt.Fprintln(os.Stderr,
-			gotext.Get("failed to open config file '%s': %s", configPath, err))
+			text.Tf("failed to open config file '%s': %s", configPath, err))
 		return
 	}
 
@@ -240,7 +239,7 @@ func (c *Configuration) load(configPath string) {
 		decoder := json.NewDecoder(cfile)
 		if err = decoder.Decode(c); err != nil {
 			fmt.Fprintln(os.Stderr,
-				gotext.Get("failed to read config file '%s': %s", configPath, err))
+				text.Tf("failed to read config file '%s': %s", configPath, err))
 		}
 	}
 }

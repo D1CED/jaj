@@ -8,7 +8,6 @@ import (
 	"strings"
 
 	alpm "github.com/Jguer/go-alpm/v2"
-	"github.com/leonelquinteros/gotext"
 	rpc "github.com/mikkeloscar/aur"
 
 	"github.com/Jguer/yay/v10/pkg/db"
@@ -176,12 +175,12 @@ func syncSearch(pkgS []string, dbExecutor db.Executor) (err error) {
 			pq.printSearch(dbExecutor)
 		}
 	default:
-		return errors.New(gotext.Get("invalid sort mode. Fix with yay -Y --bottomup --save"))
+		return errors.New(text.T("invalid sort mode. Fix with yay -Y --bottomup --save"))
 	}
 
 	if aurErr != nil {
-		text.Errorln(gotext.Get("error during AUR search: %s", aurErr))
-		text.Warnln(gotext.Get("Showing repo packages only"))
+		text.Errorln(text.Tf("error during AUR search: %s", aurErr))
+		text.Warnln(text.T("Showing repo packages only"))
 	}
 
 	return nil

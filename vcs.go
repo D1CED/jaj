@@ -3,8 +3,6 @@ package main
 import (
 	"sync"
 
-	"github.com/leonelquinteros/gotext"
-
 	"github.com/Jguer/yay/v10/pkg/db"
 	"github.com/Jguer/yay/v10/pkg/dep"
 	"github.com/Jguer/yay/v10/pkg/query"
@@ -48,6 +46,6 @@ func createDevelDB(config *settings.Configuration, dbExecutor db.Executor) error
 	}
 
 	wg.Wait()
-	text.OperationInfoln(gotext.Get("GenDB finished. No packages were installed"))
+	text.OperationInfoln(text.T("GenDB finished. No packages were installed"))
 	return err
 }

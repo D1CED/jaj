@@ -3,8 +3,6 @@ package query
 import (
 	"fmt"
 
-	"github.com/leonelquinteros/gotext"
-
 	"github.com/Jguer/yay/v10/pkg/stringset"
 	"github.com/Jguer/yay/v10/pkg/text"
 )
@@ -22,17 +20,17 @@ func NewWarnings() *AURWarnings {
 
 func (warnings *AURWarnings) Print() {
 	if len(warnings.Missing) > 0 {
-		text.Warn(gotext.Get("Missing AUR Packages:"))
+		text.Warn(text.T("Missing AUR Packages:"))
 		printRange(warnings.Missing)
 	}
 
 	if len(warnings.Orphans) > 0 {
-		text.Warn(gotext.Get("Orphaned AUR Packages:"))
+		text.Warn(text.T("Orphaned AUR Packages:"))
 		printRange(warnings.Orphans)
 	}
 
 	if len(warnings.OutOfDate) > 0 {
-		text.Warn(gotext.Get("Flagged Out Of Date AUR Packages:"))
+		text.Warn(text.T("Flagged Out Of Date AUR Packages:"))
 		printRange(warnings.OutOfDate)
 	}
 }
