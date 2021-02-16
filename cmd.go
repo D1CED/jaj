@@ -11,7 +11,6 @@ import (
 
 	"github.com/Jguer/yay/v10/pkg/completion"
 	"github.com/Jguer/yay/v10/pkg/db"
-	"github.com/Jguer/yay/v10/pkg/intrange"
 	"github.com/Jguer/yay/v10/pkg/news"
 	"github.com/Jguer/yay/v10/pkg/query"
 	"github.com/Jguer/yay/v10/pkg/settings"
@@ -358,7 +357,7 @@ func displayNumberMenu(pkgS []string, dbExecutor db.Executor, cmdArgs *settings.
 		return fmt.Errorf(gotext.Get("input too long"))
 	}
 
-	include, exclude, _, otherExclude := intrange.ParseNumberMenu(string(numberBuf))
+	include, exclude, _, otherExclude := ParseNumberMenu(string(numberBuf))
 	arguments := cmdArgs.CopyGlobal()
 
 	isInclude := len(exclude) == 0 && len(otherExclude) == 0

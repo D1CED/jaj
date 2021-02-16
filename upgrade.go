@@ -6,12 +6,9 @@ import (
 	"strings"
 	"sync"
 
-	alpm "github.com/Jguer/go-alpm/v2"
 	"github.com/leonelquinteros/gotext"
-	rpc "github.com/mikkeloscar/aur"
 
 	"github.com/Jguer/yay/v10/pkg/db"
-	"github.com/Jguer/yay/v10/pkg/intrange"
 	"github.com/Jguer/yay/v10/pkg/multierror"
 	"github.com/Jguer/yay/v10/pkg/query"
 	"github.com/Jguer/yay/v10/pkg/settings"
@@ -28,7 +25,7 @@ func upList(warnings *query.AURWarnings, dbExecutor db.Executor, enableDowngrade
 	var develUp upgrade.UpSlice
 	var errs multierror.MultiError
 
-	aurdata := make(map[string]*rpc.Pkg)
+	aurdata := make(map[string]*query.Pkg)
 
 	for _, pkg := range remote {
 		if pkg.ShouldIgnore() {
@@ -49,7 +46,7 @@ func upList(warnings *query.AURWarnings, dbExecutor db.Executor, enableDowngrade
 	if config.Runtime.Mode == settings.ModeAny || config.Runtime.Mode == settings.ModeAUR {
 		text.OperationInfoln(gotext.Get("Searching AUR for updates..."))
 
-		var _aurdata []*rpc.Pkg
+		var _aurdata []*query.Pkg
 		_aurdata, err = query.AURInfo(remoteNames, warnings, config.RequestSplitN)
 		errs.Add(err)
 		if err == nil {
@@ -96,7 +93,7 @@ func upList(warnings *query.AURWarnings, dbExecutor db.Executor, enableDowngrade
 }
 
 func printLocalNewerThanAUR(
-	remote []alpm.IPackage, aurdata map[string]*rpc.Pkg) {
+	remote []db.IPackage, aurdata map[string]*query.Pkg) {
 	for _, pkg := range remote {
 		aurPkg, ok := aurdata[pkg.Name()]
 		if !ok {
@@ -105,7 +102,7 @@ func printLocalNewerThanAUR(
 
 		left, right := upgrade.GetVersionDiff(pkg.Version(), aurPkg.Version)
 
-		if !isDevelPackage(pkg) && alpm.VerCmp(pkg.Version(), aurPkg.Version) > 0 {
+		if !isDevelPackage(pkg) && db.VerCmp(pkg.Version(), aurPkg.Version) > 0 {
 			text.Warnln(gotext.Get("%s: local (%s) is newer than AUR (%s)",
 				text.Cyan(pkg.Name()),
 				left, right,
@@ -124,7 +121,7 @@ func isDevelName(name string) bool {
 	return strings.Contains(name, "-always-")
 }
 
-func isDevelPackage(pkg alpm.IPackage) bool {
+func isDevelPackage(pkg db.IPackage) bool {
 	return isDevelName(pkg.Name()) || isDevelName(pkg.Base())
 }
 
@@ -161,7 +158,7 @@ func upgradePkgs(aurUp, repoUp upgrade.UpSlice) (ignore, aurNames stringset.Stri
 
 	// upgrade menu asks you which packages to NOT upgrade so in this case
 	// include and exclude are kind of swapped
-	include, exclude, otherInclude, otherExclude := intrange.ParseNumberMenu(numbers)
+	include, exclude, otherInclude, otherExclude := ParseNumberMenu(numbers)
 
 	isInclude := len(exclude) == 0 && len(otherExclude) == 0
 

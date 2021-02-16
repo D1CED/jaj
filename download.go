@@ -11,8 +11,6 @@ import (
 	"github.com/leonelquinteros/gotext"
 	"github.com/pkg/errors"
 
-	alpm "github.com/Jguer/go-alpm/v2"
-
 	"github.com/Jguer/yay/v10/pkg/db"
 	"github.com/Jguer/yay/v10/pkg/dep"
 	"github.com/Jguer/yay/v10/pkg/multierror"
@@ -227,7 +225,7 @@ func getPkgbuildsfromABS(pkgs []string, path string, dbExecutor db.Executor, for
 	downloaded := 0
 
 	for _, pkgN := range pkgs {
-		var pkg alpm.IPackage
+		var pkg db.IPackage
 		var err error
 		var url string
 		pkgDB, name := text.SplitDBFromName(pkgN)

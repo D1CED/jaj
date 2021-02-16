@@ -30,13 +30,9 @@ Step 1
 
   completion -> db (not possible, but use a smaller interface) [done]
 
-  dep -> settings
+  settings -> vcs
 
-  query -> settings
-
-  news -> settings
-
-  intrange -> stringset (ParseNumberMenu should be moved)
+  intrange -> stringset (ParseNumberMenu should be moved) [done]
 
 * Reduce extra module dependencies
 
@@ -53,3 +49,23 @@ Step 1
   \* -> os and fmt (make pkg/text the destination for all user relevant output)
 
   news and completions -> net/http (create a http client in main and inject it)
+
+
+leaky abstractions
+^^^^^^^^^^^^^^^^^^
+
+main
+
+  install.go: alpm.QuestionType and bit mask (move to pkg/db)
+
+  query.go: alpm.PkgReasonExplicit (move to pkg/db)
+
+  query.go: rpc.SearchBy (move to pkg/query)
+
+settings
+
+  rpc.AURURL
+
+intrange
+
+  ParseNumberMenu (move to main)
