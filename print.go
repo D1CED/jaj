@@ -2,7 +2,6 @@ package main
 
 import (
 	"fmt"
-	"os"
 	"strconv"
 
 	"github.com/Jguer/yay/v10/pkg/db"
@@ -10,6 +9,7 @@ import (
 	"github.com/Jguer/yay/v10/pkg/settings"
 	"github.com/Jguer/yay/v10/pkg/stringset"
 	"github.com/Jguer/yay/v10/pkg/text"
+	"github.com/Jguer/yay/v10/pkg/upgrade"
 )
 
 // PrintSearch handles printing search results in a given format
@@ -26,7 +26,7 @@ func (q aurQuery) printSearch(start int, dbExecutor db.Executor) {
 				text.Warnln(text.T("invalid sort mode. Fix with yay -Y --bottomup --save"))
 			}
 		} else if config.SearchMode == minimal {
-			fmt.Println(q[i].Name)
+			text.Println(q[i].Name)
 			continue
 		}
 
@@ -51,7 +51,7 @@ func (q aurQuery) printSearch(start int, dbExecutor db.Executor) {
 			}
 		}
 		toprint += "\n    " + q[i].Description
-		fmt.Println(toprint)
+		text.Println(toprint)
 	}
 }
 
@@ -69,7 +69,7 @@ func (s repoQuery) printSearch(dbExecutor db.Executor) {
 				text.Warnln(text.T("invalid sort mode. Fix with yay -Y --bottomup --save"))
 			}
 		} else if config.SearchMode == minimal {
-			fmt.Println(res.Name())
+			text.Println(res.Name())
 			continue
 		}
 
@@ -92,7 +92,7 @@ func (s repoQuery) printSearch(dbExecutor db.Executor) {
 		}
 
 		toprint += "\n    " + res.Description()
-		fmt.Println(toprint)
+		text.Println(toprint)
 	}
 }
 
@@ -134,7 +134,7 @@ func PrintInfo(a *query.Pkg, extendedInfo bool) {
 		text.PrintInfoValue(text.T("Snapshot URL"), config.AURURL+a.URLPath)
 	}
 
-	fmt.Println()
+	text.Println()
 }
 
 // BiggestPackages prints the name of the ten biggest packages in the system.
@@ -146,7 +146,7 @@ func biggestPackages(dbExecutor db.Executor) {
 	}
 
 	for i := 0; i < 10; i++ {
-		fmt.Printf("%s: %s\n", text.Bold(pkgS[i].Name()), text.Cyan(text.Human(pkgS[i].ISize())))
+		text.Printf("%s: %s\n", text.Bold(pkgS[i].Name()), text.Cyan(text.Human(pkgS[i].ISize())))
 	}
 	// Could implement size here as well, but we just want the general idea
 }
@@ -161,49 +161,62 @@ func localStatistics(dbExecutor db.Executor) error {
 	}
 
 	text.Infoln(text.Tf("Yay version v%s", yayVersion))
-	fmt.Println(text.Bold(text.Cyan("===========================================")))
+	text.Println(text.Bold(text.Cyan("===========================================")))
 	text.Infoln(text.Tf("Total installed packages: %s", text.Cyan(strconv.Itoa(info.Totaln))))
 	text.Infoln(text.Tf("Total foreign installed packages: %s", text.Cyan(strconv.Itoa(len(remoteNames)))))
 	text.Infoln(text.Tf("Explicitly installed packages: %s", text.Cyan(strconv.Itoa(info.Expln))))
 	text.Infoln(text.Tf("Total Size occupied by packages: %s", text.Cyan(text.Human(info.TotalSize))))
-	fmt.Println(text.Bold(text.Cyan("===========================================")))
+	text.Println(text.Bold(text.Cyan("===========================================")))
 	text.Infoln(text.T("Ten biggest packages:"))
 	biggestPackages(dbExecutor)
-	fmt.Println(text.Bold(text.Cyan("===========================================")))
+	text.Println(text.Bold(text.Cyan("===========================================")))
 
 	query.AURInfoPrint(remoteNames, config.RequestSplitN)
 
 	return nil
 }
 
-// TODO: Make it less hacky
 func printNumberOfUpdates(dbExecutor db.Executor, enableDowngrade bool) error {
 	warnings := query.NewWarnings()
-	old := os.Stdout // keep backup of the real stdout
-	os.Stdout = nil
-	aurUp, repoUp, err := upList(warnings, dbExecutor, enableDowngrade)
-	os.Stdout = old // restoring the real stdout
+
+	var (
+		aurUp  upgrade.UpSlice
+		repoUp upgrade.UpSlice
+		err    error
+	)
+
+	text.CaptureOutput(nil, nil, func() {
+		aurUp, repoUp, err = upList(warnings, dbExecutor, enableDowngrade)
+	})
+
 	if err != nil {
 		return err
 	}
-	fmt.Println(len(aurUp) + len(repoUp))
+	text.Println(len(aurUp) + len(repoUp))
 
 	return nil
 }
 
-// TODO: Make it less hacky
 func printUpdateList(cmdArgs *settings.Arguments, dbExecutor db.Executor, enableDowngrade bool) error {
 	targets := stringset.FromSlice(cmdArgs.Targets)
 	warnings := query.NewWarnings()
-	old := os.Stdout // keep backup of the real stdout
-	os.Stdout = nil
-	localNames, remoteNames, err := query.GetPackageNamesBySource(dbExecutor)
-	if err != nil {
-		return err
-	}
 
-	aurUp, repoUp, err := upList(warnings, dbExecutor, enableDowngrade)
-	os.Stdout = old // restoring the real stdout
+	var (
+		err         error
+		localNames  []string
+		remoteNames []string
+		aurUp       upgrade.UpSlice
+		repoUp      upgrade.UpSlice
+	)
+	text.CaptureOutput(nil, nil, func() {
+		localNames, remoteNames, err = query.GetPackageNamesBySource(dbExecutor)
+		if err != nil {
+			return
+		}
+
+		aurUp, repoUp, err = upList(warnings, dbExecutor, enableDowngrade)
+	})
+
 	if err != nil {
 		return err
 	}
@@ -214,9 +227,9 @@ func printUpdateList(cmdArgs *settings.Arguments, dbExecutor db.Executor, enable
 		for _, pkg := range repoUp {
 			if noTargets || targets.Get(pkg.Name) {
 				if cmdArgs.ExistsArg("q", "quiet") {
-					fmt.Printf("%s\n", pkg.Name)
+					text.Printf("%s\n", pkg.Name)
 				} else {
-					fmt.Printf("%s %s -> %s\n", text.Bold(pkg.Name), text.Green(pkg.LocalVersion), text.Green(pkg.RemoteVersion))
+					text.Printf("%s %s -> %s\n", text.Bold(pkg.Name), text.Green(pkg.LocalVersion), text.Green(pkg.RemoteVersion))
 				}
 				delete(targets, pkg.Name)
 			}
@@ -227,9 +240,9 @@ func printUpdateList(cmdArgs *settings.Arguments, dbExecutor db.Executor, enable
 		for _, pkg := range aurUp {
 			if noTargets || targets.Get(pkg.Name) {
 				if cmdArgs.ExistsArg("q", "quiet") {
-					fmt.Printf("%s\n", pkg.Name)
+					text.Printf("%s\n", pkg.Name)
 				} else {
-					fmt.Printf("%s %s -> %s\n", text.Bold(pkg.Name), text.Green(pkg.LocalVersion), text.Green(pkg.RemoteVersion))
+					text.Printf("%s %s -> %s\n", text.Bold(pkg.Name), text.Green(pkg.LocalVersion), text.Green(pkg.RemoteVersion))
 				}
 				delete(targets, pkg.Name)
 			}
@@ -257,7 +270,7 @@ outer:
 	}
 
 	if missing {
-		return fmt.Errorf("")
+		return ErrMissing
 	}
 
 	return nil

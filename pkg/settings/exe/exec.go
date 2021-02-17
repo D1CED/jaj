@@ -2,8 +2,7 @@ package exe
 
 import (
 	"bytes"
-	"fmt"
-	"os"
+	"errors"
 	"os/exec"
 	"strings"
 	"syscall"
@@ -11,6 +10,9 @@ import (
 
 	"github.com/Jguer/yay/v10/pkg/text"
 )
+
+var ErrCmdTimeout = errors.New("command timed out")
+var errEmpty = errors.New("")
 
 type Runner interface {
 	Capture(cmd *exec.Cmd, timeout int64) (stdout string, stderr string, err error)
@@ -21,10 +23,10 @@ type OSRunner struct {
 }
 
 func (r *OSRunner) Show(cmd *exec.Cmd) error {
-	cmd.Stdin, cmd.Stdout, cmd.Stderr = os.Stdin, os.Stdout, os.Stderr
+	cmd.Stdin, cmd.Stdout, cmd.Stderr = text.In, text.Out, text.ErrOut
 	err := cmd.Run()
 	if err != nil {
-		return fmt.Errorf("")
+		return errEmpty
 	}
 	return nil
 }
@@ -67,7 +69,7 @@ func (r *OSRunner) Capture(cmd *exec.Cmd, timeout int64) (stdout, stderr string,
 	}
 
 	if timedOut {
-		err = fmt.Errorf("command timed out")
+		err = ErrCmdTimeout
 	}
 
 	return stdout, stderr, err

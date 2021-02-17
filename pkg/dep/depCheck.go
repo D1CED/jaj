@@ -1,8 +1,7 @@
 package dep
 
 import (
-	"fmt"
-	"os"
+	"errors"
 	"strings"
 	"sync"
 
@@ -148,7 +147,7 @@ func (dp *Pool) CheckConflicts(useAsk, noConfirm bool) (stringset.MapStringSet, 
 			}
 			str = strings.TrimSuffix(str, ",")
 
-			fmt.Println(str)
+			text.Println(str)
 		}
 	}
 
@@ -162,7 +161,7 @@ func (dp *Pool) CheckConflicts(useAsk, noConfirm bool) (stringset.MapStringSet, 
 			}
 			str = strings.TrimSuffix(str, ",")
 
-			fmt.Println(str)
+			text.Println(str)
 		}
 	}
 
@@ -179,7 +178,7 @@ func (dp *Pool) CheckConflicts(useAsk, noConfirm bool) (stringset.MapStringSet, 
 	if len(conflicts) > 0 {
 		if !useAsk {
 			if noConfirm {
-				return nil, fmt.Errorf(text.T("package conflicts can not be resolved with noconfirm, aborting"))
+				return nil, text.ErrT("package conflicts can not be resolved with noconfirm, aborting")
 			}
 
 			text.Errorln(text.T("Conflicting packages will have to be confirmed manually"))
@@ -283,21 +282,21 @@ func (dp *Pool) CheckMissing() error {
 	text.Errorln(text.T("Could not find all required packages:"))
 	for dep, trees := range missing.Missing {
 		for _, tree := range trees {
-			fmt.Fprintf(os.Stderr, "\t%s", text.Cyan(dep))
+			text.EPrintf("\t%s", text.Cyan(dep))
 
 			if len(tree) == 0 {
-				fmt.Fprint(os.Stderr, text.T(" (Target"))
+				text.EPrint(text.T(" (Target"))
 			} else {
-				fmt.Fprint(os.Stderr, text.T(" (Wanted by: "))
+				text.EPrint(text.T(" (Wanted by: "))
 				for n := 0; n < len(tree)-1; n++ {
-					fmt.Fprint(os.Stderr, text.Cyan(tree[n]), " -> ")
+					text.EPrint(text.Cyan(tree[n]), " -> ")
 				}
-				fmt.Fprint(os.Stderr, text.Cyan(tree[len(tree)-1]))
+				text.EPrint(text.Cyan(tree[len(tree)-1]))
 			}
 
-			fmt.Fprintln(os.Stderr, ")")
+			text.EPrintln(")")
 		}
 	}
 
-	return fmt.Errorf("")
+	return errors.New("")
 }

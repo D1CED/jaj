@@ -2,9 +2,7 @@ package main
 
 import (
 	"bufio"
-	"fmt"
 	"net/http"
-	"os"
 
 	alpm "github.com/Jguer/go-alpm/v2"
 
@@ -18,7 +16,7 @@ import (
 )
 
 func usage() {
-	fmt.Println(`Usage:
+	text.Println(`Usage:
     yay
     yay <operation> [...]
     yay <package(s)>
@@ -173,7 +171,7 @@ func handleCmd(cmdArgs *settings.Arguments, dbExecutor db.Executor) error {
 		return handleYay(cmdArgs, dbExecutor)
 	}
 
-	return fmt.Errorf(text.T("unhandled operation"))
+	return text.ErrT("unhandled operation")
 }
 
 func handleQuery(cmdArgs *settings.Arguments, dbExecutor db.Executor) error {
@@ -192,16 +190,16 @@ func handleHelp(cmdArgs *settings.Arguments) error {
 }
 
 func handleVersion() {
-	fmt.Printf("yay v%s - libalpm v%s\n", yayVersion, alpm.Version())
+	text.Printf("yay v%s - libalpm v%s\n", yayVersion, alpm.Version())
 }
 
 func handlePrint(cmdArgs *settings.Arguments, dbExecutor db.Executor) (err error) {
 	switch {
 	case cmdArgs.ExistsArg("d", "defaultconfig"):
 		tmpConfig := settings.DefaultConfig()
-		fmt.Printf("%v", tmpConfig)
+		text.Printf("%v", tmpConfig)
 	case cmdArgs.ExistsArg("g", "currentconfig"):
-		fmt.Printf("%v", config)
+		text.Printf("%v", config)
 	case cmdArgs.ExistsArg("n", "numberupgrades"):
 		err = printNumberOfUpdates(dbExecutor, cmdArgs.ExistsDouble("u", "sysupgrade"))
 	case cmdArgs.ExistsArg("w", "news"):
@@ -316,7 +314,7 @@ func displayNumberMenu(pkgS []string, dbExecutor db.Executor, cmdArgs *settings.
 	}
 
 	if lenpq == 0 && lenaq == 0 {
-		return fmt.Errorf(text.T("no packages match search"))
+		return text.ErrT("no packages match search")
 	}
 
 	switch config.SortMode {
@@ -335,7 +333,7 @@ func displayNumberMenu(pkgS []string, dbExecutor db.Executor, cmdArgs *settings.
 			pq.printSearch(dbExecutor)
 		}
 	default:
-		return fmt.Errorf(text.T("invalid sort mode. Fix with yay -Y --bottomup --save"))
+		return text.ErrT("invalid sort mode. Fix with yay -Y --bottomup --save")
 	}
 
 	if aurErr != nil {
@@ -346,14 +344,14 @@ func displayNumberMenu(pkgS []string, dbExecutor db.Executor, cmdArgs *settings.
 	text.Infoln(text.T("Packages to install (eg: 1 2 3, 1-3 or ^4)"))
 	text.Info()
 
-	reader := bufio.NewReader(os.Stdin)
+	reader := bufio.NewReader(text.In)
 
 	numberBuf, overflow, err := reader.ReadLine()
 	if err != nil {
 		return err
 	}
 	if overflow {
-		return fmt.Errorf(text.T("input too long"))
+		return text.ErrT("input too long")
 	}
 
 	include, exclude, _, otherExclude := ParseNumberMenu(string(numberBuf))
@@ -369,7 +367,7 @@ func displayNumberMenu(pkgS []string, dbExecutor db.Executor, cmdArgs *settings.
 		case settings.BottomUp:
 			target = len(pq) - i
 		default:
-			return fmt.Errorf(text.T("invalid sort mode. Fix with yay -Y --bottomup --save"))
+			return text.ErrT("invalid sort mode. Fix with yay -Y --bottomup --save")
 		}
 
 		if (isInclude && include.Get(target)) || (!isInclude && !exclude.Get(target)) {
@@ -386,7 +384,7 @@ func displayNumberMenu(pkgS []string, dbExecutor db.Executor, cmdArgs *settings.
 		case settings.BottomUp:
 			target = len(aq) - i + len(pq)
 		default:
-			return fmt.Errorf(text.T("invalid sort mode. Fix with yay -Y --bottomup --save"))
+			return text.ErrT("invalid sort mode. Fix with yay -Y --bottomup --save")
 		}
 
 		if (isInclude && include.Get(target)) || (!isInclude && !exclude.Get(target)) {
@@ -395,7 +393,7 @@ func displayNumberMenu(pkgS []string, dbExecutor db.Executor, cmdArgs *settings.
 	}
 
 	if len(arguments.Targets) == 0 {
-		fmt.Println(text.T(" there is nothing to do"))
+		text.Println(text.T(" there is nothing to do"))
 		return nil
 	}
 
@@ -429,15 +427,15 @@ func syncList(cmdArgs *settings.Arguments, dbExecutor db.Executor) error {
 		for scanner.Scan() {
 			name := scanner.Text()
 			if cmdArgs.ExistsArg("q", "quiet") {
-				fmt.Println(name)
+				text.Println(name)
 			} else {
-				fmt.Printf("%s %s %s", text.Magenta("aur"), text.Bold(name), text.Bold(text.Green(text.T("unknown-version"))))
+				text.Printf("%s %s %s", text.Magenta("aur"), text.Bold(name), text.Bold(text.Green(text.T("unknown-version"))))
 
 				if dbExecutor.LocalPackage(name) != nil {
-					fmt.Print(text.Bold(text.Blue(text.T(" [Installed]"))))
+					text.Print(text.Bold(text.Blue(text.T(" [Installed]"))))
 				}
 
-				fmt.Println()
+				text.Println()
 			}
 		}
 	}

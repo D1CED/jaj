@@ -65,7 +65,9 @@ func main() {
 	var err error
 	ret := 0
 	defer func() { os.Exit(ret) }()
+
 	text.Init(localePath)
+
 	if os.Geteuid() == 0 {
 		text.Warnln(text.T("Avoid running yay as root/sudo."))
 	}
@@ -73,7 +75,7 @@ func main() {
 	config, err = settings.NewConfig()
 	if err != nil {
 		if str := err.Error(); str != "" {
-			fmt.Fprintln(os.Stderr, str)
+			text.EPrintln(str)
 		}
 		ret = 1
 		return
@@ -83,7 +85,7 @@ func main() {
 	err = cmdArgs.ParseCommandLine(config)
 	if err != nil {
 		if str := err.Error(); str != "" {
-			fmt.Fprintln(os.Stderr, str)
+			text.EPrintln(str)
 		}
 		ret = 1
 		return
@@ -91,7 +93,7 @@ func main() {
 
 	if config.Runtime.SaveConfig {
 		if errS := config.Save(config.Runtime.ConfigPath); errS != nil {
-			fmt.Fprintln(os.Stderr, err)
+			text.EPrintln(err)
 		}
 	}
 
@@ -99,7 +101,7 @@ func main() {
 	config.Runtime.PacmanConf, useColor, err = initAlpm(cmdArgs, config.PacmanConf)
 	if err != nil {
 		if str := err.Error(); str != "" {
-			fmt.Fprintln(os.Stderr, str)
+			text.EPrintln(str)
 		}
 		ret = 1
 		return
@@ -110,7 +112,7 @@ func main() {
 	dbExecutor, err := ialpm.NewExecutor(config.Runtime.PacmanConf)
 	if err != nil {
 		if str := err.Error(); str != "" {
-			fmt.Fprintln(os.Stderr, str)
+			text.EPrintln(str)
 		}
 		ret = 1
 		return
@@ -120,7 +122,7 @@ func main() {
 	err = handleCmd(cmdArgs, db.Executor(dbExecutor))
 	if err != nil {
 		if str := err.Error(); str != "" {
-			fmt.Fprintln(os.Stderr, str)
+			text.EPrintln(str)
 		}
 		ret = 1
 		return

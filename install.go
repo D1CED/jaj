@@ -76,7 +76,7 @@ func install(cmdArgs *settings.Arguments, dbExecutor db.Executor, ignoreProvider
 			if cmdArgs.ExistsArg("y", "refresh") {
 				err = earlyRefresh(cmdArgs)
 				if err != nil {
-					return fmt.Errorf(text.T("error refreshing databases"))
+					return text.ErrT("error refreshing databases")
 				}
 			}
 		} else if cmdArgs.ExistsArg("y", "refresh") || cmdArgs.ExistsArg("u", "sysupgrade") || len(cmdArgs.Targets) > 0 {
@@ -165,7 +165,7 @@ func install(cmdArgs *settings.Arguments, dbExecutor db.Executor, ignoreProvider
 	if len(dp.Aur) == 0 {
 		if !config.CombinedUpgrade {
 			if cmdArgs.ExistsArg("u", "sysupgrade") {
-				fmt.Println(text.T(" there is nothing to do"))
+				text.Println(text.T(" there is nothing to do"))
 			}
 			return nil
 		}
@@ -179,7 +179,7 @@ func install(cmdArgs *settings.Arguments, dbExecutor db.Executor, ignoreProvider
 	}
 
 	if len(dp.Aur) > 0 && os.Geteuid() == 0 {
-		return fmt.Errorf(text.T("refusing to install AUR packages as root, aborting"))
+		return text.ErrT("refusing to install AUR packages as root, aborting")
 	}
 
 	var conflicts stringset.MapStringSet
@@ -204,12 +204,12 @@ func install(cmdArgs *settings.Arguments, dbExecutor db.Executor, ignoreProvider
 	}
 
 	if len(do.Aur) == 0 && len(arguments.Targets) == 0 && (!cmdArgs.ExistsArg("u", "sysupgrade") || config.Runtime.Mode == settings.ModeAUR) {
-		fmt.Println(text.T(" there is nothing to do"))
+		text.Println(text.T(" there is nothing to do"))
 		return nil
 	}
 
 	do.Print()
-	fmt.Println()
+	text.Println()
 
 	if config.CleanAfter {
 		defer cleanAfter(do.Aur)
@@ -272,9 +272,9 @@ func install(cmdArgs *settings.Arguments, dbExecutor db.Executor, ignoreProvider
 	if len(toDiff) > 0 {
 		oldValue := settings.NoConfirm
 		settings.NoConfirm = false
-		fmt.Println()
+		text.Println()
 		if !text.ContinueTask(text.T("Proceed with install?"), true, settings.NoConfirm) {
-			return fmt.Errorf(text.T("aborting due to user"))
+			return text.ErrT("aborting due to user")
 		}
 		err = updatePkgbuildSeenRef(toDiff)
 		if err != nil {
@@ -312,7 +312,7 @@ func install(cmdArgs *settings.Arguments, dbExecutor db.Executor, ignoreProvider
 	if len(toEdit) > 0 {
 		oldValue := settings.NoConfirm
 		settings.NoConfirm = false
-		fmt.Println()
+		text.Println()
 		if !text.ContinueTask(text.T("Proceed with install?"), true, settings.NoConfirm) {
 			return errors.New(text.T("aborting due to user"))
 		}
@@ -480,10 +480,10 @@ nextpkg:
 	if len(incompatible) > 0 {
 		text.Warnln(text.T("The following packages are not compatible with your architecture:"))
 		for pkg := range incompatible {
-			fmt.Print("  " + text.Cyan(basesMap[pkg].String()))
+			text.Print("  " + text.Cyan(basesMap[pkg].String()))
 		}
 
-		fmt.Println()
+		text.Println()
 
 		if !text.ContinueTask(text.T("Try to build them anyway?"), true, settings.NoConfirm) {
 			return nil, errors.New(text.T("aborting due to user"))
@@ -567,7 +567,7 @@ func pkgbuildNumberMenu(bases []dep.Base, installed stringset.StringSet) bool {
 		toPrint += "\n"
 	}
 
-	fmt.Print(toPrint)
+	text.Print(toPrint)
 
 	return askClean
 }
@@ -590,7 +590,7 @@ func cleanNumberMenu(bases []dep.Base, installed stringset.StringSet, hasClean b
 	cIsInclude := len(cExclude) == 0 && len(cOtherExclude) == 0
 
 	if cOtherInclude.Get("abort") || cOtherInclude.Get("ab") {
-		return nil, fmt.Errorf(text.T("aborting due to user"))
+		return nil, text.ErrT("aborting due to user")
 	}
 
 	if !cOtherInclude.Get("n") && !cOtherInclude.Get("none") {
@@ -673,7 +673,7 @@ func editDiffNumberMenu(bases []dep.Base, installed stringset.StringSet, diff bo
 	eIsInclude := len(eExclude) == 0 && len(eOtherExclude) == 0
 
 	if eOtherInclude.Get("abort") || eOtherInclude.Get("ab") {
-		return nil, fmt.Errorf(text.T("aborting due to user"))
+		return nil, text.ErrT("aborting due to user")
 	}
 
 	if !eOtherInclude.Get("n") && !eOtherInclude.Get("none") {
@@ -788,7 +788,7 @@ func editPkgbuilds(bases []dep.Base, srcinfos map[string]*gosrc.Srcinfo) error {
 		editor, editorArgs := editor()
 		editorArgs = append(editorArgs, pkgbuilds...)
 		editcmd := exec.Command(editor, editorArgs...)
-		editcmd.Stdin, editcmd.Stdout, editcmd.Stderr = os.Stdin, os.Stdout, os.Stderr
+		editcmd.Stdin, editcmd.Stdout, editcmd.Stderr = text.In, text.Out, text.ErrOut
 		err := editcmd.Run()
 		if err != nil {
 			return errors.New(text.Tf("editor did not exit successfully, aborting: %s", err))
@@ -978,7 +978,7 @@ func buildInstallPkgbuilds(
 		}
 
 		if errStore := config.Runtime.VCSStore.Save(); err != nil {
-			fmt.Fprintln(os.Stderr, errStore)
+			text.EPrintln(errStore)
 		}
 
 		if errDeps := asdeps(cmdArgs, deps); err != nil {
@@ -1077,7 +1077,7 @@ func buildInstallPkgbuilds(
 					return errors.New(text.Tf("error making: %s", err))
 				}
 
-				fmt.Fprintln(os.Stdout, text.Tf("%s is up to date -- skipping", text.Cyan(pkg+"-"+pkgVersion)))
+				text.EPrintln(text.Tf("%s is up to date -- skipping", text.Cyan(pkg+"-"+pkgVersion)))
 				continue
 			}
 		}

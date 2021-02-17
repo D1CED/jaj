@@ -14,10 +14,12 @@ import (
 	"testing"
 
 	gosrc "github.com/Morganamilo/go-srcinfo"
-	"github.com/bradleyjkemp/cupaloy"
 	rpc "github.com/mikkeloscar/aur"
 
+	"github.com/bradleyjkemp/cupaloy"
+
 	"github.com/Jguer/yay/v10/pkg/dep"
+	"github.com/Jguer/yay/v10/pkg/text"
 )
 
 const (
@@ -36,7 +38,7 @@ func init() {
 		w.Header().Set("Content-Type", "application/pgp-keys")
 		_, err := w.Write([]byte(data))
 		if err != nil {
-			fmt.Fprintln(os.Stderr, err)
+			panic(err)
 		}
 	})
 }
@@ -58,13 +60,13 @@ func getPgpKey(key string) string {
 	return buffer.String()
 }
 
-func startPgpKeyServer() *http.Server {
+func startPgpKeyServer(t *testing.T) *http.Server {
 	srv := &http.Server{Addr: fmt.Sprintf("127.0.0.1:%d", gpgServerPort)}
 
 	go func() {
 		err := srv.ListenAndServe()
-		if err != nil {
-			fmt.Fprintln(os.Stderr, err)
+		if err != nil && err != http.ErrServerClosed {
+			t.Error(err)
 		}
 	}()
 	return srv
@@ -77,11 +79,11 @@ func TestImportKeys(t *testing.T) {
 	}
 	defer os.RemoveAll(keyringDir)
 
-	server := startPgpKeyServer()
+	server := startPgpKeyServer(t)
 	defer func() {
 		err := server.Shutdown(context.TODO())
-		if err != nil {
-			fmt.Fprintln(os.Stderr, err)
+		if err != nil && err != http.ErrServerClosed {
+			t.Error(err)
 		}
 	}()
 
@@ -126,17 +128,19 @@ func TestImportKeys(t *testing.T) {
 		},
 	}
 
+	text.Out = ioutil.Discard
+
 	for _, tt := range casetests {
 		err := importKeys(tt.keys, "gpg", fmt.Sprintf("--homedir %s --keyserver 127.0.0.1", keyringDir))
 		if !tt.wantError {
 			if err != nil {
 				t.Fatalf("Got error %q, want no error", err)
 			}
-			continue
-		}
-		// Here, we want to see the error.
-		if err == nil {
-			t.Fatalf("Got no error; want error")
+		} else {
+			// Here, we want to see the error.
+			if err == nil {
+				t.Fatalf("Got no error; want error")
+			}
 		}
 	}
 }
@@ -156,11 +160,11 @@ func TestCheckPgpKeys(t *testing.T) {
 	}
 	defer os.RemoveAll(keyringDir)
 
-	server := startPgpKeyServer()
+	server := startPgpKeyServer(t)
 	defer func() {
 		err := server.Shutdown(context.TODO())
 		if err != nil {
-			fmt.Fprintln(os.Stderr, err)
+			t.Error(err)
 		}
 	}()
 
@@ -242,9 +246,9 @@ func TestCheckPgpKeys(t *testing.T) {
 
 	for _, tt := range casetests {
 		t.Run(tt.name, func(t *testing.T) {
-			rescueStdout := os.Stdout
-			r, w, _ := os.Pipe()
-			os.Stdout = w
+
+			buf := &bytes.Buffer{}
+			text.Out = buf
 
 			err := CheckPgpKeys([]dep.Base{tt.pkgs}, tt.srcinfos, "gpg",
 				fmt.Sprintf("--homedir %s --keyserver 127.0.0.1", keyringDir), true)
@@ -253,11 +257,7 @@ func TestCheckPgpKeys(t *testing.T) {
 					t.Fatalf("Got error %q, want no error", err)
 				}
 
-				w.Close()
-				out, _ := ioutil.ReadAll(r)
-				os.Stdout = rescueStdout
-
-				splitLines := strings.Split(string(out), "\n")
+				splitLines := strings.Split(buf.String(), "\n")
 				sort.Strings(splitLines)
 
 				cupaloy.SnapshotT(t, strings.Join(splitLines, "\n"))

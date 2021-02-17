@@ -1,20 +1,22 @@
 package vcs
 
 import (
+	"bytes"
 	"encoding/json"
 	"errors"
-	"fmt"
 	"io/ioutil"
 	"os"
 	"os/exec"
 	"sync"
 	"testing"
 
-	gosrc "github.com/Morganamilo/go-srcinfo"
 	"github.com/bradleyjkemp/cupaloy"
 	"github.com/stretchr/testify/assert"
 
+	gosrc "github.com/Morganamilo/go-srcinfo"
+
 	"github.com/Jguer/yay/v10/pkg/settings/exe"
+	"github.com/Jguer/yay/v10/pkg/text"
 )
 
 func TestParsing(t *testing.T) {
@@ -71,6 +73,11 @@ func TestNewInfoStore(t *testing.T) {
 			},
 		},
 	}
+
+	text.Out = ioutil.Discard
+	ebuf := &bytes.Buffer{}
+	text.ErrOut = ebuf
+
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			got := NewInfoStore(tt.args.filePath, tt.args.runner, tt.args.cmdBuilder)
@@ -79,8 +86,12 @@ func TestNewInfoStore(t *testing.T) {
 			assert.Equal(t, tt.args.cmdBuilder, got.CmdBuilder)
 			assert.Equal(t, tt.args.runner, got.Runner)
 			assert.Equal(t, "/tmp/a.json", got.FilePath)
+
+			t.Log(ebuf)
+			ebuf.Reset()
 		})
 	}
+
 }
 
 type MockRunner struct {
@@ -285,7 +296,7 @@ func TestInfoStore_Update(t *testing.T) {
 			cupaloy.SnapshotT(t, marshalledinfo)
 
 			v.Load()
-			fmt.Println(v.OriginsByPackage)
+			t.Log(v.OriginsByPackage)
 			assert.Len(t, tt.fields.OriginsByPackage, 1)
 
 			marshalledinfo, err = json.MarshalIndent(tt.fields.OriginsByPackage, "", "\t")

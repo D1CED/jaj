@@ -1,8 +1,6 @@
 package query
 
 import (
-	"fmt"
-
 	"github.com/Jguer/yay/v10/pkg/stringset"
 	"github.com/Jguer/yay/v10/pkg/text"
 )
@@ -37,7 +35,7 @@ func (warnings *AURWarnings) Print() {
 
 func printRange(names []string) {
 	for _, name := range names {
-		fmt.Print("  " + text.Cyan(name))
+		text.Print("  " + text.Cyan(name))
 	}
-	fmt.Println()
+	text.Println()
 }

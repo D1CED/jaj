@@ -208,7 +208,7 @@ func getPkgbuilds(pkgs []string, dbExecutor db.Executor, force bool) error {
 	}
 
 	if missing {
-		err = fmt.Errorf("")
+		err = ErrMissing
 	}
 
 	return err
@@ -297,7 +297,7 @@ func getPkgbuildsfromABS(pkgs []string, path string, dbExecutor db.Executor, for
 		if err != nil {
 			errs.Add(errors.New(text.Tf("failed to link %s: %s", text.Cyan(pkg), stderr)))
 		} else {
-			fmt.Fprintln(os.Stdout, text.Tf("(%d/%d) Downloaded PKGBUILD from ABS: %s", downloaded, len(names), text.Cyan(pkg)))
+			text.EPrintln(text.Tf("(%d/%d) Downloaded PKGBUILD from ABS: %s", downloaded, len(names), text.Cyan(pkg)))
 		}
 		mux.Unlock()
 	}

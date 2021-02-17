@@ -2,7 +2,6 @@ package main
 
 import (
 	"bufio"
-	"fmt"
 	"os"
 	"os/exec"
 	"strings"
@@ -31,7 +30,7 @@ func editor() (editor string, args []string) {
 	case config.Editor != "":
 		editor, err := exec.LookPath(config.Editor)
 		if err != nil {
-			fmt.Fprintln(os.Stderr, err)
+			text.EPrintln(err)
 		} else {
 			return editor, strings.Fields(config.EditorFlags)
 		}
@@ -40,7 +39,7 @@ func editor() (editor string, args []string) {
 		if editorArgs := strings.Fields(os.Getenv("EDITOR")); len(editorArgs) != 0 {
 			editor, err := exec.LookPath(editorArgs[0])
 			if err != nil {
-				fmt.Fprintln(os.Stderr, err)
+				text.EPrintln(err)
 			} else {
 				return editor, editorArgs[1:]
 			}
@@ -50,14 +49,14 @@ func editor() (editor string, args []string) {
 		if editorArgs := strings.Fields(os.Getenv("VISUAL")); len(editorArgs) != 0 {
 			editor, err := exec.LookPath(editorArgs[0])
 			if err != nil {
-				fmt.Fprintln(os.Stderr, err)
+				text.EPrintln(err)
 			} else {
 				return editor, editorArgs[1:]
 			}
 		}
 		fallthrough
 	default:
-		fmt.Fprintln(os.Stderr)
+		text.EPrintln()
 		text.Errorln(text.Tf("%s is not set", text.Bold(text.Cyan("$EDITOR"))))
 		text.Warnln(text.Tf("Add %s or %s to your environment variables", text.Bold(text.Cyan("$EDITOR")), text.Bold(text.Cyan("$VISUAL"))))
 
@@ -65,7 +64,7 @@ func editor() (editor string, args []string) {
 			text.Infoln(text.T("Edit PKGBUILD with?"))
 			editorInput, err := getInput("")
 			if err != nil {
-				fmt.Fprintln(os.Stderr, err)
+				text.EPrintln(err)
 				continue
 			}
 
@@ -76,7 +75,7 @@ func editor() (editor string, args []string) {
 
 			editor, err := exec.LookPath(editorArgs[0])
 			if err != nil {
-				fmt.Fprintln(os.Stderr, err)
+				text.EPrintln(err)
 				continue
 			}
 			return editor, editorArgs[1:]
@@ -87,11 +86,11 @@ func editor() (editor string, args []string) {
 func getInput(defaultValue string) (string, error) {
 	text.Info()
 	if defaultValue != "" || settings.NoConfirm {
-		fmt.Println(defaultValue)
+		text.Println(defaultValue)
 		return defaultValue, nil
 	}
 
-	reader := bufio.NewReader(os.Stdin)
+	reader := bufio.NewReader(text.In)
 
 	buf, overflow, err := reader.ReadLine()
 	if err != nil {
@@ -99,7 +98,7 @@ func getInput(defaultValue string) (string, error) {
 	}
 
 	if overflow {
-		return "", fmt.Errorf(text.T("input too long"))
+		return "", text.ErrT("input too long")
 	}
 
 	return string(buf), nil

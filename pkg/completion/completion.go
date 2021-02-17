@@ -13,6 +13,7 @@ import (
 	"time"
 
 	"github.com/Jguer/yay/v10/pkg/db"
+	"github.com/Jguer/yay/v10/pkg/text"
 )
 
 type PkgSynchronizer interface {
@@ -32,7 +33,7 @@ func Show(dbExecutor PkgSynchronizer, aurURL, completionPath string, interval in
 	}
 	defer in.Close()
 
-	_, err = io.Copy(os.Stdout, in)
+	_, err = io.Copy(text.Out, in)
 	return err
 }
 

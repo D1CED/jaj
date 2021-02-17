@@ -3,7 +3,6 @@ package settings
 import (
 	"bytes"
 	"encoding/json"
-	"fmt"
 	"os"
 	"path/filepath"
 	"strings"
@@ -131,7 +130,7 @@ func (c *Configuration) String() string {
 	enc := json.NewEncoder(&buf)
 	enc.SetIndent("", "\t")
 	if err := enc.Encode(c); err != nil {
-		fmt.Fprintln(os.Stderr, err)
+		text.EPrintln(err)
 	}
 	return buf.String()
 }
@@ -229,8 +228,7 @@ func NewConfig() (*Configuration, error) {
 func (c *Configuration) load(configPath string) {
 	cfile, err := os.Open(configPath)
 	if !os.IsNotExist(err) && err != nil {
-		fmt.Fprintln(os.Stderr,
-			text.Tf("failed to open config file '%s': %s", configPath, err))
+		text.EPrintln(text.Tf("failed to open config file '%s': %s", configPath, err))
 		return
 	}
 
@@ -238,8 +236,7 @@ func (c *Configuration) load(configPath string) {
 	if !os.IsNotExist(err) {
 		decoder := json.NewDecoder(cfile)
 		if err = decoder.Decode(c); err != nil {
-			fmt.Fprintln(os.Stderr,
-				text.Tf("failed to read config file '%s': %s", configPath, err))
+			text.EPrintln(text.Tf("failed to read config file '%s': %s", configPath, err))
 		}
 	}
 }

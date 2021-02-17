@@ -3,8 +3,6 @@ package pgp
 import (
 	"bytes"
 	"errors"
-	"fmt"
-	"os"
 	"os/exec"
 	"strings"
 
@@ -79,8 +77,8 @@ func CheckPgpKeys(bases []dep.Base, srcinfos map[string]*gosrc.Srcinfo,
 		return err
 	}
 
-	fmt.Println()
-	fmt.Println(str)
+	text.Println()
+	text.Println(str)
 
 	if text.ContinueTask(text.T("Import?"), true, noConfirm) {
 		return importKeys(problematic.toSlice(), gpgBin, gpgFlags)
@@ -93,7 +91,7 @@ func CheckPgpKeys(bases []dep.Base, srcinfos map[string]*gosrc.Srcinfo,
 func importKeys(keys []string, gpgBin, gpgFlags string) error {
 	args := append(strings.Fields(gpgFlags), "--recv-keys")
 	cmd := exec.Command(gpgBin, append(args, keys...)...)
-	cmd.Stdin, cmd.Stdout, cmd.Stderr = os.Stdin, os.Stdout, os.Stderr
+	cmd.Stdin, cmd.Stdout, cmd.Stderr = text.In, text.Out, text.ErrOut
 
 	text.OperationInfoln(text.T("Importing keys with gpg..."))
 	err := cmd.Run()

@@ -1,14 +1,15 @@
 package news
 
 import (
-	"io/ioutil"
-	"os"
+	"bytes"
 	"testing"
 	"time"
 
 	"github.com/bradleyjkemp/cupaloy"
 	"github.com/stretchr/testify/assert"
 	"gopkg.in/h2non/gock.v1"
+
+	"github.com/Jguer/yay/v10/pkg/text"
 )
 
 const sampleNews = `<?xml version="1.0" encoding="utf-8"?>
@@ -106,17 +107,15 @@ func TestPrintNewsFeed(t *testing.T) {
 				Get("/feeds/news").
 				Reply(200).
 				BodyString(sampleNews)
-			rescueStdout := os.Stdout
-			r, w, _ := os.Pipe()
-			os.Stdout = w
+
+			buf := &bytes.Buffer{}
+			text.Out = buf
 
 			err := PrintNewsFeed(tt.args.cutOffDate, tt.args.sortMode, tt.args.all, tt.args.quiet)
 			assert.NoError(t, err)
 
-			w.Close()
-			out, _ := ioutil.ReadAll(r)
-			cupaloy.SnapshotT(t, out)
-			os.Stdout = rescueStdout
+			cupaloy.SnapshotT(t, buf.Bytes())
+			text.Out = nil
 		})
 	}
 }

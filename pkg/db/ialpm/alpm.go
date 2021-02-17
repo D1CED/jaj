@@ -4,13 +4,11 @@ import (
 	"bufio"
 	"errors"
 	"fmt"
-	"os"
 	"strconv"
 	"time"
 
 	alpm "github.com/Jguer/go-alpm/v2"
 	pacmanconf "github.com/Morganamilo/go-pacmanconf"
-	"github.com/leonelquinteros/gotext"
 
 	"github.com/Jguer/yay/v10/pkg/db"
 	"github.com/Jguer/yay/v10/pkg/settings"
@@ -177,7 +175,7 @@ func (ae *AlpmExecutor) questionCallback() func(question alpm.QuestionAny) {
 			return nil
 		})
 
-		str := text.Bold(gotext.Get("There are %d providers available for %s:\n", size, qp.Dep()))
+		str := text.Bold(text.Tf("There are %d providers available for %s:\n", size, qp.Dep()))
 
 		size = 1
 		var dbName string
@@ -187,7 +185,7 @@ func (ae *AlpmExecutor) questionCallback() func(question alpm.QuestionAny) {
 
 			if dbName != thisDB {
 				dbName = thisDB
-				str += text.SprintOperationInfo(gotext.Get("Repository"), dbName, "\n    ")
+				str += text.SprintOperationInfo(text.T("Repository"), dbName, "\n    ")
 			}
 			str += fmt.Sprintf("%d) %s ", size, pkg.Name())
 			size++
@@ -197,15 +195,15 @@ func (ae *AlpmExecutor) questionCallback() func(question alpm.QuestionAny) {
 		text.OperationInfoln(str)
 
 		for {
-			fmt.Print(gotext.Get("\nEnter a number (default=1): "))
+			text.Print(text.T("\nEnter a number (default=1): "))
 
 			// TODO: reenable noconfirm
 			if settings.NoConfirm {
-				fmt.Println()
+				text.Println()
 				break
 			}
 
-			reader := bufio.NewReader(os.Stdin)
+			reader := bufio.NewReader(text.In)
 			numberBuf, overflow, err := reader.ReadLine()
 			if err != nil {
 				text.Errorln(err)
@@ -213,7 +211,7 @@ func (ae *AlpmExecutor) questionCallback() func(question alpm.QuestionAny) {
 			}
 
 			if overflow {
-				text.Errorln(gotext.Get(" Input too long"))
+				text.Errorln(text.T(" Input too long"))
 				continue
 			}
 
@@ -223,12 +221,12 @@ func (ae *AlpmExecutor) questionCallback() func(question alpm.QuestionAny) {
 
 			num, err := strconv.Atoi(string(numberBuf))
 			if err != nil {
-				text.Errorln(gotext.Get("invalid number: %s", string(numberBuf)))
+				text.Errorln(text.Tf("invalid number: %s", string(numberBuf)))
 				continue
 			}
 
 			if num < 1 || num > size {
-				text.Errorln(gotext.Get("invalid value: %d is not between %d and %d", num, 1, size))
+				text.Errorln(text.Tf("invalid value: %d is not between %d and %d", num, 1, size))
 				continue
 			}
 
@@ -247,7 +245,7 @@ func (ae *AlpmExecutor) RefreshHandle() error {
 
 	alpmHandle, err := alpm.Initialize(ae.conf.RootDir, ae.conf.DBPath)
 	if err != nil {
-		return errors.New(gotext.Get("unable to CreateHandle: %s", err))
+		return errors.New(text.Tf("unable to CreateHandle: %s", err))
 	}
 
 	if errConf := configureAlpm(ae.conf, alpmHandle); errConf != nil {
@@ -471,7 +469,7 @@ func (ae *AlpmExecutor) LastBuildTime() time.Time {
 func (ae *AlpmExecutor) Cleanup() {
 	if ae.handle != nil {
 		if err := ae.handle.Release(); err != nil {
-			fmt.Fprintln(os.Stderr, err)
+			text.EPrintln(err)
 		}
 	}
 }

@@ -1,7 +1,6 @@
 package main
 
 import (
-	"fmt"
 	"sort"
 	"strings"
 	"sync"
@@ -144,7 +143,7 @@ func upgradePkgs(aurUp, repoUp upgrade.UpSlice) (ignore, aurNames stringset.Stri
 	sort.Sort(repoUp)
 	sort.Sort(aurUp)
 	allUp := append(repoUp, aurUp...)
-	fmt.Printf("%s"+text.Bold(" %d ")+"%s\n", text.Bold(text.Cyan("::")), allUpLen, text.Bold(text.T("Packages to upgrade.")))
+	text.Printf("%s"+text.Bold(" %d ")+"%s\n", text.Bold(text.Cyan("::")), allUpLen, text.Bold(text.T("Packages to upgrade.")))
 	allUp.Print()
 
 	text.Infoln(text.T("Packages to exclude: (eg: \"1 2 3\", \"1-3\", \"^4\" or repo name)"))

@@ -1,7 +1,6 @@
 package main
 
 import (
-	"fmt"
 	"io/ioutil"
 	"os"
 	"path/filepath"
@@ -68,7 +67,7 @@ func syncClean(cmdArgs *settings.Arguments, dbExecutor db.Executor) error {
 		question = text.T("Do you want to remove all other AUR packages from cache?")
 	}
 
-	fmt.Println(text.T("\nBuild directory:"), config.BuildDir)
+	text.Println(text.T("\nBuild directory:"), config.BuildDir)
 
 	if text.ContinueTask(question, true, settings.NoConfirm) {
 		if err := cleanAUR(keepInstalled, keepCurrent, removeAll, dbExecutor); err != nil {
@@ -88,7 +87,7 @@ func syncClean(cmdArgs *settings.Arguments, dbExecutor db.Executor) error {
 }
 
 func cleanAUR(keepInstalled, keepCurrent, removeAll bool, dbExecutor db.Executor) error {
-	fmt.Println(text.T("removing AUR packages from cache..."))
+	text.Println(text.T("removing AUR packages from cache..."))
 
 	installedBases := make(stringset.StringSet)
 	inAURBases := make(stringset.StringSet)
@@ -157,7 +156,7 @@ func cleanAUR(keepInstalled, keepCurrent, removeAll bool, dbExecutor db.Executor
 }
 
 func cleanUntracked() error {
-	fmt.Println(text.T("removing untracked AUR files from cache..."))
+	text.Println(text.T("removing untracked AUR files from cache..."))
 
 	files, err := ioutil.ReadDir(config.BuildDir)
 	if err != nil {
@@ -186,7 +185,7 @@ func isGitRepository(dir string) bool {
 }
 
 func cleanAfter(bases []dep.Base) {
-	fmt.Println(text.T("removing untracked AUR files from cache..."))
+	text.Println(text.T("removing untracked AUR files from cache..."))
 
 	for i, base := range bases {
 		dir := filepath.Join(config.BuildDir, base.Pkgbase())
@@ -202,7 +201,7 @@ func cleanAfter(bases []dep.Base) {
 		}
 
 		if err := config.Runtime.CmdRunner.Show(config.Runtime.CmdBuilder.BuildGitCmd(dir, "clean", "-fx", "--exclude='*.pkg.*'")); err != nil {
-			fmt.Fprintln(os.Stderr, err)
+			text.EPrintln(err)
 		}
 	}
 }
@@ -212,7 +211,7 @@ func cleanBuilds(bases []dep.Base) {
 		dir := filepath.Join(config.BuildDir, base.Pkgbase())
 		text.OperationInfoln(text.Tf("Deleting (%d/%d): %s", i+1, len(bases), text.Cyan(dir)))
 		if err := os.RemoveAll(dir); err != nil {
-			fmt.Fprintln(os.Stderr, err)
+			text.EPrintln(err)
 		}
 	}
 }

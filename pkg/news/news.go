@@ -3,11 +3,9 @@ package news
 import (
 	"bytes"
 	"encoding/xml"
-	"fmt"
 	"html"
 	"io/ioutil"
 	"net/http"
-	"os"
 	"strings"
 	"time"
 
@@ -28,7 +26,7 @@ func (item *item) print(buildTime time.Time, all, quiet bool) {
 	date, err := time.Parse(time.RFC1123Z, item.PubDate)
 
 	if err != nil {
-		fmt.Fprintln(os.Stderr, err)
+		text.EPrintln(err)
 	} else {
 		fd = text.FormatTime(int(date.Unix()))
 		if !all && !buildTime.IsZero() {
@@ -38,11 +36,11 @@ func (item *item) print(buildTime time.Time, all, quiet bool) {
 		}
 	}
 
-	fmt.Println(text.Bold(text.Magenta(fd)), text.Bold(strings.TrimSpace(item.Title)))
+	text.Println(text.Bold(text.Magenta(fd)), text.Bold(strings.TrimSpace(item.Title)))
 
 	if !quiet {
 		desc := strings.TrimSpace(parseNews(item.Description))
-		fmt.Println(desc)
+		text.Println(desc)
 	}
 }
 

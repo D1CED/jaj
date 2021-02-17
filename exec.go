@@ -1,7 +1,6 @@
 package main
 
 import (
-	"fmt"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -30,7 +29,7 @@ func updateSudo() {
 		mSudoFlags = append([]string{"-v"}, mSudoFlags...)
 		err := config.Runtime.CmdRunner.Show(exec.Command(config.SudoBin, mSudoFlags...))
 		if err != nil {
-			fmt.Fprintln(os.Stderr, err)
+			text.EPrintln(err)
 		} else {
 			break
 		}
@@ -50,7 +49,7 @@ func waitLock(dbPath string) {
 	for {
 		time.Sleep(3 * time.Second)
 		if _, err := os.Stat(lockDBPath); err != nil {
-			fmt.Println()
+			text.Println()
 			return
 		}
 	}

@@ -1,22 +1,22 @@
 package upgrade
 
 import (
-	"fmt"
+	"bytes"
 	"io/ioutil"
-	"os"
 	"os/exec"
 	"strconv"
 	"testing"
 	"time"
 
-	"github.com/bradleyjkemp/cupaloy"
-	rpc "github.com/mikkeloscar/aur"
-	"github.com/stretchr/testify/assert"
-
 	alpm "github.com/Jguer/go-alpm/v2"
+	rpc "github.com/mikkeloscar/aur"
+
+	"github.com/bradleyjkemp/cupaloy"
+	"github.com/stretchr/testify/assert"
 
 	"github.com/Jguer/yay/v10/pkg/db/mock"
 	"github.com/Jguer/yay/v10/pkg/settings"
+	"github.com/Jguer/yay/v10/pkg/text"
 	"github.com/Jguer/yay/v10/pkg/vcs"
 )
 
@@ -68,16 +68,13 @@ func Test_upAUR(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			rescueStdout := os.Stdout
-			r, w, _ := os.Pipe()
-			os.Stdout = w
+
+			buf := &bytes.Buffer{}
+			text.Out = buf
 			got := UpAUR(tt.args.remote, tt.args.aurdata, tt.args.timeUpdate)
 			assert.EqualValues(t, tt.want, got)
 
-			w.Close()
-			out, _ := ioutil.ReadAll(r)
-			cupaloy.SnapshotT(t, out)
-			os.Stdout = rescueStdout
+			cupaloy.SnapshotT(t, buf.Bytes())
 		})
 	}
 }
@@ -95,9 +92,9 @@ func (r *MockRunner) Show(cmd *exec.Cmd) error {
 func (r *MockRunner) Capture(cmd *exec.Cmd, timeout int64) (stdout, stderr string, err error) {
 	i, _ := strconv.Atoi(cmd.Args[len(cmd.Args)-1])
 	if i >= len(r.Returned) {
-		fmt.Println(r.Returned)
-		fmt.Println(cmd.Args)
-		fmt.Println(i)
+		r.t.Log(r.Returned)
+		r.t.Log(cmd.Args)
+		r.t.Log(i)
 	}
 	stdout = r.Returned[i]
 	assert.Contains(r.t, cmd.Args, "ls-remote")
@@ -263,6 +260,10 @@ func Test_upDevel(t *testing.T) {
 			want: UpSlice{},
 		},
 	}
+
+	text.Out = ioutil.Discard
+	text.ErrOut = ioutil.Discard
+
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			config.Runtime.CmdRunner.(*MockRunner).t = t

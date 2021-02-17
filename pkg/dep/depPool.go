@@ -3,7 +3,6 @@ package dep
 import (
 	"bufio"
 	"fmt"
-	"os"
 	"sort"
 	"strconv"
 	"strings"
@@ -488,17 +487,17 @@ func providerMenu(dep string, providers providers, noConfirm bool) *query.Pkg {
 	text.OperationInfoln(str)
 
 	for {
-		fmt.Print(text.T("\nEnter a number (default=1): "))
+		text.Print(text.T("\nEnter a number (default=1): "))
 
 		if noConfirm {
-			fmt.Println("1")
+			text.Println("1")
 			return providers.Pkgs[0]
 		}
 
-		reader := bufio.NewReader(os.Stdin)
+		reader := bufio.NewReader(text.In)
 		numberBuf, overflow, err := reader.ReadLine()
 		if err != nil {
-			fmt.Fprintln(os.Stderr, err)
+			text.EPrintln(err)
 			break
 		}
 

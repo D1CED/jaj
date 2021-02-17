@@ -200,5 +200,5 @@ func printDownloads(repoName string, length int, packages string) {
 	}
 
 	repoInfo := fmt.Sprintf(text.Bold(text.Blue("[%s:%d]")), repoName, length)
-	fmt.Println(repoInfo + text.Cyan(packages))
+	text.Println(repoInfo + text.Cyan(packages))
 }

@@ -2,8 +2,6 @@ package main
 
 import (
 	"errors"
-	"fmt"
-	"os"
 	"sort"
 	"strings"
 
@@ -16,6 +14,8 @@ import (
 	"github.com/Jguer/yay/v10/pkg/stringset"
 	"github.com/Jguer/yay/v10/pkg/text"
 )
+
+var ErrMissing = errors.New("missing")
 
 // Query is a collection of Results
 type aurQuery []rpc.Pkg
@@ -205,7 +205,7 @@ func syncInfo(cmdArgs *settings.Arguments, pkgS []string, dbExecutor db.Executor
 		info, err = query.AURInfoPrint(noDB, config.RequestSplitN)
 		if err != nil {
 			missing = true
-			fmt.Fprintln(os.Stderr, err)
+			text.EPrintln(err)
 		}
 	}
 
@@ -232,7 +232,7 @@ func syncInfo(cmdArgs *settings.Arguments, pkgS []string, dbExecutor db.Executor
 	}
 
 	if missing {
-		err = fmt.Errorf("")
+		err = ErrMissing
 	}
 
 	return err

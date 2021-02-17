@@ -98,10 +98,10 @@ func (u UpSlice) Print() {
 	for k, i := range u {
 		left, right := GetVersionDiff(i.LocalVersion, i.RemoteVersion)
 
-		fmt.Print(text.Magenta(fmt.Sprintf(numberPadding, len(u)-k)))
+		text.Print(text.Magenta(fmt.Sprintf(numberPadding, len(u)-k)))
 
-		fmt.Printf(namePadding, StylizedNameWithRepository(&i))
+		text.Printf(namePadding, StylizedNameWithRepository(&i))
 
-		fmt.Printf("%s -> %s\n", fmt.Sprintf(versionPadding, left), right)
+		text.Printf("%s -> %s\n", fmt.Sprintf(versionPadding, left), right)
 	}
 }
