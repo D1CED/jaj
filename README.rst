@@ -48,9 +48,9 @@ Step 1
 
 * Reduce standard library dependencies
 
-  \* -> os and fmt (make pkg/text the destination for all user relevant output)
+  \* -> os and fmt (make pkg/text the destination for all user relevant output) [done]
 
-  news and completions -> net/http (create a http client in main and inject it)
+  news and completion -> net/http (create a http client in main and inject it)
 
 
 leaky abstractions
@@ -66,4 +66,32 @@ main
 
 settings
 
-  rpc.AURURL
+  parser.go: rpc.AURURL
+
+
+More emphasis on pkg/settings/exec. Needs to play well with pkg/text
+
+::
+
+    db: -
+    intrange: -
+    multierror: -
+    stringset: -
+    text: -
+
+    completion: db, text
+    exe: text
+
+    vcs: exe, text
+
+    settings: exe, text, vcs
+
+    query: intrange, multierror, text, stringset, db, settings
+    news: settings, text
+
+    dep: query, text, db, stringset, settings
+    upgrade: db, query, text, vcs, intrange
+
+    pgp: dep, text
+
+    main: *
