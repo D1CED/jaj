@@ -3,37 +3,36 @@ package main
 import (
 	"sync"
 
-	"github.com/Jguer/yay/v10/pkg/db"
 	"github.com/Jguer/yay/v10/pkg/dep"
 	"github.com/Jguer/yay/v10/pkg/query"
-	"github.com/Jguer/yay/v10/pkg/settings"
+	"github.com/Jguer/yay/v10/pkg/settings/runtime"
 	"github.com/Jguer/yay/v10/pkg/stringset"
 	"github.com/Jguer/yay/v10/pkg/text"
 )
 
 // createDevelDB forces yay to create a DB of the existing development packages
-func createDevelDB(config *settings.Configuration, dbExecutor db.Executor) error {
+func createDevelDB(rt *runtime.Runtime) error {
 	var mux sync.Mutex
 	var wg sync.WaitGroup
 
-	_, remoteNames, err := query.GetPackageNamesBySource(dbExecutor)
+	_, remoteNames, err := query.GetPackageNamesBySource(rt.DB)
 	if err != nil {
 		return err
 	}
 
-	info, err := query.AURInfoPrint(remoteNames, config.RequestSplitN)
+	info, err := query.AURInfoPrint(remoteNames, rt.Config.RequestSplitN)
 	if err != nil {
 		return err
 	}
 
 	bases := dep.GetBases(info)
-	toSkip := pkgbuildsToSkip(bases, stringset.FromSlice(remoteNames))
-	_, err = downloadPkgbuilds(bases, toSkip, config.BuildDir)
+	toSkip := pkgbuildsToSkip(bases, stringset.FromSlice(remoteNames), rt.Config.ReDownload, rt.Config.BuildDir)
+	_, err = downloadPkgbuilds(BuildRun{rt.CmdBuilder, rt.CmdRunner}, bases, toSkip, rt.Config.BuildDir, rt.Config.AURURL)
 	if err != nil {
 		return err
 	}
 
-	srcinfos, err := parseSrcinfoFiles(bases, false)
+	srcinfos, err := parseSrcinfoFiles(bases, false, rt.Config.BuildDir)
 	if err != nil {
 		return err
 	}
@@ -41,7 +40,7 @@ func createDevelDB(config *settings.Configuration, dbExecutor db.Executor) error
 	for i := range srcinfos {
 		for iP := range srcinfos[i].Packages {
 			wg.Add(1)
-			go config.Runtime.VCSStore.Update(srcinfos[i].Packages[iP].Pkgname, srcinfos[i].Source, &mux, &wg)
+			go rt.VCSStore.Update(srcinfos[i].Packages[iP].Pkgname, srcinfos[i].Source, &mux, &wg)
 		}
 	}
 

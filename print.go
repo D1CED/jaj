@@ -7,17 +7,18 @@ import (
 	"github.com/Jguer/yay/v10/pkg/db"
 	"github.com/Jguer/yay/v10/pkg/query"
 	"github.com/Jguer/yay/v10/pkg/settings"
+	"github.com/Jguer/yay/v10/pkg/settings/runtime"
 	"github.com/Jguer/yay/v10/pkg/stringset"
 	"github.com/Jguer/yay/v10/pkg/text"
 	"github.com/Jguer/yay/v10/pkg/upgrade"
 )
 
 // PrintSearch handles printing search results in a given format
-func (q aurQuery) printSearch(start int, dbExecutor db.Executor) {
+func (q aurQuery) printSearch(dbExecutor db.Executor, start int, searchMode enum, sortOrder enum) {
 	for i := range q {
 		var toprint string
-		if config.SearchMode == numberMenu {
-			switch config.SortMode {
+		if searchMode == numberMenu {
+			switch sortOrder {
 			case settings.TopDown:
 				toprint += text.Magenta(strconv.Itoa(start+i) + " ")
 			case settings.BottomUp:
@@ -25,7 +26,7 @@ func (q aurQuery) printSearch(start int, dbExecutor db.Executor) {
 			default:
 				text.Warnln(text.T("invalid sort mode. Fix with yay -Y --bottomup --save"))
 			}
-		} else if config.SearchMode == minimal {
+		} else if searchMode == minimal {
 			text.Println(q[i].Name)
 			continue
 		}
@@ -56,11 +57,11 @@ func (q aurQuery) printSearch(start int, dbExecutor db.Executor) {
 }
 
 // PrintSearch receives a RepoSearch type and outputs pretty text.
-func (s repoQuery) printSearch(dbExecutor db.Executor) {
+func (s repoQuery) printSearch(dbExecutor db.Executor, searchMode enum, sortMode enum) {
 	for i, res := range s {
 		var toprint string
-		if config.SearchMode == numberMenu {
-			switch config.SortMode {
+		if searchMode == numberMenu {
+			switch sortMode {
 			case settings.TopDown:
 				toprint += text.Magenta(strconv.Itoa(i+1) + " ")
 			case settings.BottomUp:
@@ -68,7 +69,7 @@ func (s repoQuery) printSearch(dbExecutor db.Executor) {
 			default:
 				text.Warnln(text.T("invalid sort mode. Fix with yay -Y --bottomup --save"))
 			}
-		} else if config.SearchMode == minimal {
+		} else if searchMode == minimal {
 			text.Println(res.Name())
 			continue
 		}
@@ -99,14 +100,14 @@ func (s repoQuery) printSearch(dbExecutor db.Executor) {
 // Pretty print a set of packages from the same package base.
 
 // PrintInfo prints package info like pacman -Si.
-func PrintInfo(a *query.Pkg, extendedInfo bool) {
+func PrintInfo(a *query.Pkg, aurURL string, extendedInfo bool) {
 	text.PrintInfoValue(text.T("Repository"), "aur")
 	text.PrintInfoValue(text.T("Name"), a.Name)
 	text.PrintInfoValue(text.T("Keywords"), a.Keywords...)
 	text.PrintInfoValue(text.T("Version"), a.Version)
 	text.PrintInfoValue(text.T("Description"), a.Description)
 	text.PrintInfoValue(text.T("URL"), a.URL)
-	text.PrintInfoValue(text.T("AUR URL"), config.AURURL+"/packages/"+a.Name)
+	text.PrintInfoValue(text.T("AUR URL"), aurURL+"/packages/"+a.Name)
 	text.PrintInfoValue(text.T("Groups"), a.Groups...)
 	text.PrintInfoValue(text.T("Licenses"), a.License...)
 	text.PrintInfoValue(text.T("Provides"), a.Provides...)
@@ -131,7 +132,7 @@ func PrintInfo(a *query.Pkg, extendedInfo bool) {
 		text.PrintInfoValue("ID", fmt.Sprintf("%d", a.ID))
 		text.PrintInfoValue(text.T("Package Base ID"), fmt.Sprintf("%d", a.PackageBaseID))
 		text.PrintInfoValue(text.T("Package Base"), a.PackageBase)
-		text.PrintInfoValue(text.T("Snapshot URL"), config.AURURL+a.URLPath)
+		text.PrintInfoValue(text.T("Snapshot URL"), aurURL+a.URLPath)
 	}
 
 	text.Println()
@@ -152,7 +153,7 @@ func biggestPackages(dbExecutor db.Executor) {
 }
 
 // localStatistics prints installed packages statistics.
-func localStatistics(dbExecutor db.Executor) error {
+func localStatistics(dbExecutor db.Executor, requestSplitN int) error {
 	info := statistics(dbExecutor)
 
 	_, remoteNames, err := query.GetPackageNamesBySource(dbExecutor)
@@ -171,12 +172,12 @@ func localStatistics(dbExecutor db.Executor) error {
 	biggestPackages(dbExecutor)
 	text.Println(text.Bold(text.Cyan("===========================================")))
 
-	query.AURInfoPrint(remoteNames, config.RequestSplitN)
+	query.AURInfoPrint(remoteNames, requestSplitN)
 
 	return nil
 }
 
-func printNumberOfUpdates(dbExecutor db.Executor, enableDowngrade bool) error {
+func printNumberOfUpdates(rt *runtime.Runtime, enableDowngrade bool) error {
 	warnings := query.NewWarnings()
 
 	var (
@@ -186,7 +187,7 @@ func printNumberOfUpdates(dbExecutor db.Executor, enableDowngrade bool) error {
 	)
 
 	text.CaptureOutput(nil, nil, func() {
-		aurUp, repoUp, err = upList(warnings, dbExecutor, enableDowngrade)
+		aurUp, repoUp, err = upList(warnings, rt, enableDowngrade)
 	})
 
 	if err != nil {
@@ -197,7 +198,7 @@ func printNumberOfUpdates(dbExecutor db.Executor, enableDowngrade bool) error {
 	return nil
 }
 
-func printUpdateList(cmdArgs *settings.Arguments, dbExecutor db.Executor, enableDowngrade bool) error {
+func printUpdateList(cmdArgs *settings.Arguments, rt *runtime.Runtime, enableDowngrade bool) error {
 	targets := stringset.FromSlice(cmdArgs.Targets)
 	warnings := query.NewWarnings()
 
@@ -209,12 +210,12 @@ func printUpdateList(cmdArgs *settings.Arguments, dbExecutor db.Executor, enable
 		repoUp      upgrade.UpSlice
 	)
 	text.CaptureOutput(nil, nil, func() {
-		localNames, remoteNames, err = query.GetPackageNamesBySource(dbExecutor)
+		localNames, remoteNames, err = query.GetPackageNamesBySource(rt.DB)
 		if err != nil {
 			return
 		}
 
-		aurUp, repoUp, err = upList(warnings, dbExecutor, enableDowngrade)
+		aurUp, repoUp, err = upList(warnings, rt, enableDowngrade)
 	})
 
 	if err != nil {

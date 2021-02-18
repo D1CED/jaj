@@ -10,14 +10,9 @@ import (
 )
 
 // configFileName holds the name of the config file.
-const configFileName string = "config.json"
+const configFileName = "config.json"
 
-// vcsFileName holds the name of the vcs file.
-const vcsFileName string = "vcs.json"
-
-const completionFileName string = "completion.cache"
-
-func getConfigPath() string {
+func GetConfigPath() string {
 	if configHome := os.Getenv("XDG_CONFIG_HOME"); configHome != "" {
 		if err := initDir(configHome); err == nil {
 			return filepath.Join(configHome, "yay", configFileName)
@@ -33,7 +28,7 @@ func getConfigPath() string {
 	return ""
 }
 
-func getCacheHome() string {
+func GetCacheHome() string {
 	if cacheHome := os.Getenv("XDG_CACHE_HOME"); cacheHome != "" {
 		if err := initDir(cacheHome); err == nil {
 			return filepath.Join(cacheHome, "yay")
@@ -50,13 +45,11 @@ func getCacheHome() string {
 }
 
 func initDir(dir string) error {
-	if _, err := os.Stat(dir); os.IsNotExist(err) {
+	_, err := os.Stat(dir)
+	if os.IsNotExist(err) {
 		if err = os.MkdirAll(dir, 0o755); err != nil {
 			return errors.New(text.Tf("failed to create config directory '%s': %s", dir, err))
 		}
-	} else if err != nil {
-		return err
 	}
-
-	return nil
+	return err
 }

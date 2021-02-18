@@ -21,18 +21,15 @@ var yayVersion = "10.1.0"
 
 var localePath = "/usr/share/locale"
 
-// YayConf holds the current config values for yay.
-var config *settings.Configuration
-
 // Editor returns the preferred system editor.
-func editor() (editor string, args []string) {
+func editor(edt, editFlags string) (editor string, args []string) {
 	switch {
-	case config.Editor != "":
-		editor, err := exec.LookPath(config.Editor)
+	case edt != "":
+		editor, err := exec.LookPath(edt)
 		if err != nil {
 			text.EPrintln(err)
 		} else {
-			return editor, strings.Fields(config.EditorFlags)
+			return editor, strings.Fields(editFlags)
 		}
 		fallthrough
 	case os.Getenv("EDITOR") != "":

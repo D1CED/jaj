@@ -9,14 +9,15 @@ import (
 	"github.com/Jguer/yay/v10/pkg/multierror"
 	"github.com/Jguer/yay/v10/pkg/query"
 	"github.com/Jguer/yay/v10/pkg/settings"
+	"github.com/Jguer/yay/v10/pkg/settings/runtime"
 	"github.com/Jguer/yay/v10/pkg/stringset"
 	"github.com/Jguer/yay/v10/pkg/text"
 	"github.com/Jguer/yay/v10/pkg/upgrade"
 )
 
 // upList returns lists of packages to upgrade from each source.
-func upList(warnings *query.AURWarnings, dbExecutor db.Executor, enableDowngrade bool) (aurUp, repoUp upgrade.UpSlice, err error) {
-	remote, remoteNames := query.GetRemotePackages(dbExecutor)
+func upList(warnings *query.AURWarnings, rt *runtime.Runtime, enableDowngrade bool) (aurUp, repoUp upgrade.UpSlice, err error) {
+	remote, remoteNames := query.GetRemotePackages(rt.DB)
 
 	var wg sync.WaitGroup
 	var develUp upgrade.UpSlice
@@ -30,21 +31,21 @@ func upList(warnings *query.AURWarnings, dbExecutor db.Executor, enableDowngrade
 		}
 	}
 
-	if config.Runtime.Mode == settings.ModeAny || config.Runtime.Mode == settings.ModeRepo {
+	if rt.Mode == settings.ModeAny || rt.Mode == settings.ModeRepo {
 		text.OperationInfoln(text.T("Searching databases for updates..."))
 		wg.Add(1)
 		go func() {
-			repoUp, err = dbExecutor.RepoUpgrades(enableDowngrade)
+			repoUp, err = rt.DB.RepoUpgrades(enableDowngrade)
 			errs.Add(err)
 			wg.Done()
 		}()
 	}
 
-	if config.Runtime.Mode == settings.ModeAny || config.Runtime.Mode == settings.ModeAUR {
+	if rt.Mode == settings.ModeAny || rt.Mode == settings.ModeAUR {
 		text.OperationInfoln(text.T("Searching AUR for updates..."))
 
 		var _aurdata []*query.Pkg
-		_aurdata, err = query.AURInfo(remoteNames, warnings, config.RequestSplitN)
+		_aurdata, err = query.AURInfo(remoteNames, warnings, rt.Config.RequestSplitN)
 		errs.Add(err)
 		if err == nil {
 			for _, pkg := range _aurdata {
@@ -53,15 +54,15 @@ func upList(warnings *query.AURWarnings, dbExecutor db.Executor, enableDowngrade
 
 			wg.Add(1)
 			go func() {
-				aurUp = upgrade.UpAUR(remote, aurdata, config.TimeUpdate)
+				aurUp = upgrade.UpAUR(remote, aurdata, rt.Config.TimeUpdate)
 				wg.Done()
 			}()
 
-			if config.Devel {
+			if rt.Config.Devel {
 				text.OperationInfoln(text.T("Checking development packages..."))
 				wg.Add(1)
 				go func() {
-					develUp = upgrade.UpDevel(remote, aurdata, config.Runtime.VCSStore)
+					develUp = upgrade.UpDevel(remote, aurdata, rt.VCSStore)
 					wg.Done()
 				}()
 			}
@@ -89,8 +90,7 @@ func upList(warnings *query.AURWarnings, dbExecutor db.Executor, enableDowngrade
 	return aurUp, repoUp, errs.Return()
 }
 
-func printLocalNewerThanAUR(
-	remote []db.IPackage, aurdata map[string]*query.Pkg) {
+func printLocalNewerThanAUR(remote []db.IPackage, aurdata map[string]*query.Pkg) {
 	for _, pkg := range remote {
 		aurPkg, ok := aurdata[pkg.Name()]
 		if !ok {
@@ -123,7 +123,7 @@ func isDevelPackage(pkg db.IPackage) bool {
 }
 
 // upgradePkgs handles updating the cache and installing updates.
-func upgradePkgs(aurUp, repoUp upgrade.UpSlice) (ignore, aurNames stringset.StringSet, err error) {
+func upgradePkgs(conf *settings.Configuration, aurUp, repoUp upgrade.UpSlice) (ignore, aurNames stringset.StringSet, err error) {
 	ignore = make(stringset.StringSet)
 	aurNames = make(stringset.StringSet)
 
@@ -132,7 +132,7 @@ func upgradePkgs(aurUp, repoUp upgrade.UpSlice) (ignore, aurNames stringset.Stri
 		return ignore, aurNames, nil
 	}
 
-	if !config.UpgradeMenu {
+	if !conf.UpgradeMenu {
 		for _, pkg := range aurUp {
 			aurNames.Set(pkg.Name)
 		}
@@ -148,7 +148,7 @@ func upgradePkgs(aurUp, repoUp upgrade.UpSlice) (ignore, aurNames stringset.Stri
 
 	text.Infoln(text.T("Packages to exclude: (eg: \"1 2 3\", \"1-3\", \"^4\" or repo name)"))
 
-	numbers, err := getInput(config.AnswerUpgrade)
+	numbers, err := getInput(conf.AnswerUpgrade)
 	if err != nil {
 		return nil, nil, err
 	}

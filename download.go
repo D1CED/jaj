@@ -14,16 +14,23 @@ import (
 	"github.com/Jguer/yay/v10/pkg/dep"
 	"github.com/Jguer/yay/v10/pkg/multierror"
 	"github.com/Jguer/yay/v10/pkg/query"
+	"github.com/Jguer/yay/v10/pkg/settings/exe"
+	"github.com/Jguer/yay/v10/pkg/settings/runtime"
 	"github.com/Jguer/yay/v10/pkg/text"
 )
 
 const gitDiffRefName = "AUR_SEEN"
 
+type BuildRun struct {
+	Build *exe.CmdBuilder
+	Run   exe.Runner
+}
+
 // Update the YAY_DIFF_REVIEW ref to HEAD. We use this ref to determine which diff were
 // reviewed by the user
-func gitUpdateSeenRef(path, name string) error {
-	_, stderr, err := config.Runtime.CmdRunner.Capture(
-		config.Runtime.CmdBuilder.BuildGitCmd(
+func gitUpdateSeenRef(br BuildRun, path, name string) error {
+	_, stderr, err := br.Run.Capture(
+		br.Build.BuildGitCmd(
 			filepath.Join(path, name), "update-ref", gitDiffRefName, "HEAD"), 0)
 	if err != nil {
 		return fmt.Errorf("%s %s", stderr, err)
@@ -33,19 +40,19 @@ func gitUpdateSeenRef(path, name string) error {
 
 // Return wether or not we have reviewed a diff yet. It checks for the existence of
 // YAY_DIFF_REVIEW in the git ref-list
-func gitHasLastSeenRef(path, name string) bool {
-	_, _, err := config.Runtime.CmdRunner.Capture(
-		config.Runtime.CmdBuilder.BuildGitCmd(
+func gitHasLastSeenRef(br BuildRun, path, name string) bool {
+	_, _, err := br.Run.Capture(
+		br.Build.BuildGitCmd(
 			filepath.Join(path, name), "rev-parse", "--quiet", "--verify", gitDiffRefName), 0)
 	return err == nil
 }
 
 // Returns the last reviewed hash. If YAY_DIFF_REVIEW exists it will return this hash.
 // If it does not it will return empty tree as no diff have been reviewed yet.
-func getLastSeenHash(path, name string) (string, error) {
-	if gitHasLastSeenRef(path, name) {
-		stdout, stderr, err := config.Runtime.CmdRunner.Capture(
-			config.Runtime.CmdBuilder.BuildGitCmd(
+func getLastSeenHash(br BuildRun, path, name string) (string, error) {
+	if gitHasLastSeenRef(br, path, name) {
+		stdout, stderr, err := br.Run.Capture(
+			br.Build.BuildGitCmd(
 				filepath.Join(path, name), "rev-parse", gitDiffRefName), 0)
 		if err != nil {
 			return "", fmt.Errorf("%s %s", stderr, err)
@@ -59,10 +66,10 @@ func getLastSeenHash(path, name string) (string, error) {
 
 // Check whether or not a diff exists between the last reviewed diff and
 // HEAD@{upstream}
-func gitHasDiff(path, name string) (bool, error) {
-	if gitHasLastSeenRef(path, name) {
-		stdout, stderr, err := config.Runtime.CmdRunner.Capture(
-			config.Runtime.CmdBuilder.BuildGitCmd(filepath.Join(path, name), "rev-parse", gitDiffRefName, "HEAD@{upstream}"), 0)
+func gitHasDiff(br BuildRun, path, name string) (bool, error) {
+	if gitHasLastSeenRef(br, path, name) {
+		stdout, stderr, err := br.Run.Capture(
+			br.Build.BuildGitCmd(filepath.Join(path, name), "rev-parse", gitDiffRefName, "HEAD@{upstream}"), 0)
 		if err != nil {
 			return false, fmt.Errorf("%s%s", stderr, err)
 		}
@@ -78,15 +85,15 @@ func gitHasDiff(path, name string) (bool, error) {
 }
 
 // TODO: yay-next passes args through the header, use that to unify ABS and AUR
-func gitDownloadABS(url, path, name string) (bool, error) {
+func gitDownloadABS(br BuildRun, url, path, name string) (bool, error) {
 	if err := os.MkdirAll(path, 0o755); err != nil {
 		return false, err
 	}
 
 	if _, errExist := os.Stat(filepath.Join(path, name)); os.IsNotExist(errExist) {
-		cmd := config.Runtime.CmdBuilder.BuildGitCmd(path, "clone", "--no-progress", "--single-branch",
+		cmd := br.Build.BuildGitCmd(path, "clone", "--no-progress", "--single-branch",
 			"-b", "packages/"+name, url, name)
-		_, stderr, err := config.Runtime.CmdRunner.Capture(cmd, 0)
+		_, stderr, err := br.Run.Capture(cmd, 0)
 		if err != nil {
 			return false, fmt.Errorf(text.Tf("error cloning %s: %s", name, stderr))
 		}
@@ -96,8 +103,8 @@ func gitDownloadABS(url, path, name string) (bool, error) {
 		return false, fmt.Errorf(text.Tf("error reading %s", filepath.Join(path, name, ".git")))
 	}
 
-	cmd := config.Runtime.CmdBuilder.BuildGitCmd(filepath.Join(path, name), "pull", "--ff-only")
-	_, stderr, err := config.Runtime.CmdRunner.Capture(cmd, 0)
+	cmd := br.Build.BuildGitCmd(filepath.Join(path, name), "pull", "--ff-only")
+	_, stderr, err := br.Run.Capture(cmd, 0)
 	if err != nil {
 		return false, fmt.Errorf(text.Tf("error fetching %s: %s", name, stderr))
 	}
@@ -105,11 +112,11 @@ func gitDownloadABS(url, path, name string) (bool, error) {
 	return true, nil
 }
 
-func gitDownload(url, path, name string) (bool, error) {
+func gitDownload(br BuildRun, url, path, name string) (bool, error) {
 	_, err := os.Stat(filepath.Join(path, name, ".git"))
 	if os.IsNotExist(err) {
-		cmd := config.Runtime.CmdBuilder.BuildGitCmd(path, "clone", "--no-progress", url, name)
-		_, stderr, errCapture := config.Runtime.CmdRunner.Capture(cmd, 0)
+		cmd := br.Build.BuildGitCmd(path, "clone", "--no-progress", url, name)
+		_, stderr, errCapture := br.Run.Capture(cmd, 0)
 		if errCapture != nil {
 			return false, fmt.Errorf(text.Tf("error cloning %s: %s", name, stderr))
 		}
@@ -119,8 +126,8 @@ func gitDownload(url, path, name string) (bool, error) {
 		return false, fmt.Errorf(text.Tf("error reading %s", filepath.Join(path, name, ".git")))
 	}
 
-	cmd := config.Runtime.CmdBuilder.BuildGitCmd(filepath.Join(path, name), "fetch")
-	_, stderr, err := config.Runtime.CmdRunner.Capture(cmd, 0)
+	cmd := br.Build.BuildGitCmd(filepath.Join(path, name), "fetch")
+	_, stderr, err := br.Run.Capture(cmd, 0)
 	if err != nil {
 		return false, fmt.Errorf(text.Tf("error fetching %s: %s", name, stderr))
 	}
@@ -128,16 +135,16 @@ func gitDownload(url, path, name string) (bool, error) {
 	return false, nil
 }
 
-func gitMerge(path, name string) error {
-	_, stderr, err := config.Runtime.CmdRunner.Capture(
-		config.Runtime.CmdBuilder.BuildGitCmd(
+func gitMerge(br BuildRun, path, name string) error {
+	_, stderr, err := br.Run.Capture(
+		br.Build.BuildGitCmd(
 			filepath.Join(path, name), "reset", "--hard", "HEAD"), 0)
 	if err != nil {
 		return fmt.Errorf(text.Tf("error resetting %s: %s", name, stderr))
 	}
 
-	_, stderr, err = config.Runtime.CmdRunner.Capture(
-		config.Runtime.CmdBuilder.BuildGitCmd(
+	_, stderr, err = br.Run.Capture(
+		br.Build.BuildGitCmd(
 			filepath.Join(path, name), "merge", "--no-edit", "--ff"), 0)
 	if err != nil {
 		return fmt.Errorf(text.Tf("error merging %s: %s", name, stderr))
@@ -146,28 +153,28 @@ func gitMerge(path, name string) error {
 	return nil
 }
 
-func getPkgbuilds(pkgs []string, dbExecutor db.Executor, force bool) error {
+func getPkgbuilds(pkgs []string, rt *runtime.Runtime, force bool) error {
 	missing := false
 	wd, err := os.Getwd()
 	if err != nil {
 		return err
 	}
 
-	pkgs = query.RemoveInvalidTargets(pkgs, config.Runtime.Mode)
-	aur, repo := packageSlices(pkgs, dbExecutor)
+	pkgs = query.RemoveInvalidTargets(pkgs, rt.Mode)
+	aur, repo := packageSlices(pkgs, rt.DB, rt.Mode)
 
 	for n := range aur {
 		_, pkg := text.SplitDBFromName(aur[n])
 		aur[n] = pkg
 	}
 
-	info, err := query.AURInfoPrint(aur, config.RequestSplitN)
+	info, err := query.AURInfoPrint(aur, rt.Config.RequestSplitN)
 	if err != nil {
 		return err
 	}
 
 	if len(repo) > 0 {
-		missing, err = getPkgbuildsfromABS(repo, wd, dbExecutor, force)
+		missing, err = getPkgbuildsfromABS(repo, wd, force, rt)
 		if err != nil {
 			return err
 		}
@@ -200,7 +207,7 @@ func getPkgbuilds(pkgs []string, dbExecutor db.Executor, force bool) error {
 			}
 		}
 
-		if _, err = downloadPkgbuilds(bases, nil, wd); err != nil {
+		if _, err = downloadPkgbuilds(BuildRun{rt.CmdBuilder, rt.CmdRunner}, bases, nil, wd, rt.Config.AURURL); err != nil {
 			return err
 		}
 
@@ -215,7 +222,7 @@ func getPkgbuilds(pkgs []string, dbExecutor db.Executor, force bool) error {
 }
 
 // GetPkgbuild downloads pkgbuild from the ABS.
-func getPkgbuildsfromABS(pkgs []string, path string, dbExecutor db.Executor, force bool) (bool, error) {
+func getPkgbuildsfromABS(pkgs []string, path string, force bool, rt *runtime.Runtime) (bool, error) {
 	var wg sync.WaitGroup
 	var mux sync.Mutex
 	var errs multierror.MultiError
@@ -230,9 +237,9 @@ func getPkgbuildsfromABS(pkgs []string, path string, dbExecutor db.Executor, for
 		pkgDB, name := text.SplitDBFromName(pkgN)
 
 		if pkgDB != "" {
-			pkg = dbExecutor.SatisfierFromDB(name, pkgDB)
+			pkg = rt.DB.SatisfierFromDB(name, pkgDB)
 		} else {
-			pkg = dbExecutor.SyncSatisfier(name)
+			pkg = rt.DB.SyncSatisfier(name)
 		}
 
 		if pkg == nil {
@@ -282,15 +289,15 @@ func getPkgbuildsfromABS(pkgs []string, path string, dbExecutor db.Executor, for
 
 	download := func(pkg string, url string) {
 		defer wg.Done()
-		if _, err := gitDownloadABS(url, config.ABSDir, pkg); err != nil {
+		if _, err := gitDownloadABS(BuildRun{rt.CmdBuilder, rt.CmdRunner}, url, rt.Config.ABSDir, pkg); err != nil {
 			errs.Add(errors.New(text.Tf("failed to get pkgbuild: %s: %s", text.Cyan(pkg), err.Error())))
 			return
 		}
 
-		_, stderr, err := config.Runtime.CmdRunner.Capture(
+		_, stderr, err := rt.CmdRunner.Capture(
 			exec.Command(
 				"cp", "-r",
-				filepath.Join(config.ABSDir, pkg, "trunk"),
+				filepath.Join(rt.Config.ABSDir, pkg, "trunk"),
 				filepath.Join(path, pkg)), 0)
 		mux.Lock()
 		downloaded++

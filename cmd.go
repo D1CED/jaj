@@ -7,12 +7,11 @@ import (
 	alpm "github.com/Jguer/go-alpm/v2"
 
 	"github.com/Jguer/yay/v10/pkg/completion"
-	"github.com/Jguer/yay/v10/pkg/db"
 	"github.com/Jguer/yay/v10/pkg/news"
 	"github.com/Jguer/yay/v10/pkg/query"
 	"github.com/Jguer/yay/v10/pkg/settings"
+	"github.com/Jguer/yay/v10/pkg/settings/runtime"
 	"github.com/Jguer/yay/v10/pkg/text"
-	"github.com/Jguer/yay/v10/pkg/vcs"
 )
 
 func usage() {
@@ -136,13 +135,13 @@ getpkgbuild specific options:
     -f --force            Force download for existing ABS packages`)
 }
 
-func handleCmd(cmdArgs *settings.Arguments, dbExecutor db.Executor) error {
+func handleCmd(cmdArgs *settings.Arguments, rt *runtime.Runtime) error {
 	if cmdArgs.ExistsArg("h", "help") {
-		return handleHelp(cmdArgs)
+		return handleHelp(cmdArgs, rt)
 	}
 
-	if config.SudoLoop && cmdArgs.NeedRoot(config.Runtime) {
-		sudoLoopBackground()
+	if rt.Config.SudoLoop && settings.NeedRoot(cmdArgs, rt.Mode) {
+		sudoLoopBackground(rt.CmdRunner, rt.Config)
 	}
 
 	switch cmdArgs.Op {
@@ -150,148 +149,148 @@ func handleCmd(cmdArgs *settings.Arguments, dbExecutor db.Executor) error {
 		handleVersion()
 		return nil
 	case "D", "database":
-		return config.Runtime.CmdRunner.Show(passToPacman(cmdArgs))
+		return rt.CmdRunner.Show(passToPacman(rt, cmdArgs))
 	case "F", "files":
-		return config.Runtime.CmdRunner.Show(passToPacman(cmdArgs))
+		return rt.CmdRunner.Show(passToPacman(rt, cmdArgs))
 	case "Q", "query":
-		return handleQuery(cmdArgs, dbExecutor)
+		return handleQuery(cmdArgs, rt)
 	case "R", "remove":
-		return handleRemove(cmdArgs, config.Runtime.VCSStore)
+		return handleRemove(cmdArgs, rt)
 	case "S", "sync":
-		return handleSync(cmdArgs, dbExecutor)
+		return handleSync(cmdArgs, rt)
 	case "T", "deptest":
-		return config.Runtime.CmdRunner.Show(passToPacman(cmdArgs))
+		return rt.CmdRunner.Show(passToPacman(rt, cmdArgs))
 	case "U", "upgrade":
-		return config.Runtime.CmdRunner.Show(passToPacman(cmdArgs))
+		return rt.CmdRunner.Show(passToPacman(rt, cmdArgs))
 	case "G", "getpkgbuild":
-		return handleGetpkgbuild(cmdArgs, dbExecutor)
+		return handleGetpkgbuild(cmdArgs, rt)
 	case "P", "show":
-		return handlePrint(cmdArgs, dbExecutor)
+		return handlePrint(cmdArgs, rt)
 	case "Y", "--yay":
-		return handleYay(cmdArgs, dbExecutor)
+		return handleYay(cmdArgs, rt)
 	}
 
 	return text.ErrT("unhandled operation")
 }
 
-func handleQuery(cmdArgs *settings.Arguments, dbExecutor db.Executor) error {
+func handleQuery(cmdArgs *settings.Arguments, rt *runtime.Runtime) error {
 	if cmdArgs.ExistsArg("u", "upgrades") {
-		return printUpdateList(cmdArgs, dbExecutor, cmdArgs.ExistsDouble("u", "sysupgrade"))
+		return printUpdateList(cmdArgs, rt, cmdArgs.ExistsDouble("u", "sysupgrade"))
 	}
-	return config.Runtime.CmdRunner.Show(passToPacman(cmdArgs))
+	return rt.CmdRunner.Show(passToPacman(rt, cmdArgs))
 }
 
-func handleHelp(cmdArgs *settings.Arguments) error {
+func handleHelp(cmdArgs *settings.Arguments, rt *runtime.Runtime) error {
 	if cmdArgs.Op == "Y" || cmdArgs.Op == "yay" {
 		usage()
 		return nil
 	}
-	return config.Runtime.CmdRunner.Show(passToPacman(cmdArgs))
+	return rt.CmdRunner.Show(passToPacman(rt, cmdArgs))
 }
 
 func handleVersion() {
 	text.Printf("yay v%s - libalpm v%s\n", yayVersion, alpm.Version())
 }
 
-func handlePrint(cmdArgs *settings.Arguments, dbExecutor db.Executor) (err error) {
+func handlePrint(cmdArgs *settings.Arguments, rt *runtime.Runtime) (err error) {
 	switch {
 	case cmdArgs.ExistsArg("d", "defaultconfig"):
 		tmpConfig := settings.DefaultConfig()
 		text.Printf("%v", tmpConfig)
 	case cmdArgs.ExistsArg("g", "currentconfig"):
-		text.Printf("%v", config)
+		text.Printf("%v", rt.Config)
 	case cmdArgs.ExistsArg("n", "numberupgrades"):
-		err = printNumberOfUpdates(dbExecutor, cmdArgs.ExistsDouble("u", "sysupgrade"))
+		err = printNumberOfUpdates(rt, cmdArgs.ExistsDouble("u", "sysupgrade"))
 	case cmdArgs.ExistsArg("w", "news"):
 		double := cmdArgs.ExistsDouble("w", "news")
 		quiet := cmdArgs.ExistsArg("q", "quiet")
-		err = news.PrintNewsFeed(dbExecutor.LastBuildTime(), config.SortMode, double, quiet)
+		err = news.PrintNewsFeed(rt.DB.LastBuildTime(), rt.Config.SortMode, double, quiet)
 	case cmdArgs.ExistsDouble("c", "complete"):
-		err = completion.Show(dbExecutor, config.AURURL, config.Runtime.CompletionPath, config.CompletionInterval, true)
+		err = completion.Show(rt.DB, rt.Config.AURURL, rt.CompletionPath, rt.Config.CompletionInterval, true)
 	case cmdArgs.ExistsArg("c", "complete"):
-		err = completion.Show(dbExecutor, config.AURURL, config.Runtime.CompletionPath, config.CompletionInterval, false)
+		err = completion.Show(rt.DB, rt.Config.AURURL, rt.CompletionPath, rt.Config.CompletionInterval, false)
 	case cmdArgs.ExistsArg("s", "stats"):
-		err = localStatistics(dbExecutor)
+		err = localStatistics(rt.DB, rt.Config.RequestSplitN)
 	default:
 		err = nil
 	}
 	return err
 }
 
-func handleYay(cmdArgs *settings.Arguments, dbExecutor db.Executor) error {
+func handleYay(cmdArgs *settings.Arguments, rt *runtime.Runtime) error {
 	if cmdArgs.ExistsArg("gendb") {
-		return createDevelDB(config, dbExecutor)
+		return createDevelDB(rt)
 	}
 	if cmdArgs.ExistsDouble("c") {
-		return cleanDependencies(cmdArgs, dbExecutor, true)
+		return cleanDependencies(rt, cmdArgs, true)
 	}
 	if cmdArgs.ExistsArg("c", "clean") {
-		return cleanDependencies(cmdArgs, dbExecutor, false)
+		return cleanDependencies(rt, cmdArgs, false)
 	}
 	if len(cmdArgs.Targets) > 0 {
-		return handleYogurt(cmdArgs, dbExecutor)
+		return handleYogurt(cmdArgs, rt)
 	}
 	return nil
 }
 
-func handleGetpkgbuild(cmdArgs *settings.Arguments, dbExecutor db.Executor) error {
-	return getPkgbuilds(cmdArgs.Targets, dbExecutor, cmdArgs.ExistsArg("f", "force"))
+func handleGetpkgbuild(cmdArgs *settings.Arguments, rt *runtime.Runtime) error {
+	return getPkgbuilds(cmdArgs.Targets, rt, cmdArgs.ExistsArg("f", "force"))
 }
 
-func handleYogurt(cmdArgs *settings.Arguments, dbExecutor db.Executor) error {
-	config.SearchMode = numberMenu
-	return displayNumberMenu(cmdArgs.Targets, dbExecutor, cmdArgs)
+func handleYogurt(cmdArgs *settings.Arguments, rt *runtime.Runtime) error {
+	rt.Config.SearchMode = numberMenu
+	return displayNumberMenu(cmdArgs.Targets, cmdArgs, rt)
 }
 
-func handleSync(cmdArgs *settings.Arguments, dbExecutor db.Executor) error {
+func handleSync(cmdArgs *settings.Arguments, rt *runtime.Runtime) error {
 	targets := cmdArgs.Targets
 
 	if cmdArgs.ExistsArg("s", "search") {
 		if cmdArgs.ExistsArg("q", "quiet") {
-			config.SearchMode = minimal
+			rt.Config.SearchMode = minimal
 		} else {
-			config.SearchMode = detailed
+			rt.Config.SearchMode = detailed
 		}
-		return syncSearch(targets, dbExecutor)
+		return syncSearch(targets, rt)
 	}
 	if cmdArgs.ExistsArg("p", "print", "print-format") {
-		return config.Runtime.CmdRunner.Show(passToPacman(cmdArgs))
+		return rt.CmdRunner.Show(passToPacman(rt, cmdArgs))
 	}
 	if cmdArgs.ExistsArg("c", "clean") {
-		return syncClean(cmdArgs, dbExecutor)
+		return syncClean(rt, cmdArgs)
 	}
 	if cmdArgs.ExistsArg("l", "list") {
-		return syncList(cmdArgs, dbExecutor)
+		return syncList(cmdArgs, rt)
 	}
 	if cmdArgs.ExistsArg("g", "groups") {
-		return config.Runtime.CmdRunner.Show(passToPacman(cmdArgs))
+		return rt.CmdRunner.Show(passToPacman(rt, cmdArgs))
 	}
 	if cmdArgs.ExistsArg("i", "info") {
-		return syncInfo(cmdArgs, targets, dbExecutor)
+		return syncInfo(cmdArgs, targets, rt)
 	}
 	if cmdArgs.ExistsArg("u", "sysupgrade") {
-		return install(cmdArgs, dbExecutor, false)
+		return install(cmdArgs, rt, false)
 	}
 	if len(cmdArgs.Targets) > 0 {
-		return install(cmdArgs, dbExecutor, false)
+		return install(cmdArgs, rt, false)
 	}
 	if cmdArgs.ExistsArg("y", "refresh") {
-		return config.Runtime.CmdRunner.Show(passToPacman(cmdArgs))
+		return rt.CmdRunner.Show(passToPacman(rt, cmdArgs))
 	}
 	return nil
 }
 
-func handleRemove(cmdArgs *settings.Arguments, localCache *vcs.InfoStore) error {
-	err := config.Runtime.CmdRunner.Show(passToPacman(cmdArgs))
+func handleRemove(cmdArgs *settings.Arguments, rt *runtime.Runtime) error {
+	err := rt.CmdRunner.Show(passToPacman(rt, cmdArgs))
 	if err == nil {
-		localCache.RemovePackage(cmdArgs.Targets)
+		rt.VCSStore.RemovePackage(cmdArgs.Targets)
 	}
 
 	return err
 }
 
 // NumberMenu presents a CLI for selecting packages to install.
-func displayNumberMenu(pkgS []string, dbExecutor db.Executor, cmdArgs *settings.Arguments) error {
+func displayNumberMenu(pkgS []string, cmdArgs *settings.Arguments, rt *runtime.Runtime) error {
 	var (
 		aurErr, repoErr error
 		aq              aurQuery
@@ -299,14 +298,14 @@ func displayNumberMenu(pkgS []string, dbExecutor db.Executor, cmdArgs *settings.
 		lenaq, lenpq    int
 	)
 
-	pkgS = query.RemoveInvalidTargets(pkgS, config.Runtime.Mode)
+	pkgS = query.RemoveInvalidTargets(pkgS, rt.Mode)
 
-	if config.Runtime.Mode == settings.ModeAUR || config.Runtime.Mode == settings.ModeAny {
-		aq, aurErr = narrowSearch(pkgS, true)
+	if rt.Mode == settings.ModeAUR || rt.Mode == settings.ModeAny {
+		aq, aurErr = narrowSearch(pkgS, true, rt.Config.SearchBy, rt.Config.SortBy)
 		lenaq = len(aq)
 	}
-	if config.Runtime.Mode == settings.ModeRepo || config.Runtime.Mode == settings.ModeAny {
-		pq = queryRepo(pkgS, dbExecutor)
+	if rt.Mode == settings.ModeRepo || rt.Mode == settings.ModeAny {
+		pq = queryRepo(pkgS, rt.DB, rt.Config.SortMode)
 		lenpq = len(pq)
 		if repoErr != nil {
 			return repoErr
@@ -317,20 +316,20 @@ func displayNumberMenu(pkgS []string, dbExecutor db.Executor, cmdArgs *settings.
 		return text.ErrT("no packages match search")
 	}
 
-	switch config.SortMode {
+	switch rt.Config.SortMode {
 	case settings.TopDown:
-		if config.Runtime.Mode == settings.ModeRepo || config.Runtime.Mode == settings.ModeAny {
-			pq.printSearch(dbExecutor)
+		if rt.Mode == settings.ModeRepo || rt.Mode == settings.ModeAny {
+			pq.printSearch(rt.DB, rt.Config.SearchMode, rt.Config.SortMode)
 		}
-		if config.Runtime.Mode == settings.ModeAUR || config.Runtime.Mode == settings.ModeAny {
-			aq.printSearch(lenpq+1, dbExecutor)
+		if rt.Mode == settings.ModeAUR || rt.Mode == settings.ModeAny {
+			aq.printSearch(rt.DB, lenpq+1, rt.Config.SearchMode, rt.Config.SortMode)
 		}
 	case settings.BottomUp:
-		if config.Runtime.Mode == settings.ModeAUR || config.Runtime.Mode == settings.ModeAny {
-			aq.printSearch(lenpq+1, dbExecutor)
+		if rt.Mode == settings.ModeAUR || rt.Mode == settings.ModeAny {
+			aq.printSearch(rt.DB, lenpq+1, rt.Config.SearchMode, rt.Config.SortMode)
 		}
-		if config.Runtime.Mode == settings.ModeRepo || config.Runtime.Mode == settings.ModeAny {
-			pq.printSearch(dbExecutor)
+		if rt.Mode == settings.ModeRepo || rt.Mode == settings.ModeAny {
+			pq.printSearch(rt.DB, rt.Config.SearchMode, rt.Config.SortMode)
 		}
 	default:
 		return text.ErrT("invalid sort mode. Fix with yay -Y --bottomup --save")
@@ -361,7 +360,7 @@ func displayNumberMenu(pkgS []string, dbExecutor db.Executor, cmdArgs *settings.
 
 	for i, pkg := range pq {
 		var target int
-		switch config.SortMode {
+		switch rt.Config.SortMode {
 		case settings.TopDown:
 			target = i + 1
 		case settings.BottomUp:
@@ -378,7 +377,7 @@ func displayNumberMenu(pkgS []string, dbExecutor db.Executor, cmdArgs *settings.
 	for i := range aq {
 		var target int
 
-		switch config.SortMode {
+		switch rt.Config.SortMode {
 		case settings.TopDown:
 			target = i + 1 + len(pq)
 		case settings.BottomUp:
@@ -397,25 +396,25 @@ func displayNumberMenu(pkgS []string, dbExecutor db.Executor, cmdArgs *settings.
 		return nil
 	}
 
-	if config.SudoLoop {
-		sudoLoopBackground()
+	if rt.Config.SudoLoop {
+		sudoLoopBackground(rt.CmdRunner, rt.Config)
 	}
 
-	return install(arguments, dbExecutor, true)
+	return install(arguments, rt, true)
 }
 
-func syncList(cmdArgs *settings.Arguments, dbExecutor db.Executor) error {
+func syncList(cmdArgs *settings.Arguments, rt *runtime.Runtime) error {
 	aur := false
 
 	for i := len(cmdArgs.Targets) - 1; i >= 0; i-- {
-		if cmdArgs.Targets[i] == "aur" && (config.Runtime.Mode == settings.ModeAny || config.Runtime.Mode == settings.ModeAUR) {
+		if cmdArgs.Targets[i] == "aur" && (rt.Mode == settings.ModeAny || rt.Mode == settings.ModeAUR) {
 			cmdArgs.Targets = append(cmdArgs.Targets[:i], cmdArgs.Targets[i+1:]...)
 			aur = true
 		}
 	}
 
-	if (config.Runtime.Mode == settings.ModeAny || config.Runtime.Mode == settings.ModeAUR) && (len(cmdArgs.Targets) == 0 || aur) {
-		resp, err := http.Get(config.AURURL + "/packages.gz")
+	if (rt.Mode == settings.ModeAny || rt.Mode == settings.ModeAUR) && (len(cmdArgs.Targets) == 0 || aur) {
+		resp, err := http.Get(rt.Config.AURURL + "/packages.gz")
 		if err != nil {
 			return err
 		}
@@ -431,7 +430,7 @@ func syncList(cmdArgs *settings.Arguments, dbExecutor db.Executor) error {
 			} else {
 				text.Printf("%s %s %s", text.Magenta("aur"), text.Bold(name), text.Bold(text.Green(text.T("unknown-version"))))
 
-				if dbExecutor.LocalPackage(name) != nil {
+				if rt.DB.LocalPackage(name) != nil {
 					text.Print(text.Bold(text.Blue(text.T(" [Installed]"))))
 				}
 
@@ -440,8 +439,8 @@ func syncList(cmdArgs *settings.Arguments, dbExecutor db.Executor) error {
 		}
 	}
 
-	if (config.Runtime.Mode == settings.ModeAny || config.Runtime.Mode == settings.ModeRepo) && (len(cmdArgs.Targets) != 0 || !aur) {
-		return config.Runtime.CmdRunner.Show(passToPacman(cmdArgs))
+	if (rt.Mode == settings.ModeAny || rt.Mode == settings.ModeRepo) && (len(cmdArgs.Targets) != 0 || !aur) {
+		return rt.CmdRunner.Show(passToPacman(rt, cmdArgs))
 	}
 
 	return nil

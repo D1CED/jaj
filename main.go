@@ -7,11 +7,14 @@ import (
 	pacmanconf "github.com/Morganamilo/go-pacmanconf"
 	"golang.org/x/term"
 
-	"github.com/Jguer/yay/v10/pkg/db"
 	"github.com/Jguer/yay/v10/pkg/db/ialpm"
 	"github.com/Jguer/yay/v10/pkg/settings"
+	"github.com/Jguer/yay/v10/pkg/settings/runtime"
 	"github.com/Jguer/yay/v10/pkg/text"
 )
+
+// YayConf holds the current config values for yay.
+// var rt *runtime.Runtime
 
 func initAlpm(cmdArgs *settings.Arguments, pacmanConfigPath string) (*pacmanconf.Config, bool, error) {
 	root := "/"
@@ -62,69 +65,60 @@ func initAlpm(cmdArgs *settings.Arguments, pacmanConfigPath string) (*pacmanconf
 }
 
 func main() {
-	var err error
-	ret := 0
-	defer func() { os.Exit(ret) }()
-
 	text.Init(localePath)
 
 	if os.Geteuid() == 0 {
 		text.Warnln(text.T("Avoid running yay as root/sudo."))
 	}
 
-	config, err = settings.NewConfig()
+	rc, err := appMain()
+	if err != nil && err.Error() != "" {
+		text.EPrintln(err)
+	}
+	os.Exit(rc)
+}
+
+func appMain() (int, error) {
+	config, err := settings.NewConfig()
 	if err != nil {
-		if str := err.Error(); str != "" {
-			text.EPrintln(str)
-		}
-		ret = 1
-		return
+		return 1, err
 	}
 
+	fl := &settings.AdditionalFlags{}
 	cmdArgs := settings.MakeArguments()
-	err = cmdArgs.ParseCommandLine(config)
+	err = cmdArgs.ParseCommandLine(config, fl)
 	if err != nil {
-		if str := err.Error(); str != "" {
-			text.EPrintln(str)
-		}
-		ret = 1
-		return
+		return 1, err
 	}
 
-	if config.Runtime.SaveConfig {
-		if errS := config.Save(config.Runtime.ConfigPath); errS != nil {
-			text.EPrintln(err)
-		}
-	}
-
-	var useColor bool
-	config.Runtime.PacmanConf, useColor, err = initAlpm(cmdArgs, config.PacmanConf)
+	pacmanConf, useColor, err := initAlpm(cmdArgs, config.PacmanConf)
 	if err != nil {
-		if str := err.Error(); str != "" {
-			text.EPrintln(str)
-		}
-		ret = 1
-		return
+		return 1, err
 	}
 
 	text.UseColor = useColor
 
-	dbExecutor, err := ialpm.NewExecutor(config.Runtime.PacmanConf)
+	dbExecutor, err := ialpm.NewExecutor(pacmanConf)
 	if err != nil {
-		if str := err.Error(); str != "" {
-			text.EPrintln(str)
-		}
-		ret = 1
-		return
+		return 1, err
+	}
+	defer dbExecutor.Cleanup()
+
+	runt, err := runtime.New(config, pacmanConf, dbExecutor, fl.SaveConfig, fl.Mode)
+	if err != nil {
+		return 1, err
 	}
 
-	defer dbExecutor.Cleanup()
-	err = handleCmd(cmdArgs, db.Executor(dbExecutor))
-	if err != nil {
-		if str := err.Error(); str != "" {
-			text.EPrintln(str)
+	if runt.SaveConfig {
+		if errS := config.Save(runt.ConfigPath); errS != nil {
+			text.EPrintln(err)
 		}
-		ret = 1
-		return
 	}
+
+	err = handleCmd(cmdArgs, runt)
+	if err != nil {
+		return 1, err
+	}
+
+	return 0, nil
 }

@@ -8,26 +8,28 @@ import (
 	"time"
 
 	"github.com/Jguer/yay/v10/pkg/settings"
+	"github.com/Jguer/yay/v10/pkg/settings/exe"
+	"github.com/Jguer/yay/v10/pkg/settings/runtime"
 	"github.com/Jguer/yay/v10/pkg/text"
 )
 
-func sudoLoopBackground() {
-	updateSudo()
-	go sudoLoop()
+func sudoLoopBackground(cmdRunner exe.Runner, conf *settings.Configuration) {
+	updateSudo(cmdRunner, conf)
+	go sudoLoop(cmdRunner, conf)
 }
 
-func sudoLoop() {
+func sudoLoop(cmdRunner exe.Runner, conf *settings.Configuration) {
 	for {
-		updateSudo()
+		updateSudo(cmdRunner, conf)
 		time.Sleep(298 * time.Second)
 	}
 }
 
-func updateSudo() {
+func updateSudo(cmdRunner exe.Runner, conf *settings.Configuration) {
 	for {
-		mSudoFlags := strings.Fields(config.SudoFlags)
+		mSudoFlags := strings.Fields(conf.SudoFlags)
 		mSudoFlags = append([]string{"-v"}, mSudoFlags...)
-		err := config.Runtime.CmdRunner.Show(exec.Command(config.SudoBin, mSudoFlags...))
+		err := cmdRunner.Show(exec.Command(conf.SudoBin, mSudoFlags...))
 		if err != nil {
 			text.EPrintln(err)
 		} else {
@@ -55,26 +57,26 @@ func waitLock(dbPath string) {
 	}
 }
 
-func passToPacman(args *settings.Arguments) *exec.Cmd {
+func passToPacman(rt *runtime.Runtime, args *settings.Arguments) *exec.Cmd {
 	argArr := make([]string, 0, 32)
 
-	if args.NeedRoot(config.Runtime) {
-		argArr = append(argArr, config.SudoBin)
-		argArr = append(argArr, strings.Fields(config.SudoFlags)...)
+	if settings.NeedRoot(args, rt.Mode) {
+		argArr = append(argArr, rt.Config.SudoBin)
+		argArr = append(argArr, strings.Fields(rt.Config.SudoFlags)...)
 	}
 
-	argArr = append(argArr, config.PacmanBin)
+	argArr = append(argArr, rt.Config.PacmanBin)
 	argArr = append(argArr, args.FormatGlobals()...)
 	argArr = append(argArr, args.FormatArgs()...)
 	if settings.NoConfirm {
 		argArr = append(argArr, "--noconfirm")
 	}
 
-	argArr = append(argArr, "--config", config.PacmanConf, "--")
+	argArr = append(argArr, "--config", rt.Config.PacmanConf, "--")
 	argArr = append(argArr, args.Targets...)
 
-	if args.NeedRoot(config.Runtime) {
-		waitLock(config.Runtime.PacmanConf.DBPath)
+	if settings.NeedRoot(args, rt.Mode) {
+		waitLock(rt.PacmanConf.DBPath)
 	}
 	return exec.Command(argArr[0], argArr[1:]...)
 }

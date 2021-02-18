@@ -14,7 +14,7 @@ import (
 	"github.com/stretchr/testify/assert"
 
 	"github.com/Jguer/yay/v10/pkg/db/mock"
-	"github.com/Jguer/yay/v10/pkg/settings"
+	"github.com/Jguer/yay/v10/pkg/settings/exe"
 	"github.com/Jguer/yay/v10/pkg/text"
 	"github.com/Jguer/yay/v10/pkg/vcs"
 )
@@ -102,11 +102,8 @@ func (r *MockRunner) Capture(cmd *exec.Cmd, timeout int64) (stdout, stderr strin
 }
 
 func Test_upDevel(t *testing.T) {
-	var err error
-	config, err := settings.NewConfig()
-	assert.NoError(t, err)
 
-	config.Runtime.CmdRunner = &MockRunner{
+	cmdRunner := &MockRunner{
 		Returned: []string{
 			"7f4c277ce7149665d1c79b76ca8fbb832a65a03b	HEAD",
 			"7f4c277ce7149665d1c79b76ca8fbb832a65a03b	HEAD",
@@ -114,6 +111,10 @@ func Test_upDevel(t *testing.T) {
 			"cccccccccccccccccccccccccccccccccccccccc	HEAD",
 			"991c5b4146fd27f4aacf4e3111258a848934aaa1	HEAD",
 		},
+	}
+
+	cmdBuilder := &exe.CmdBuilder{
+		GitBin: "git",
 	}
 
 	type args struct {
@@ -131,8 +132,8 @@ func Test_upDevel(t *testing.T) {
 			name: "No Updates",
 			args: args{
 				cached: vcs.InfoStore{
-					Runner:     config.Runtime.CmdRunner,
-					CmdBuilder: config.Runtime.CmdBuilder,
+					Runner:     cmdRunner,
+					CmdBuilder: cmdBuilder,
 				},
 				remote: []alpm.IPackage{
 					&mock.Package{PName: "hello", PVersion: "2.0.0"},
@@ -151,8 +152,8 @@ func Test_upDevel(t *testing.T) {
 			finalLen: 3,
 			args: args{
 				cached: vcs.InfoStore{
-					Runner:     config.Runtime.CmdRunner,
-					CmdBuilder: config.Runtime.CmdBuilder,
+					Runner:     cmdRunner,
+					CmdBuilder: cmdBuilder,
 					OriginsByPackage: map[string]vcs.OriginInfoByURL{
 						"hello": {
 							"github.com/Jguer/z.git": vcs.OriginInfo{
@@ -220,8 +221,8 @@ func Test_upDevel(t *testing.T) {
 			finalLen: 1,
 			args: args{
 				cached: vcs.InfoStore{
-					Runner:     config.Runtime.CmdRunner,
-					CmdBuilder: config.Runtime.CmdBuilder,
+					Runner:     cmdRunner,
+					CmdBuilder: cmdBuilder,
 					OriginsByPackage: map[string]vcs.OriginInfoByURL{
 						"hello": {
 							"github.com/Jguer/d.git": vcs.OriginInfo{
@@ -242,8 +243,8 @@ func Test_upDevel(t *testing.T) {
 			finalLen: 1,
 			args: args{
 				cached: vcs.InfoStore{
-					Runner:     config.Runtime.CmdRunner,
-					CmdBuilder: config.Runtime.CmdBuilder,
+					Runner:     cmdRunner,
+					CmdBuilder: cmdBuilder,
 					OriginsByPackage: map[string]vcs.OriginInfoByURL{
 						"hello": {
 							"github.com/Jguer/e.git": vcs.OriginInfo{
@@ -264,7 +265,7 @@ func Test_upDevel(t *testing.T) {
 	text.CaptureOutput(nil, nil, func() {
 		for _, tt := range tests {
 			t.Run(tt.name, func(t *testing.T) {
-				config.Runtime.CmdRunner.(*MockRunner).t = t
+				tt.args.cached.Runner.(*MockRunner).t = t
 				got := UpDevel(tt.args.remote, tt.args.aurdata, &tt.args.cached)
 				assert.ElementsMatch(t, tt.want, got)
 				assert.Equal(t, tt.finalLen, len(tt.args.cached.OriginsByPackage))

@@ -11,59 +11,56 @@ import (
 	"github.com/Jguer/yay/v10/pkg/db"
 	"github.com/Jguer/yay/v10/pkg/query"
 	"github.com/Jguer/yay/v10/pkg/settings"
+	"github.com/Jguer/yay/v10/pkg/settings/runtime"
 	"github.com/Jguer/yay/v10/pkg/stringset"
 	"github.com/Jguer/yay/v10/pkg/text"
 )
 
 var ErrMissing = errors.New("missing")
 
+type enum = int
+
 // Query is a collection of Results
 type aurQuery []rpc.Pkg
 
 // Query holds the results of a repository search.
-type repoQuery []alpm.IPackage
+type repoQuery []db.IPackage
 
-func (s repoQuery) Reverse() {
+func Reverse(s repoQuery) {
 	for i, j := 0, len(s)-1; i < j; i, j = i+1, j-1 {
 		s[i], s[j] = s[j], s[i]
 	}
 }
 
-func (q aurQuery) Len() int {
-	return len(q)
-}
+func SortAURQuery(q aurQuery, sortBy string, sortMode enum) func(int, int) bool {
+	return func(i, j int) bool {
+		var result bool
 
-func (q aurQuery) Less(i, j int) bool {
-	var result bool
+		switch sortBy {
+		case "votes":
+			result = q[i].NumVotes > q[j].NumVotes
+		case "popularity":
+			result = q[i].Popularity > q[j].Popularity
+		case "name":
+			result = text.LessRunes([]rune(q[i].Name), []rune(q[j].Name))
+		case "base":
+			result = text.LessRunes([]rune(q[i].PackageBase), []rune(q[j].PackageBase))
+		case "submitted":
+			result = q[i].FirstSubmitted < q[j].FirstSubmitted
+		case "modified":
+			result = q[i].LastModified < q[j].LastModified
+		case "id":
+			result = q[i].ID < q[j].ID
+		case "baseid":
+			result = q[i].PackageBaseID < q[j].PackageBaseID
+		}
 
-	switch config.SortBy {
-	case "votes":
-		result = q[i].NumVotes > q[j].NumVotes
-	case "popularity":
-		result = q[i].Popularity > q[j].Popularity
-	case "name":
-		result = text.LessRunes([]rune(q[i].Name), []rune(q[j].Name))
-	case "base":
-		result = text.LessRunes([]rune(q[i].PackageBase), []rune(q[j].PackageBase))
-	case "submitted":
-		result = q[i].FirstSubmitted < q[j].FirstSubmitted
-	case "modified":
-		result = q[i].LastModified < q[j].LastModified
-	case "id":
-		result = q[i].ID < q[j].ID
-	case "baseid":
-		result = q[i].PackageBaseID < q[j].PackageBaseID
+		if sortMode == settings.BottomUp {
+			return !result
+		}
+
+		return result
 	}
-
-	if config.SortMode == settings.BottomUp {
-		return !result
-	}
-
-	return result
-}
-
-func (q aurQuery) Swap(i, j int) {
-	q[i], q[j] = q[j], q[i]
 }
 
 func getSearchBy(value string) rpc.By {
@@ -86,12 +83,12 @@ func getSearchBy(value string) rpc.By {
 }
 
 // NarrowSearch searches AUR and narrows based on subarguments
-func narrowSearch(pkgS []string, sortS bool) (aurQuery, error) {
+func narrowSearch(pkgS []string, sortS bool, searchBy string, sortBy string) (aurQuery, error) {
 	var r []rpc.Pkg
 	var err error
 	var usedIndex int
 
-	by := getSearchBy(config.SearchBy)
+	by := getSearchBy(searchBy)
 
 	if len(pkgS) == 0 {
 		return nil, nil
@@ -111,7 +108,7 @@ func narrowSearch(pkgS []string, sortS bool) (aurQuery, error) {
 
 	if len(pkgS) == 1 {
 		if sortS {
-			sort.Sort(aurQuery(r))
+			sort.Slice(aurQuery(r), SortAURQuery(r, sortBy, settings.TopDown))
 		}
 		return r, err
 	}
@@ -139,40 +136,40 @@ func narrowSearch(pkgS []string, sortS bool) (aurQuery, error) {
 	}
 
 	if sortS {
-		sort.Sort(aq)
+		sort.Slice(aq, SortAURQuery(aq, sortBy, settings.TopDown))
 	}
 
 	return aq, err
 }
 
 // SyncSearch presents a query to the local repos and to the AUR.
-func syncSearch(pkgS []string, dbExecutor db.Executor) (err error) {
-	pkgS = query.RemoveInvalidTargets(pkgS, config.Runtime.Mode)
+func syncSearch(pkgS []string, rt *runtime.Runtime) (err error) {
+	pkgS = query.RemoveInvalidTargets(pkgS, rt.Mode)
 	var aurErr error
 	var aq aurQuery
 	var pq repoQuery
 
-	if config.Runtime.Mode == settings.ModeAUR || config.Runtime.Mode == settings.ModeAny {
-		aq, aurErr = narrowSearch(pkgS, true)
+	if rt.Mode == settings.ModeAUR || rt.Mode == settings.ModeAny {
+		aq, aurErr = narrowSearch(pkgS, true, rt.Config.SearchBy, rt.Config.SortBy)
 	}
-	if config.Runtime.Mode == settings.ModeRepo || config.Runtime.Mode == settings.ModeAny {
-		pq = queryRepo(pkgS, dbExecutor)
+	if rt.Mode == settings.ModeRepo || rt.Mode == settings.ModeAny {
+		pq = queryRepo(pkgS, rt.DB, rt.Config.SortMode)
 	}
 
-	switch config.SortMode {
+	switch rt.Config.SortMode {
 	case settings.TopDown:
-		if config.Runtime.Mode == settings.ModeRepo || config.Runtime.Mode == settings.ModeAny {
-			pq.printSearch(dbExecutor)
+		if rt.Mode == settings.ModeRepo || rt.Mode == settings.ModeAny {
+			pq.printSearch(rt.DB, rt.Config.SearchMode, rt.Config.SortMode)
 		}
-		if config.Runtime.Mode == settings.ModeAUR || config.Runtime.Mode == settings.ModeAny {
-			aq.printSearch(1, dbExecutor)
+		if rt.Mode == settings.ModeAUR || rt.Mode == settings.ModeAny {
+			aq.printSearch(rt.DB, 1, rt.Config.SearchMode, rt.Config.SortMode)
 		}
 	case settings.BottomUp:
-		if config.Runtime.Mode == settings.ModeAUR || config.Runtime.Mode == settings.ModeAny {
-			aq.printSearch(1, dbExecutor)
+		if rt.Mode == settings.ModeAUR || rt.Mode == settings.ModeAny {
+			aq.printSearch(rt.DB, 1, rt.Config.SearchMode, rt.Config.SortMode)
 		}
-		if config.Runtime.Mode == settings.ModeRepo || config.Runtime.Mode == settings.ModeAny {
-			pq.printSearch(dbExecutor)
+		if rt.Mode == settings.ModeRepo || rt.Mode == settings.ModeAny {
+			pq.printSearch(rt.DB, rt.Config.SearchMode, rt.Config.SortMode)
 		}
 	default:
 		return errors.New(text.T("invalid sort mode. Fix with yay -Y --bottomup --save"))
@@ -187,12 +184,12 @@ func syncSearch(pkgS []string, dbExecutor db.Executor) (err error) {
 }
 
 // SyncInfo serves as a pacman -Si for repo packages and AUR packages.
-func syncInfo(cmdArgs *settings.Arguments, pkgS []string, dbExecutor db.Executor) error {
+func syncInfo(cmdArgs *settings.Arguments, pkgS []string, rt *runtime.Runtime) error {
 	var info []*rpc.Pkg
 	var err error
 	missing := false
-	pkgS = query.RemoveInvalidTargets(pkgS, config.Runtime.Mode)
-	aurS, repoS := packageSlices(pkgS, dbExecutor)
+	pkgS = query.RemoveInvalidTargets(pkgS, rt.Mode)
+	aurS, repoS := packageSlices(pkgS, rt.DB, rt.Mode)
 
 	if len(aurS) != 0 {
 		noDB := make([]string, 0, len(aurS))
@@ -202,7 +199,7 @@ func syncInfo(cmdArgs *settings.Arguments, pkgS []string, dbExecutor db.Executor
 			noDB = append(noDB, name)
 		}
 
-		info, err = query.AURInfoPrint(noDB, config.RequestSplitN)
+		info, err = query.AURInfoPrint(noDB, rt.Config.RequestSplitN)
 		if err != nil {
 			missing = true
 			text.EPrintln(err)
@@ -214,7 +211,7 @@ func syncInfo(cmdArgs *settings.Arguments, pkgS []string, dbExecutor db.Executor
 		arguments := cmdArgs.Copy()
 		arguments.ClearTargets()
 		arguments.AddTarget(repoS...)
-		err = config.Runtime.CmdRunner.Show(passToPacman(arguments))
+		err = rt.CmdRunner.Show(passToPacman(rt, arguments))
 
 		if err != nil {
 			return err
@@ -227,7 +224,7 @@ func syncInfo(cmdArgs *settings.Arguments, pkgS []string, dbExecutor db.Executor
 
 	if len(info) != 0 {
 		for _, pkg := range info {
-			PrintInfo(pkg, cmdArgs.ExistsDouble("i"))
+			PrintInfo(pkg, rt.Config.AURURL, cmdArgs.ExistsDouble("i"))
 		}
 	}
 
@@ -239,25 +236,25 @@ func syncInfo(cmdArgs *settings.Arguments, pkgS []string, dbExecutor db.Executor
 }
 
 // Search handles repo searches. Creates a RepoSearch struct.
-func queryRepo(pkgInputN []string, dbExecutor db.Executor) repoQuery {
+func queryRepo(pkgInputN []string, dbExecutor db.Executor, sortOrder enum) repoQuery {
 	s := repoQuery(dbExecutor.SyncPackages(pkgInputN...))
 
-	if config.SortMode == settings.BottomUp {
-		s.Reverse()
+	if sortOrder == settings.BottomUp {
+		Reverse(s)
 	}
 	return s
 }
 
 // PackageSlices separates an input slice into aur and repo slices
-func packageSlices(toCheck []string, dbExecutor db.Executor) (aur, repo []string) {
+func packageSlices(toCheck []string, dbExecutor db.Executor, mode settings.TargetMode) (aur, repo []string) {
 	for _, _pkg := range toCheck {
 		dbName, name := text.SplitDBFromName(_pkg)
 		found := false
 
-		if dbName == "aur" || config.Runtime.Mode == settings.ModeAUR {
+		if dbName == "aur" || mode == settings.ModeAUR {
 			aur = append(aur, _pkg)
 			continue
-		} else if dbName != "" || config.Runtime.Mode == settings.ModeRepo {
+		} else if dbName != "" || mode == settings.ModeRepo {
 			repo = append(repo, _pkg)
 			continue
 		}
