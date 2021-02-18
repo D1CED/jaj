@@ -67,7 +67,7 @@ func ContinueTask(s string, cont, noConfirm bool) bool {
 
 	Info(Bold(s), Bold(postFix))
 
-	if _, err := fmt.Fscanln(In, &response); err != nil {
+	if _, err := fmt.Fscanln(in, &response); err != nil {
 		return cont
 	}
 

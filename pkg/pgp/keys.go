@@ -91,7 +91,7 @@ func CheckPgpKeys(bases []dep.Base, srcinfos map[string]*gosrc.Srcinfo,
 func importKeys(keys []string, gpgBin, gpgFlags string) error {
 	args := append(strings.Fields(gpgFlags), "--recv-keys")
 	cmd := exec.Command(gpgBin, append(args, keys...)...)
-	cmd.Stdin, cmd.Stdout, cmd.Stderr = text.In, text.Out, text.ErrOut
+	cmd.Stdin, cmd.Stdout, cmd.Stderr = text.AllPorts()
 
 	text.OperationInfoln(text.T("Importing keys with gpg..."))
 	err := cmd.Run()

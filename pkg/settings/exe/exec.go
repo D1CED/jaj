@@ -23,7 +23,7 @@ type OSRunner struct {
 }
 
 func (r *OSRunner) Show(cmd *exec.Cmd) error {
-	cmd.Stdin, cmd.Stdout, cmd.Stderr = text.In, text.Out, text.ErrOut
+	cmd.Stdin, cmd.Stdout, cmd.Stderr = text.AllPorts()
 	err := cmd.Run()
 	if err != nil {
 		return errEmpty

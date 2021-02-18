@@ -128,21 +128,21 @@ func TestImportKeys(t *testing.T) {
 		},
 	}
 
-	text.Out = ioutil.Discard
-
-	for _, tt := range casetests {
-		err := importKeys(tt.keys, "gpg", fmt.Sprintf("--homedir %s --keyserver 127.0.0.1", keyringDir))
-		if !tt.wantError {
-			if err != nil {
-				t.Fatalf("Got error %q, want no error", err)
-			}
-		} else {
-			// Here, we want to see the error.
-			if err == nil {
-				t.Fatalf("Got no error; want error")
+	text.CaptureOutput(nil, nil, func() {
+		for _, tt := range casetests {
+			err := importKeys(tt.keys, "gpg", fmt.Sprintf("--homedir %s --keyserver 127.0.0.1", keyringDir))
+			if !tt.wantError {
+				if err != nil {
+					t.Fatalf("Got error %q, want no error", err)
+				}
+			} else {
+				// Here, we want to see the error.
+				if err == nil {
+					t.Fatalf("Got no error; want error")
+				}
 			}
 		}
-	}
+	})
 }
 
 func makeSrcinfo(pkgbase string, pgpkeys ...string) *gosrc.Srcinfo {
@@ -248,25 +248,26 @@ func TestCheckPgpKeys(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 
 			buf := &bytes.Buffer{}
-			text.Out = buf
+			text.CaptureOutput(buf, nil, func() {
 
-			err := CheckPgpKeys([]dep.Base{tt.pkgs}, tt.srcinfos, "gpg",
-				fmt.Sprintf("--homedir %s --keyserver 127.0.0.1", keyringDir), true)
-			if !tt.wantError {
-				if err != nil {
-					t.Fatalf("Got error %q, want no error", err)
+				err := CheckPgpKeys([]dep.Base{tt.pkgs}, tt.srcinfos, "gpg",
+					fmt.Sprintf("--homedir %s --keyserver 127.0.0.1", keyringDir), true)
+				if !tt.wantError {
+					if err != nil {
+						t.Fatalf("Got error %q, want no error", err)
+					}
+
+					splitLines := strings.Split(buf.String(), "\n")
+					sort.Strings(splitLines)
+
+					cupaloy.SnapshotT(t, strings.Join(splitLines, "\n"))
+					return
 				}
-
-				splitLines := strings.Split(buf.String(), "\n")
-				sort.Strings(splitLines)
-
-				cupaloy.SnapshotT(t, strings.Join(splitLines, "\n"))
-				return
-			}
-			// Here, we want to see the error.
-			if err == nil {
-				t.Fatalf("Got no error; want error")
-			}
+				// Here, we want to see the error.
+				if err == nil {
+					t.Fatalf("Got no error; want error")
+				}
+			})
 		})
 	}
 }

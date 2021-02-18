@@ -2,7 +2,6 @@ package upgrade
 
 import (
 	"bytes"
-	"io/ioutil"
 	"os/exec"
 	"strconv"
 	"testing"
@@ -70,9 +69,10 @@ func Test_upAUR(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 
 			buf := &bytes.Buffer{}
-			text.Out = buf
-			got := UpAUR(tt.args.remote, tt.args.aurdata, tt.args.timeUpdate)
-			assert.EqualValues(t, tt.want, got)
+			text.CaptureOutput(buf, nil, func() {
+				got := UpAUR(tt.args.remote, tt.args.aurdata, tt.args.timeUpdate)
+				assert.EqualValues(t, tt.want, got)
+			})
 
 			cupaloy.SnapshotT(t, buf.Bytes())
 		})
@@ -261,15 +261,14 @@ func Test_upDevel(t *testing.T) {
 		},
 	}
 
-	text.Out = ioutil.Discard
-	text.ErrOut = ioutil.Discard
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			config.Runtime.CmdRunner.(*MockRunner).t = t
-			got := UpDevel(tt.args.remote, tt.args.aurdata, &tt.args.cached)
-			assert.ElementsMatch(t, tt.want, got)
-			assert.Equal(t, tt.finalLen, len(tt.args.cached.OriginsByPackage))
-		})
-	}
+	text.CaptureOutput(nil, nil, func() {
+		for _, tt := range tests {
+			t.Run(tt.name, func(t *testing.T) {
+				config.Runtime.CmdRunner.(*MockRunner).t = t
+				got := UpDevel(tt.args.remote, tt.args.aurdata, &tt.args.cached)
+				assert.ElementsMatch(t, tt.want, got)
+				assert.Equal(t, tt.finalLen, len(tt.args.cached.OriginsByPackage))
+			})
+		}
+	})
 }

@@ -90,7 +90,7 @@ func getInput(defaultValue string) (string, error) {
 		return defaultValue, nil
 	}
 
-	reader := bufio.NewReader(text.In)
+	reader := bufio.NewReader(text.In())
 
 	buf, overflow, err := reader.ReadLine()
 	if err != nil {

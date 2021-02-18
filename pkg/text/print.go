@@ -22,68 +22,79 @@ const (
 var cachedColumnCount = -1
 
 var (
-	Out    io.Writer
-	ErrOut io.Writer
-	In     io.Reader
+	out    io.Writer
+	errOut io.Writer
+
+	in io.Reader = os.Stdin
 )
+
+func AllPorts() (i io.Reader, o, e io.Writer) {
+	return in, out, errOut
+}
+
+func In() io.Reader {
+	return in
+}
 
 // CaptureOutput takes two io.Writer and runs a function so that the output gets written to those.
 // If you supply nil for the writers the output will be discarded.
 //
 // Be very careful with concurrent use!!!
 // No writing function may run concurrently.
-func CaptureOutput(out, errOut io.Writer, f func()) {
-	if out == nil {
-		out = ioutil.Discard
+func CaptureOutput(out2, errOut2 io.Writer, f func()) {
+	if out2 == nil {
+		out2 = ioutil.Discard
 	}
-	if errOut == nil {
-		errOut = ioutil.Discard
+	if errOut2 == nil {
+		errOut2 = ioutil.Discard
 	}
 
-	safeOut := Out
-	safeErrOut := ErrOut
+	safeOut := out
+	safeErrOut := errOut
 
-	Out = out
-	ErrOut = errOut
+	defer func() {
+		out = safeOut
+		errOut = safeErrOut
+	}()
+
+	out = out2
+	errOut = errOut2
 
 	f()
-
-	Out = safeOut
-	ErrOut = safeErrOut
 }
 
 func Print(a ...interface{}) {
-	fmt.Fprint(Out, a...)
+	fmt.Fprint(out, a...)
 }
 
 func Println(a ...interface{}) {
-	fmt.Fprintln(Out, a...)
+	fmt.Fprintln(out, a...)
 }
 
 func Printf(format string, a ...interface{}) {
-	fmt.Fprintf(Out, format, a...)
+	fmt.Fprintf(out, format, a...)
 }
 
 func EPrint(a ...interface{}) {
-	fmt.Fprint(ErrOut, a...)
+	fmt.Fprint(errOut, a...)
 }
 
 func EPrintln(a ...interface{}) {
-	fmt.Fprintln(ErrOut, a...)
+	fmt.Fprintln(errOut, a...)
 }
 
 func EPrintf(format string, a ...interface{}) {
-	fmt.Fprintf(ErrOut, format, a...)
+	fmt.Fprintf(errOut, format, a...)
 }
 
 func OperationInfoln(a ...interface{}) {
-	fmt.Fprint(Out, append([]interface{}{Bold(Cyan(opSymbol + " ")), boldCode}, a...)...)
-	fmt.Fprintln(Out, ResetCode)
+	fmt.Fprint(out, append([]interface{}{Bold(Cyan(opSymbol + " ")), boldCode}, a...)...)
+	fmt.Fprintln(out, ResetCode)
 }
 
 func OperationInfo(a ...interface{}) {
-	fmt.Fprint(Out, append([]interface{}{Bold(Cyan(opSymbol + " ")), boldCode}, a...)...)
-	fmt.Fprint(Out, ResetCode)
+	fmt.Fprint(out, append([]interface{}{Bold(Cyan(opSymbol + " ")), boldCode}, a...)...)
+	fmt.Fprint(out, ResetCode)
 }
 
 func SprintOperationInfo(a ...interface{}) string {
@@ -91,11 +102,11 @@ func SprintOperationInfo(a ...interface{}) string {
 }
 
 func Info(a ...interface{}) {
-	fmt.Fprint(Out, append([]interface{}{Bold(Green(arrow + " "))}, a...)...)
+	fmt.Fprint(out, append([]interface{}{Bold(Green(arrow + " "))}, a...)...)
 }
 
 func Infoln(a ...interface{}) {
-	fmt.Fprintln(Out, append([]interface{}{Bold(Green(arrow))}, a...)...)
+	fmt.Fprintln(out, append([]interface{}{Bold(Green(arrow))}, a...)...)
 }
 
 func SprintWarn(a ...interface{}) string {
@@ -103,11 +114,11 @@ func SprintWarn(a ...interface{}) string {
 }
 
 func Warn(a ...interface{}) {
-	fmt.Fprint(Out, append([]interface{}{Bold(yellow(smallArrow + " "))}, a...)...)
+	fmt.Fprint(out, append([]interface{}{Bold(yellow(smallArrow + " "))}, a...)...)
 }
 
 func Warnln(a ...interface{}) {
-	fmt.Fprintln(Out, append([]interface{}{Bold(yellow(smallArrow))}, a...)...)
+	fmt.Fprintln(out, append([]interface{}{Bold(yellow(smallArrow))}, a...)...)
 }
 
 func SprintError(a ...interface{}) string {
@@ -115,11 +126,11 @@ func SprintError(a ...interface{}) string {
 }
 
 func Error(a ...interface{}) {
-	fmt.Fprint(ErrOut, append([]interface{}{Bold(Red(smallArrow + " "))}, a...)...)
+	fmt.Fprint(errOut, append([]interface{}{Bold(Red(smallArrow + " "))}, a...)...)
 }
 
 func Errorln(a ...interface{}) {
-	fmt.Fprintln(ErrOut, append([]interface{}{Bold(Red(smallArrow))}, a...)...)
+	fmt.Fprintln(errOut, append([]interface{}{Bold(Red(smallArrow))}, a...)...)
 }
 
 func getColumnCount() int {
@@ -146,7 +157,7 @@ func PrintInfoValue(key string, values ...string) {
 
 	str := fmt.Sprintf(Bold("%-16s: "), key)
 	if len(values) == 0 || (len(values) == 1 && values[0] == "") {
-		fmt.Fprintf(Out, "%s%s\n", str, gotext.Get("None"))
+		fmt.Fprintf(out, "%s%s\n", str, gotext.Get("None"))
 		return
 	}
 

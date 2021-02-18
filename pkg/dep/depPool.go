@@ -494,7 +494,7 @@ func providerMenu(dep string, providers providers, noConfirm bool) *query.Pkg {
 			return providers.Pkgs[0]
 		}
 
-		reader := bufio.NewReader(text.In)
+		reader := bufio.NewReader(text.In())
 		numberBuf, overflow, err := reader.ReadLine()
 		if err != nil {
 			text.EPrintln(err)

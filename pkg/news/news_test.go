@@ -109,13 +109,12 @@ func TestPrintNewsFeed(t *testing.T) {
 				BodyString(sampleNews)
 
 			buf := &bytes.Buffer{}
-			text.Out = buf
-
-			err := PrintNewsFeed(tt.args.cutOffDate, tt.args.sortMode, tt.args.all, tt.args.quiet)
-			assert.NoError(t, err)
+			text.CaptureOutput(buf, nil, func() {
+				err := PrintNewsFeed(tt.args.cutOffDate, tt.args.sortMode, tt.args.all, tt.args.quiet)
+				assert.NoError(t, err)
+			})
 
 			cupaloy.SnapshotT(t, buf.Bytes())
-			text.Out = nil
 		})
 	}
 }

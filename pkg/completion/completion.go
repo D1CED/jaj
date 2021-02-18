@@ -33,7 +33,8 @@ func Show(dbExecutor PkgSynchronizer, aurURL, completionPath string, interval in
 	}
 	defer in.Close()
 
-	_, err = io.Copy(text.Out, in)
+	_, out, _ := text.AllPorts()
+	_, err = io.Copy(out, in)
 	return err
 }
 

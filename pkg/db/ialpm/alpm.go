@@ -203,7 +203,7 @@ func (ae *AlpmExecutor) questionCallback() func(question alpm.QuestionAny) {
 				break
 			}
 
-			reader := bufio.NewReader(text.In)
+			reader := bufio.NewReader(text.In())
 			numberBuf, overflow, err := reader.ReadLine()
 			if err != nil {
 				text.Errorln(err)

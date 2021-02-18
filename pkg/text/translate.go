@@ -18,9 +18,8 @@ func Init(localePath string) {
 
 	gotext.Configure(localePath, os.Getenv("LANG"), "yay")
 
-	In = os.Stdin
-	Out = os.Stdout
-	ErrOut = os.Stderr
+	out = os.Stdout
+	errOut = os.Stderr
 }
 
 func T(s TrTemplate) string { return gotext.Get(string(s)) }

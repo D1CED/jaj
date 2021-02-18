@@ -344,7 +344,7 @@ func displayNumberMenu(pkgS []string, dbExecutor db.Executor, cmdArgs *settings.
 	text.Infoln(text.T("Packages to install (eg: 1 2 3, 1-3 or ^4)"))
 	text.Info()
 
-	reader := bufio.NewReader(text.In)
+	reader := bufio.NewReader(text.In())
 
 	numberBuf, overflow, err := reader.ReadLine()
 	if err != nil {

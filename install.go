@@ -788,7 +788,7 @@ func editPkgbuilds(bases []dep.Base, srcinfos map[string]*gosrc.Srcinfo) error {
 		editor, editorArgs := editor()
 		editorArgs = append(editorArgs, pkgbuilds...)
 		editcmd := exec.Command(editor, editorArgs...)
-		editcmd.Stdin, editcmd.Stdout, editcmd.Stderr = text.In, text.Out, text.ErrOut
+		editcmd.Stdin, editcmd.Stdout, editcmd.Stderr = text.AllPorts()
 		err := editcmd.Run()
 		if err != nil {
 			return errors.New(text.Tf("editor did not exit successfully, aborting: %s", err))
