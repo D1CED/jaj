@@ -74,24 +74,23 @@ func TestNewInfoStore(t *testing.T) {
 		},
 	}
 
-	text.Out = ioutil.Discard
 	ebuf := &bytes.Buffer{}
-	text.ErrOut = ebuf
 
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			got := NewInfoStore(tt.args.filePath, tt.args.runner, tt.args.cmdBuilder)
-			assert.NotNil(t, got)
-			assert.Equal(t, []string{"--a", "--b"}, got.CmdBuilder.GitFlags)
-			assert.Equal(t, tt.args.cmdBuilder, got.CmdBuilder)
-			assert.Equal(t, tt.args.runner, got.Runner)
-			assert.Equal(t, "/tmp/a.json", got.FilePath)
+	text.CaptureOutput(nil, ebuf, func() {
+		for _, tt := range tests {
+			t.Run(tt.name, func(t *testing.T) {
+				got := NewInfoStore(tt.args.filePath, tt.args.runner, tt.args.cmdBuilder)
+				assert.NotNil(t, got)
+				assert.Equal(t, []string{"--a", "--b"}, got.CmdBuilder.GitFlags)
+				assert.Equal(t, tt.args.cmdBuilder, got.CmdBuilder)
+				assert.Equal(t, tt.args.runner, got.Runner)
+				assert.Equal(t, "/tmp/a.json", got.FilePath)
 
-			t.Log(ebuf)
-			ebuf.Reset()
-		})
-	}
-
+				t.Log(ebuf)
+				ebuf.Reset()
+			})
+		}
+	})
 }
 
 type MockRunner struct {
@@ -230,16 +229,19 @@ func TestInfoStore_NeedsUpdate(t *testing.T) {
 			want: false,
 		},
 	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			v := &InfoStore{
-				Runner:     tt.fields.Runner,
-				CmdBuilder: tt.fields.CmdBuilder,
-			}
-			got := v.NeedsUpdate(tt.args.infos)
-			assert.Equal(t, tt.want, got)
-		})
-	}
+
+	text.CaptureOutput(nil, nil, func() {
+		for _, tt := range tests {
+			t.Run(tt.name, func(t *testing.T) {
+				v := &InfoStore{
+					Runner:     tt.fields.Runner,
+					CmdBuilder: tt.fields.CmdBuilder,
+				}
+				got := v.NeedsUpdate(tt.args.infos)
+				assert.Equal(t, tt.want, got)
+			})
+		}
+	})
 }
 
 func TestInfoStore_Update(t *testing.T) {
@@ -285,24 +287,27 @@ func TestInfoStore_Update(t *testing.T) {
 			}
 			var mux sync.Mutex
 			var wg sync.WaitGroup
-			wg.Add(1)
-			v.Update(tt.args.pkgName, tt.args.sources, &mux, &wg)
-			wg.Wait()
-			assert.Len(t, tt.fields.OriginsByPackage, 1)
 
-			marshalledinfo, err := json.MarshalIndent(tt.fields.OriginsByPackage, "", "\t")
-			assert.NoError(t, err)
+			text.CaptureOutput(nil, nil, func() {
+				wg.Add(1)
+				v.Update(tt.args.pkgName, tt.args.sources, &mux, &wg)
+				wg.Wait()
+				assert.Len(t, tt.fields.OriginsByPackage, 1)
 
-			cupaloy.SnapshotT(t, marshalledinfo)
+				marshalledinfo, err := json.MarshalIndent(tt.fields.OriginsByPackage, "", "\t")
+				assert.NoError(t, err)
 
-			v.Load()
-			t.Log(v.OriginsByPackage)
-			assert.Len(t, tt.fields.OriginsByPackage, 1)
+				cupaloy.SnapshotT(t, marshalledinfo)
 
-			marshalledinfo, err = json.MarshalIndent(tt.fields.OriginsByPackage, "", "\t")
-			assert.NoError(t, err)
+				v.Load()
+				t.Log(v.OriginsByPackage)
+				assert.Len(t, tt.fields.OriginsByPackage, 1)
 
-			cupaloy.SnapshotT(t, marshalledinfo)
+				marshalledinfo, err = json.MarshalIndent(tt.fields.OriginsByPackage, "", "\t")
+				assert.NoError(t, err)
+
+				cupaloy.SnapshotT(t, marshalledinfo)
+			})
 		})
 	}
 }
