@@ -30,7 +30,7 @@ Step 1
 
   completion -> db (not possible, but use a smaller interface) [done]
 
-  settings -> vcs
+  settings -> vcs [done]
 
   intrange -> stringset (ParseNumberMenu should be moved) [done]
 
@@ -68,8 +68,9 @@ settings
 
   parser.go: rpc.AURURL
 
-
+Investigate merging putting Arguments inside Runtime
 More emphasis on pkg/settings/exec. Needs to play well with pkg/text
+Split parsing off of settings.
 
 ::
 
@@ -95,3 +96,29 @@ More emphasis on pkg/settings/exec. Needs to play well with pkg/text
     pgp: dep, text
 
     main: *
+
+Now::
+
+    db: -
+    intrange: -
+    multierror: -
+    stringset: -
+    text: -
+    
+    completion: text db
+    settings: text
+    exe: text
+    
+    news: text settings
+    query: intrange multierror stringset text settings db
+    vcs: text exe
+    
+    dep: stringset text query settings db
+    runtime: vcs exe settings db
+    upgrade: intrange text vcs query db
+    
+    db/ialpm: text upgrade settings db
+    pgp: text dep
+
+    main: *
+    

@@ -1,14 +1,239 @@
 package settings
 
 import (
-	"os"
 	"strconv"
 	"strings"
 
 	rpc "github.com/mikkeloscar/aur"
+
+	"github.com/Jguer/yay/v10/pkg/settings/parser"
 )
 
-func NeedRoot(a *Arguments, mode TargetMode) bool {
+var isArg = []string{
+	"-", "--",
+	"ask",
+	"D", "database",
+	"Q", "query",
+	"R", "remove",
+	"S", "sync",
+	"T", "deptest",
+	"U", "upgrade",
+	"F", "files",
+	"V", "version",
+	"h", "help",
+	"Y", "yay",
+	"P", "show",
+	"G", "getpkgbuild",
+	"b", "dbpath",
+	"r", "root",
+	"v", "verbose",
+	"arch",
+	"cachedir",
+	"color",
+	"config",
+	"debug",
+	"gpgdir",
+	"hookdir",
+	"logfile",
+	"noconfirm",
+	"confirm",
+	"disable-download-timeout",
+	"sysroot",
+	"d", "nodeps",
+	"assume-installed",
+	"dbonly",
+	"absdir",
+	"noprogressbar",
+	"noscriptlet",
+	"p", "print",
+	"print-format",
+	"asdeps",
+	"asexplicit",
+	"ignore",
+	"ignoregroup",
+	"needed",
+	"overwrite",
+	"f", "force",
+	"c", "changelog",
+	"deps",
+	"e", "explicit",
+	"g", "groups",
+	"i", "info",
+	"k", "check",
+	"l", "list",
+	"m", "foreign",
+	"n", "native",
+	"o", "owns",
+	"file",
+	"q", "quiet",
+	"s", "search",
+	"t", "unrequired",
+	"u", "upgrades",
+	"cascade",
+	"nosave",
+	"recursive",
+	"unneeded",
+	"clean",
+	"sysupgrade",
+	"w", "downloadonly",
+	"y", "refresh",
+	"x", "regex",
+	"machinereadable",
+	// yay options
+	"aururl",
+	"save",
+	"afterclean", "cleanafter",
+	"noafterclean", "nocleanafter",
+	"devel",
+	"nodevel",
+	"timeupdate",
+	"notimeupdate",
+	"topdown",
+	"bottomup",
+	"completioninterval",
+	"sortby",
+	"searchby",
+	"redownload",
+	"redownloadall",
+	"noredownload",
+	"rebuild",
+	"rebuildall",
+	"rebuildtree",
+	"norebuild",
+	"batchinstall",
+	"nobatchinstall",
+	"answerclean",
+	"noanswerclean",
+	"answerdiff",
+	"noanswerdiff",
+	"answeredit",
+	"noansweredit",
+	"answerupgrade",
+	"noanswerupgrade",
+	"gpgflags",
+	"mflags",
+	"gitflags",
+	"builddir",
+	"editor",
+	"editorflags",
+	"makepkg",
+	"makepkgconf",
+	"nomakepkgconf",
+	"pacman",
+	"git",
+	"gpg",
+	"sudo",
+	"sudoflags",
+	"requestsplitn",
+	"sudoloop",
+	"nosudoloop",
+	"provides",
+	"noprovides",
+	"pgpfetch",
+	"nopgpfetch",
+	"upgrademenu",
+	"noupgrademenu",
+	"cleanmenu",
+	"nocleanmenu",
+	"diffmenu",
+	"nodiffmenu",
+	"editmenu",
+	"noeditmenu",
+	"useask",
+	"nouseask",
+	"combinedupgrade",
+	"nocombinedupgrade",
+	"a", "aur",
+	"repo",
+	"removemake",
+	"noremovemake",
+	"askremovemake",
+	"complete",
+	"stats",
+	"news",
+	"gendb",
+	"currentconfig",
+}
+
+var isOp = []string{
+	"V", "version",
+	"D", "database",
+	"F", "files",
+	"Q", "query",
+	"R", "remove",
+	"S", "sync",
+	"T", "deptest",
+	"U", "upgrade",
+	// yay specific
+	"Y", "yay",
+	"P", "show",
+	"G", "getpkgbuild",
+}
+
+var isGlobal = []string{
+	"b", "dbpath",
+	"r", "root",
+	"v", "verbose",
+	"arch",
+	"cachedir",
+	"color",
+	"config",
+	"debug",
+	"gpgdir",
+	"hookdir",
+	"logfile",
+	"noconfirm",
+	"confirm",
+}
+
+var hasParam = []string{
+	"dbpath", "b",
+	"root", "r",
+	"sysroot",
+	"config",
+	"ignore",
+	"assume-installed",
+	"overwrite",
+	"ask",
+	"cachedir",
+	"hookdir",
+	"logfile",
+	"ignoregroup",
+	"arch",
+	"print-format",
+	"gpgdir",
+	"color",
+	// yay params
+	"aururl",
+	"mflags",
+	"gpgflags",
+	"gitflags",
+	"builddir",
+	"absdir",
+	"editor",
+	"editorflags",
+	"makepkg",
+	"makepkgconf",
+	"pacman",
+	"git",
+	"gpg",
+	"sudo",
+	"sudoflags",
+	"requestsplitn",
+	"answerclean",
+	"answerdiff",
+	"answeredit",
+	"answerupgrade",
+	"completioninterval",
+	"sortby",
+	"searchby",
+}
+
+func NewFlagParser() *parser.Arguments {
+	return parser.New(isArg, isOp, isGlobal, hasParam)
+}
+
+func NeedRoot(a *parser.Arguments, mode TargetMode) bool {
 	if a.ExistsArg("h", "help") {
 		return false
 	}
@@ -62,158 +287,6 @@ func NeedRoot(a *Arguments, mode TargetMode) bool {
 	default:
 		return false
 	}
-}
-
-func isArg(arg string) bool {
-	switch arg {
-	case "-", "--":
-	case "ask":
-	case "D", "database":
-	case "Q", "query":
-	case "R", "remove":
-	case "S", "sync":
-	case "T", "deptest":
-	case "U", "upgrade":
-	case "F", "files":
-	case "V", "version":
-	case "h", "help":
-	case "Y", "yay":
-	case "P", "show":
-	case "G", "getpkgbuild":
-	case "b", "dbpath":
-	case "r", "root":
-	case "v", "verbose":
-	case "arch":
-	case "cachedir":
-	case "color":
-	case "config":
-	case "debug":
-	case "gpgdir":
-	case "hookdir":
-	case "logfile":
-	case "noconfirm":
-	case "confirm":
-	case "disable-download-timeout":
-	case "sysroot":
-	case "d", "nodeps":
-	case "assume-installed":
-	case "dbonly":
-	case "absdir":
-	case "noprogressbar":
-	case "noscriptlet":
-	case "p", "print":
-	case "print-format":
-	case "asdeps":
-	case "asexplicit":
-	case "ignore":
-	case "ignoregroup":
-	case "needed":
-	case "overwrite":
-	case "f", "force":
-	case "c", "changelog":
-	case "deps":
-	case "e", "explicit":
-	case "g", "groups":
-	case "i", "info":
-	case "k", "check":
-	case "l", "list":
-	case "m", "foreign":
-	case "n", "native":
-	case "o", "owns":
-	case "file":
-	case "q", "quiet":
-	case "s", "search":
-	case "t", "unrequired":
-	case "u", "upgrades":
-	case "cascade":
-	case "nosave":
-	case "recursive":
-	case "unneeded":
-	case "clean":
-	case "sysupgrade":
-	case "w", "downloadonly":
-	case "y", "refresh":
-	case "x", "regex":
-	case "machinereadable":
-	// yay options
-	case "aururl":
-	case "save":
-	case "afterclean", "cleanafter":
-	case "noafterclean", "nocleanafter":
-	case "devel":
-	case "nodevel":
-	case "timeupdate":
-	case "notimeupdate":
-	case "topdown":
-	case "bottomup":
-	case "completioninterval":
-	case "sortby":
-	case "searchby":
-	case "redownload":
-	case "redownloadall":
-	case "noredownload":
-	case "rebuild":
-	case "rebuildall":
-	case "rebuildtree":
-	case "norebuild":
-	case "batchinstall":
-	case "nobatchinstall":
-	case "answerclean":
-	case "noanswerclean":
-	case "answerdiff":
-	case "noanswerdiff":
-	case "answeredit":
-	case "noansweredit":
-	case "answerupgrade":
-	case "noanswerupgrade":
-	case "gpgflags":
-	case "mflags":
-	case "gitflags":
-	case "builddir":
-	case "editor":
-	case "editorflags":
-	case "makepkg":
-	case "makepkgconf":
-	case "nomakepkgconf":
-	case "pacman":
-	case "git":
-	case "gpg":
-	case "sudo":
-	case "sudoflags":
-	case "requestsplitn":
-	case "sudoloop":
-	case "nosudoloop":
-	case "provides":
-	case "noprovides":
-	case "pgpfetch":
-	case "nopgpfetch":
-	case "upgrademenu":
-	case "noupgrademenu":
-	case "cleanmenu":
-	case "nocleanmenu":
-	case "diffmenu":
-	case "nodiffmenu":
-	case "editmenu":
-	case "noeditmenu":
-	case "useask":
-	case "nouseask":
-	case "combinedupgrade":
-	case "nocombinedupgrade":
-	case "a", "aur":
-	case "repo":
-	case "removemake":
-	case "noremovemake":
-	case "askremovemake":
-	case "complete":
-	case "stats":
-	case "news":
-	case "gendb":
-	case "currentconfig":
-	default:
-		return false
-	}
-
-	return true
 }
 
 func handleConfig(config *Configuration, addFlags *AdditionalFlags, option, value string) bool {
@@ -373,153 +446,14 @@ func handleConfig(config *Configuration, addFlags *AdditionalFlags, option, valu
 	return true
 }
 
-func isOp(op string) bool {
-	switch op {
-	case "V", "version":
-	case "D", "database":
-	case "F", "files":
-	case "Q", "query":
-	case "R", "remove":
-	case "S", "sync":
-	case "T", "deptest":
-	case "U", "upgrade":
-	// yay specific
-	case "Y", "yay":
-	case "P", "show":
-	case "G", "getpkgbuild":
-	default:
-		return false
+func ParseCommandLine(a *parser.Arguments, args []string, config *Configuration, addFlags *AdditionalFlags) error {
+	if len(args) == 0 {
+		args = []string{"-Syu"}
 	}
 
-	return true
-}
-
-func isGlobal(op string) bool {
-	switch op {
-	case "b", "dbpath":
-	case "r", "root":
-	case "v", "verbose":
-	case "arch":
-	case "cachedir":
-	case "color":
-	case "config":
-	case "debug":
-	case "gpgdir":
-	case "hookdir":
-	case "logfile":
-	case "noconfirm":
-	case "confirm":
-	default:
-		return false
-	}
-
-	return true
-}
-
-func hasParam(arg string) bool {
-	switch arg {
-	case "dbpath", "b":
-	case "root", "r":
-	case "sysroot":
-	case "config":
-	case "ignore":
-	case "assume-installed":
-	case "overwrite":
-	case "ask":
-	case "cachedir":
-	case "hookdir":
-	case "logfile":
-	case "ignoregroup":
-	case "arch":
-	case "print-format":
-	case "gpgdir":
-	case "color":
-	// yay params
-	case "aururl":
-	case "mflags":
-	case "gpgflags":
-	case "gitflags":
-	case "builddir":
-	case "absdir":
-	case "editor":
-	case "editorflags":
-	case "makepkg":
-	case "makepkgconf":
-	case "pacman":
-	case "git":
-	case "gpg":
-	case "sudo":
-	case "sudoflags":
-	case "requestsplitn":
-	case "answerclean":
-	case "answerdiff":
-	case "answeredit":
-	case "answerupgrade":
-	case "completioninterval":
-	case "sortby":
-	case "searchby":
-	default:
-		return false
-	}
-
-	return true
-}
-
-func (a *Arguments) ParseCommandLine(config *Configuration, addFlags *AdditionalFlags) error {
-	args := os.Args[1:]
-	usedNext := false
-
-	if len(args) < 1 {
-		if _, err := a.parseShortOption("-Syu", ""); err != nil {
-			return err
-		}
-	} else {
-		for k, arg := range args {
-			var nextArg string
-
-			if usedNext {
-				usedNext = false
-				continue
-			}
-
-			if k+1 < len(args) {
-				nextArg = args[k+1]
-			}
-
-			var err error
-			switch {
-			case a.ExistsArg("--"):
-				a.AddTarget(arg)
-			case strings.HasPrefix(arg, "--"):
-				usedNext, err = a.parseLongOption(arg, nextArg)
-			case strings.HasPrefix(arg, "-"):
-				usedNext, err = a.parseShortOption(arg, nextArg)
-			default:
-				a.AddTarget(arg)
-			}
-
-			if err != nil {
-				return err
-			}
-		}
-	}
-
-	if a.Op == "" {
-		a.Op = "Y"
-	}
-
-	if a.ExistsArg("-") {
-		if err := a.parseStdin(); err != nil {
-			return err
-		}
-		a.DelArg("-")
-
-		file, err := os.Open("/dev/tty")
-		if err != nil {
-			return err
-		}
-
-		os.Stdin = file
+	err := a.Parse(args)
+	if err != nil {
+		return err
 	}
 
 	extractYayOptions(a, config, addFlags)
@@ -527,9 +461,9 @@ func (a *Arguments) ParseCommandLine(config *Configuration, addFlags *Additional
 	return nil
 }
 
-func extractYayOptions(a *Arguments, config *Configuration, addFlags *AdditionalFlags) {
+func extractYayOptions(a *parser.Arguments, config *Configuration, addFlags *AdditionalFlags) {
 	for option, value := range a.Options {
-		if handleConfig(config, addFlags, option, value.First()) {
+		if handleConfig(config, addFlags, option, parser.First(value)) {
 			a.DelArg(option)
 		}
 	}

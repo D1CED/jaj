@@ -10,6 +10,7 @@ import (
 	"github.com/Jguer/yay/v10/pkg/news"
 	"github.com/Jguer/yay/v10/pkg/query"
 	"github.com/Jguer/yay/v10/pkg/settings"
+	"github.com/Jguer/yay/v10/pkg/settings/parser"
 	"github.com/Jguer/yay/v10/pkg/settings/runtime"
 	"github.com/Jguer/yay/v10/pkg/text"
 )
@@ -135,7 +136,7 @@ getpkgbuild specific options:
     -f --force            Force download for existing ABS packages`)
 }
 
-func handleCmd(cmdArgs *settings.Arguments, rt *runtime.Runtime) error {
+func handleCmd(cmdArgs *parser.Arguments, rt *runtime.Runtime) error {
 	if cmdArgs.ExistsArg("h", "help") {
 		return handleHelp(cmdArgs, rt)
 	}
@@ -173,14 +174,14 @@ func handleCmd(cmdArgs *settings.Arguments, rt *runtime.Runtime) error {
 	return text.ErrT("unhandled operation")
 }
 
-func handleQuery(cmdArgs *settings.Arguments, rt *runtime.Runtime) error {
+func handleQuery(cmdArgs *parser.Arguments, rt *runtime.Runtime) error {
 	if cmdArgs.ExistsArg("u", "upgrades") {
 		return printUpdateList(cmdArgs, rt, cmdArgs.ExistsDouble("u", "sysupgrade"))
 	}
 	return rt.CmdRunner.Show(passToPacman(rt, cmdArgs))
 }
 
-func handleHelp(cmdArgs *settings.Arguments, rt *runtime.Runtime) error {
+func handleHelp(cmdArgs *parser.Arguments, rt *runtime.Runtime) error {
 	if cmdArgs.Op == "Y" || cmdArgs.Op == "yay" {
 		usage()
 		return nil
@@ -192,7 +193,7 @@ func handleVersion() {
 	text.Printf("yay v%s - libalpm v%s\n", yayVersion, alpm.Version())
 }
 
-func handlePrint(cmdArgs *settings.Arguments, rt *runtime.Runtime) (err error) {
+func handlePrint(cmdArgs *parser.Arguments, rt *runtime.Runtime) (err error) {
 	switch {
 	case cmdArgs.ExistsArg("d", "defaultconfig"):
 		tmpConfig := settings.DefaultConfig()
@@ -217,7 +218,7 @@ func handlePrint(cmdArgs *settings.Arguments, rt *runtime.Runtime) (err error) {
 	return err
 }
 
-func handleYay(cmdArgs *settings.Arguments, rt *runtime.Runtime) error {
+func handleYay(cmdArgs *parser.Arguments, rt *runtime.Runtime) error {
 	if cmdArgs.ExistsArg("gendb") {
 		return createDevelDB(rt)
 	}
@@ -233,16 +234,16 @@ func handleYay(cmdArgs *settings.Arguments, rt *runtime.Runtime) error {
 	return nil
 }
 
-func handleGetpkgbuild(cmdArgs *settings.Arguments, rt *runtime.Runtime) error {
+func handleGetpkgbuild(cmdArgs *parser.Arguments, rt *runtime.Runtime) error {
 	return getPkgbuilds(cmdArgs.Targets, rt, cmdArgs.ExistsArg("f", "force"))
 }
 
-func handleYogurt(cmdArgs *settings.Arguments, rt *runtime.Runtime) error {
+func handleYogurt(cmdArgs *parser.Arguments, rt *runtime.Runtime) error {
 	rt.Config.SearchMode = numberMenu
 	return displayNumberMenu(cmdArgs.Targets, cmdArgs, rt)
 }
 
-func handleSync(cmdArgs *settings.Arguments, rt *runtime.Runtime) error {
+func handleSync(cmdArgs *parser.Arguments, rt *runtime.Runtime) error {
 	targets := cmdArgs.Targets
 
 	if cmdArgs.ExistsArg("s", "search") {
@@ -280,7 +281,7 @@ func handleSync(cmdArgs *settings.Arguments, rt *runtime.Runtime) error {
 	return nil
 }
 
-func handleRemove(cmdArgs *settings.Arguments, rt *runtime.Runtime) error {
+func handleRemove(cmdArgs *parser.Arguments, rt *runtime.Runtime) error {
 	err := rt.CmdRunner.Show(passToPacman(rt, cmdArgs))
 	if err == nil {
 		rt.VCSStore.RemovePackage(cmdArgs.Targets)
@@ -290,7 +291,7 @@ func handleRemove(cmdArgs *settings.Arguments, rt *runtime.Runtime) error {
 }
 
 // NumberMenu presents a CLI for selecting packages to install.
-func displayNumberMenu(pkgS []string, cmdArgs *settings.Arguments, rt *runtime.Runtime) error {
+func displayNumberMenu(pkgS []string, cmdArgs *parser.Arguments, rt *runtime.Runtime) error {
 	var (
 		aurErr, repoErr error
 		aq              aurQuery
@@ -403,7 +404,7 @@ func displayNumberMenu(pkgS []string, cmdArgs *settings.Arguments, rt *runtime.R
 	return install(arguments, rt, true)
 }
 
-func syncList(cmdArgs *settings.Arguments, rt *runtime.Runtime) error {
+func syncList(cmdArgs *parser.Arguments, rt *runtime.Runtime) error {
 	aur := false
 
 	for i := len(cmdArgs.Targets) - 1; i >= 0; i-- {

@@ -7,6 +7,7 @@ import (
 	"github.com/Jguer/yay/v10/pkg/db"
 	"github.com/Jguer/yay/v10/pkg/query"
 	"github.com/Jguer/yay/v10/pkg/settings"
+	"github.com/Jguer/yay/v10/pkg/settings/parser"
 	"github.com/Jguer/yay/v10/pkg/settings/runtime"
 	"github.com/Jguer/yay/v10/pkg/stringset"
 	"github.com/Jguer/yay/v10/pkg/text"
@@ -198,7 +199,7 @@ func printNumberOfUpdates(rt *runtime.Runtime, enableDowngrade bool) error {
 	return nil
 }
 
-func printUpdateList(cmdArgs *settings.Arguments, rt *runtime.Runtime, enableDowngrade bool) error {
+func printUpdateList(cmdArgs *parser.Arguments, rt *runtime.Runtime, enableDowngrade bool) error {
 	targets := stringset.FromSlice(cmdArgs.Targets)
 	warnings := query.NewWarnings()
 

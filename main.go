@@ -9,6 +9,7 @@ import (
 
 	"github.com/Jguer/yay/v10/pkg/db/ialpm"
 	"github.com/Jguer/yay/v10/pkg/settings"
+	"github.com/Jguer/yay/v10/pkg/settings/parser"
 	"github.com/Jguer/yay/v10/pkg/settings/runtime"
 	"github.com/Jguer/yay/v10/pkg/text"
 )
@@ -16,7 +17,7 @@ import (
 // YayConf holds the current config values for yay.
 // var rt *runtime.Runtime
 
-func initAlpm(cmdArgs *settings.Arguments, pacmanConfigPath string) (*pacmanconf.Config, bool, error) {
+func initAlpm(cmdArgs *parser.Arguments, pacmanConfigPath string) (*pacmanconf.Config, bool, error) {
 	root := "/"
 	if value, _, exists := cmdArgs.GetArg("root", "r"); exists {
 		root = value
@@ -85,8 +86,8 @@ func appMain() (int, error) {
 	}
 
 	fl := &settings.AdditionalFlags{}
-	cmdArgs := settings.MakeArguments()
-	err = cmdArgs.ParseCommandLine(config, fl)
+	cmdArgs := settings.NewFlagParser()
+	err = settings.ParseCommandLine(cmdArgs, os.Args[1:], config, fl)
 	if err != nil {
 		return 1, err
 	}

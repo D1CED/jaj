@@ -20,6 +20,7 @@ import (
 	"github.com/Jguer/yay/v10/pkg/pgp"
 	"github.com/Jguer/yay/v10/pkg/query"
 	"github.com/Jguer/yay/v10/pkg/settings"
+	"github.com/Jguer/yay/v10/pkg/settings/parser"
 	"github.com/Jguer/yay/v10/pkg/settings/runtime"
 	"github.com/Jguer/yay/v10/pkg/stringset"
 	"github.com/Jguer/yay/v10/pkg/text"
@@ -28,7 +29,7 @@ import (
 
 const gitEmptyTree = "4b825dc642cb6eb9a060e54bf8d69288fbee4904"
 
-func asdeps(cmdArgs *settings.Arguments, rt *runtime.Runtime, pkgs []string) error {
+func asdeps(cmdArgs *parser.Arguments, rt *runtime.Runtime, pkgs []string) error {
 	if len(pkgs) == 0 {
 		return nil
 	}
@@ -44,7 +45,7 @@ func asdeps(cmdArgs *settings.Arguments, rt *runtime.Runtime, pkgs []string) err
 	return nil
 }
 
-func asexp(cmdArgs *settings.Arguments, rt *runtime.Runtime, pkgs []string) error {
+func asexp(cmdArgs *parser.Arguments, rt *runtime.Runtime, pkgs []string) error {
 	if len(pkgs) == 0 {
 		return nil
 	}
@@ -61,7 +62,7 @@ func asexp(cmdArgs *settings.Arguments, rt *runtime.Runtime, pkgs []string) erro
 }
 
 // Install handles package installs
-func install(cmdArgs *settings.Arguments, rt *runtime.Runtime, ignoreProviders bool) (err error) {
+func install(cmdArgs *parser.Arguments, rt *runtime.Runtime, ignoreProviders bool) (err error) {
 	var incompatible stringset.StringSet
 	var do *dep.Order
 
@@ -385,7 +386,7 @@ func install(cmdArgs *settings.Arguments, rt *runtime.Runtime, ignoreProviders b
 }
 
 func removeMake(do *dep.Order, rt *runtime.Runtime) error {
-	removeArguments := settings.MakeArguments()
+	removeArguments := settings.NewFlagParser()
 	err := removeArguments.AddArg("R", "u")
 	if err != nil {
 		return err
@@ -420,7 +421,7 @@ func inRepos(dbExecutor db.Executor, pkg string) bool {
 	return exists || len(dbExecutor.PackagesFromGroup(target.Name)) > 0
 }
 
-func earlyPacmanCall(cmdArgs *settings.Arguments, rt *runtime.Runtime) error {
+func earlyPacmanCall(cmdArgs *parser.Arguments, rt *runtime.Runtime) error {
 	arguments := cmdArgs.Copy()
 	arguments.Op = "S"
 	targets := cmdArgs.Targets
@@ -449,7 +450,7 @@ func earlyPacmanCall(cmdArgs *settings.Arguments, rt *runtime.Runtime) error {
 	return nil
 }
 
-func earlyRefresh(cmdArgs *settings.Arguments, rt *runtime.Runtime) error {
+func earlyRefresh(cmdArgs *parser.Arguments, rt *runtime.Runtime) error {
 	arguments := cmdArgs.Copy()
 	cmdArgs.DelArg("y", "refresh")
 	arguments.DelArg("u", "sysupgrade")
@@ -934,7 +935,7 @@ func downloadPkgbuildsSources(br BuildRun, bases []dep.Base, incompatible string
 }
 
 func buildInstallPkgbuilds(
-	cmdArgs *settings.Arguments,
+	cmdArgs *parser.Arguments,
 	rt *runtime.Runtime,
 	dp *dep.Pool,
 	do *dep.Order,
@@ -1108,9 +1109,9 @@ func buildInstallPkgbuilds(
 
 		// conflicts have been checked so answer y for them
 		if rt.Config.UseAsk && cmdArgs.ExistsArg("ask") {
-			ask, _ := strconv.Atoi(cmdArgs.Options["ask"].First())
+			ask, _ := strconv.Atoi(parser.First(cmdArgs.Options["ask"]))
 			uask := alpm.QuestionType(ask) | alpm.QuestionTypeConflictPkg
-			cmdArgs.Options["ask"].Set(fmt.Sprint(uask))
+			cmdArgs.Options["ask"] = []string{fmt.Sprint(uask)}
 		} else {
 			for _, split := range base {
 				if _, ok := conflicts[split.Name]; ok {

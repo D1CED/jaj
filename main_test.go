@@ -41,7 +41,7 @@ func TestPacmanConf(t *testing.T) {
 		},
 	}
 
-	pacmanConf, color, err := initAlpm(settings.MakeArguments(), "testdata/pacman.conf")
+	pacmanConf, color, err := initAlpm(settings.NewFlagParser(), "testdata/pacman.conf")
 	assert.Nil(t, err)
 	assert.NotNil(t, pacmanConf)
 	assert.Equal(t, color, false)

@@ -11,6 +11,7 @@ import (
 	"github.com/Jguer/yay/v10/pkg/db"
 	"github.com/Jguer/yay/v10/pkg/query"
 	"github.com/Jguer/yay/v10/pkg/settings"
+	"github.com/Jguer/yay/v10/pkg/settings/parser"
 	"github.com/Jguer/yay/v10/pkg/settings/runtime"
 	"github.com/Jguer/yay/v10/pkg/stringset"
 	"github.com/Jguer/yay/v10/pkg/text"
@@ -184,7 +185,7 @@ func syncSearch(pkgS []string, rt *runtime.Runtime) (err error) {
 }
 
 // SyncInfo serves as a pacman -Si for repo packages and AUR packages.
-func syncInfo(cmdArgs *settings.Arguments, pkgS []string, rt *runtime.Runtime) error {
+func syncInfo(cmdArgs *parser.Arguments, pkgS []string, rt *runtime.Runtime) error {
 	var info []*rpc.Pkg
 	var err error
 	missing := false

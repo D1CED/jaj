@@ -1,4 +1,4 @@
-package settings
+package parser
 
 import (
 	"bufio"
@@ -8,15 +8,17 @@ import (
 
 	"github.com/pkg/errors"
 
+	"github.com/Jguer/yay/v10/pkg/stringset"
 	"github.com/Jguer/yay/v10/pkg/text"
 )
 
-type Option struct {
+/*
+type option struct {
 	Global bool
 	Args   []string
 }
 
-func (o *Option) Add(args ...string) {
+func (o *option) Add(args ...string) {
 	if o.Args == nil {
 		o.Args = args
 		return
@@ -24,55 +26,138 @@ func (o *Option) Add(args ...string) {
 	o.Args = append(o.Args, args...)
 }
 
-func (o *Option) First() string {
+func (o *option) First() string {
 	if len(o.Args) == 0 {
 		return ""
 	}
 	return o.Args[0]
 }
 
-func (o *Option) Set(arg string) {
+func (o *option) Set(arg string) {
 	o.Args = []string{arg}
 }
 
-func (o *Option) String() string {
+func (o *option) String() string {
 	return fmt.Sprintf("Global:%v Args:%v", o.Global, o.Args)
+}
+*/
+
+func First(s []string) string {
+	if len(s) == 0 {
+		return ""
+	}
+	return s[0]
+}
+
+func add(a *Arguments, key string, values ...string) {
+	a.Options[key] = append(a.Options[key], values...)
 }
 
 // Arguments Parses command line arguments in a way we can interact with programmatically but
 // also in a way that can easily be passed to pacman later on.
 type Arguments struct {
 	Op      string
-	Options map[string]*Option
+	Options map[string][]string
 	Targets []string
+
+	isArg    stringset.StringSet
+	isOp     stringset.StringSet
+	isGlobal stringset.StringSet
+	hasParam stringset.StringSet
 }
 
-func MakeArguments() *Arguments {
+func New(isArg, isOp, isGlobal, hasParam []string) *Arguments {
 	return &Arguments{
-		"",
-		make(map[string]*Option),
-		make([]string, 0),
+		Op:      "",
+		Options: make(map[string][]string),
+		Targets: nil,
+
+		isArg:    stringset.FromSlice(isArg),
+		isOp:     stringset.FromSlice(isOp),
+		isGlobal: stringset.FromSlice(isGlobal),
+		hasParam: stringset.FromSlice(hasParam),
 	}
+}
+
+func (a *Arguments) Parse(args []string) error {
+	usedNext := false
+
+	for k, arg := range args {
+		var nextArg string
+
+		if usedNext {
+			usedNext = false
+			continue
+		}
+
+		if k+1 < len(args) {
+			nextArg = args[k+1]
+		}
+
+		var err error
+		switch {
+		case a.ExistsArg("--"):
+			a.AddTarget(arg)
+		case strings.HasPrefix(arg, "--"):
+			usedNext, err = a.parseLongOption(arg, nextArg)
+		case strings.HasPrefix(arg, "-"):
+			usedNext, err = a.parseShortOption(arg, nextArg)
+		default:
+			a.AddTarget(arg)
+		}
+
+		if err != nil {
+			return err
+		}
+	}
+
+	if a.Op == "" {
+		a.Op = "Y"
+	}
+
+	if a.ExistsArg("-") {
+		if err := a.parseStdin(); err != nil {
+			return err
+		}
+		a.DelArg("-")
+
+		file, err := os.Open("/dev/tty")
+		if err != nil {
+			return err
+		}
+
+		os.Stdin = file
+	}
+
+	return nil
 }
 
 func (a *Arguments) String() string {
 	return fmt.Sprintf("Op:%v Options:%+v Targets: %v", a.Op, a.Options, a.Targets)
 }
 
-func (a *Arguments) CreateOrAppendOption(option string, values ...string) {
-	if a.Options[option] == nil {
-		a.Options[option] = &Option{
-			Args: values,
-		}
+func (a *Arguments) CreateOrAppendOption(optionStr string, values ...string) {
+	if a.Options[optionStr] == nil {
+		a.Options[optionStr] = values
 	} else {
-		a.Options[option].Add(values...)
+		a.Options[optionStr] = append(a.Options[optionStr], values...)
 	}
 }
 
 func (a *Arguments) CopyGlobal() *Arguments {
-	cp := MakeArguments()
+	cp := &Arguments{
+		isArg:    a.isArg,
+		isOp:     a.isOp,
+		isGlobal: a.isGlobal,
+		hasParam: a.hasParam,
+
+		Op:      "",
+		Options: make(map[string][]string, len(a.Options)),
+		Targets: nil,
+	}
+
 	for k, v := range a.Options {
-		if v.Global {
+		if a.isGlobal.Get(k) {
 			cp.Options[k] = v
 		}
 	}
@@ -80,19 +165,24 @@ func (a *Arguments) CopyGlobal() *Arguments {
 	return cp
 }
 
-func (a *Arguments) Copy() (cp *Arguments) {
-	cp = MakeArguments()
+func (a *Arguments) Copy() *Arguments {
+	cp := &Arguments{
+		Op:       a.Op,
+		isArg:    a.isArg,
+		isOp:     a.isOp,
+		isGlobal: a.isGlobal,
+		hasParam: a.hasParam,
 
-	cp.Op = a.Op
+		Options: make(map[string][]string, len(a.Options)),
+		Targets: make([]string, len(a.Targets)),
+	}
 
 	for k, v := range a.Options {
 		cp.Options[k] = v
 	}
-
-	cp.Targets = make([]string, len(a.Targets))
 	copy(cp.Targets, a.Targets)
 
-	return
+	return cp
 }
 
 func (a *Arguments) DelArg(options ...string) {
@@ -111,19 +201,16 @@ func (a *Arguments) addOP(op string) error {
 }
 
 func (a *Arguments) addParam(option, arg string) error {
-	if !isArg(option) {
+	if !a.isArg.Get(option) {
 		return errors.New(text.Tf("invalid option '%s'", option))
 	}
 
-	if isOp(option) {
+	if a.isOp.Get(option) {
 		return a.addOP(option)
 	}
 
 	a.CreateOrAppendOption(option, strings.Split(arg, ",")...)
 
-	if isGlobal(option) {
-		a.Options[option].Global = true
-	}
 	return nil
 }
 
@@ -151,7 +238,7 @@ func (a *Arguments) GetArg(options ...string) (arg string, double, exists bool) 
 	for _, option := range options {
 		value, exists := a.Options[option]
 		if exists {
-			return value.First(), len(value.Args) >= 2, len(value.Args) >= 1
+			return First(value), len(value) >= 2, len(value) >= 1
 		}
 	}
 
@@ -161,25 +248,21 @@ func (a *Arguments) GetArg(options ...string) (arg string, double, exists bool) 
 func (a *Arguments) GetArgs(option string) (args []string) {
 	value, exists := a.Options[option]
 	if exists {
-		return value.Args
+		return value[0:len(value):len(value)]
 	}
 
 	return nil
 }
 
-func (a *Arguments) AddTarget(targets ...string) {
-	a.Targets = append(a.Targets, targets...)
-}
+func (a *Arguments) AddTarget(targets ...string) { a.Targets = append(a.Targets, targets...) }
 
-func (a *Arguments) ClearTargets() {
-	a.Targets = make([]string, 0)
-}
+func (a *Arguments) ClearTargets() { a.Targets = make([]string, 0) }
 
 // Multiple args acts as an OR operator
 func (a *Arguments) ExistsDouble(options ...string) bool {
 	for _, option := range options {
 		if value, exists := a.Options[option]; exists {
-			return len(value.Args) >= 2
+			return len(value) >= 2
 		}
 	}
 	return false
@@ -201,14 +284,14 @@ func (a *Arguments) FormatArgs() (args []string) {
 	}
 
 	for option, arg := range a.Options {
-		if arg.Global || option == "--" {
+		if a.isGlobal.Get(option) || option == "--" {
 			continue
 		}
 
 		formattedOption := formatArg(option)
-		for _, value := range arg.Args {
+		for _, value := range arg {
 			args = append(args, formattedOption)
-			if hasParam(option) {
+			if a.hasParam.Get(option) {
 				args = append(args, value)
 			}
 		}
@@ -218,14 +301,14 @@ func (a *Arguments) FormatArgs() (args []string) {
 
 func (a *Arguments) FormatGlobals() (args []string) {
 	for option, arg := range a.Options {
-		if !arg.Global {
+		if !a.isGlobal.Get(option) {
 			continue
 		}
 		formattedOption := formatArg(option)
 
-		for _, value := range arg.Args {
+		for _, value := range arg {
 			args = append(args, formattedOption)
-			if hasParam(option) {
+			if a.hasParam.Get(option) {
 				args = append(args, value)
 			}
 		}
@@ -246,7 +329,7 @@ func (a *Arguments) parseShortOption(arg, param string) (usedNext bool, err erro
 	for k, _char := range arg {
 		char := string(_char)
 
-		if hasParam(char) {
+		if a.hasParam.Get(char) {
 			if k < len(arg)-1 {
 				err = a.addParam(char, arg[k+1:])
 			} else {
@@ -281,7 +364,7 @@ func (a *Arguments) parseLongOption(arg, param string) (usedNext bool, err error
 	switch {
 	case len(split) == 2:
 		err = a.addParam(split[0], split[1])
-	case hasParam(arg):
+	case a.hasParam.Get(arg):
 		err = a.addParam(arg, param)
 		usedNext = true
 	default:

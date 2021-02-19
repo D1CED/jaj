@@ -9,13 +9,14 @@ import (
 	"github.com/Jguer/yay/v10/pkg/dep"
 	"github.com/Jguer/yay/v10/pkg/query"
 	"github.com/Jguer/yay/v10/pkg/settings"
+	"github.com/Jguer/yay/v10/pkg/settings/parser"
 	"github.com/Jguer/yay/v10/pkg/settings/runtime"
 	"github.com/Jguer/yay/v10/pkg/stringset"
 	"github.com/Jguer/yay/v10/pkg/text"
 )
 
 // CleanDependencies removes all dangling dependencies in system
-func cleanDependencies(rt *runtime.Runtime, cmdArgs *settings.Arguments, removeOptional bool) error {
+func cleanDependencies(rt *runtime.Runtime, cmdArgs *parser.Arguments, removeOptional bool) error {
 	hanging := hangingPackages(removeOptional, rt.DB)
 	if len(hanging) != 0 {
 		return cleanRemove(rt, cmdArgs, hanging)
@@ -25,7 +26,7 @@ func cleanDependencies(rt *runtime.Runtime, cmdArgs *settings.Arguments, removeO
 }
 
 // CleanRemove sends a full removal command to pacman with the pkgName slice
-func cleanRemove(rt *runtime.Runtime, cmdArgs *settings.Arguments, pkgNames []string) error {
+func cleanRemove(rt *runtime.Runtime, cmdArgs *parser.Arguments, pkgNames []string) error {
 	if len(pkgNames) == 0 {
 		return nil
 	}
@@ -37,7 +38,7 @@ func cleanRemove(rt *runtime.Runtime, cmdArgs *settings.Arguments, pkgNames []st
 	return rt.CmdRunner.Show(passToPacman(rt, arguments))
 }
 
-func syncClean(rt *runtime.Runtime, cmdArgs *settings.Arguments) error {
+func syncClean(rt *runtime.Runtime, cmdArgs *parser.Arguments) error {
 	keepInstalled := false
 	keepCurrent := false
 

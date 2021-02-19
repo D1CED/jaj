@@ -9,6 +9,7 @@ import (
 
 	"github.com/Jguer/yay/v10/pkg/settings"
 	"github.com/Jguer/yay/v10/pkg/settings/exe"
+	"github.com/Jguer/yay/v10/pkg/settings/parser"
 	"github.com/Jguer/yay/v10/pkg/settings/runtime"
 	"github.com/Jguer/yay/v10/pkg/text"
 )
@@ -57,7 +58,7 @@ func waitLock(dbPath string) {
 	}
 }
 
-func passToPacman(rt *runtime.Runtime, args *settings.Arguments) *exec.Cmd {
+func passToPacman(rt *runtime.Runtime, args *parser.Arguments) *exec.Cmd {
 	argArr := make([]string, 0, 32)
 
 	if settings.NeedRoot(args, rt.Mode) {
