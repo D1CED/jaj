@@ -69,7 +69,7 @@ func (set StringSet) Copy() StringSet {
 
 // FromSlice creates a new StringSet from an input slice
 func FromSlice(in []string) StringSet {
-	set := make(StringSet)
+	set := make(StringSet, len(in))
 
 	for _, v := range in {
 		set.Set(v)
@@ -87,10 +87,6 @@ func Make(in ...string) StringSet {
 func Equal(a, b StringSet) bool {
 	if a == nil && b == nil {
 		return true
-	}
-
-	if a == nil || b == nil {
-		return false
 	}
 
 	if len(a) != len(b) {
