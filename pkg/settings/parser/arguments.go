@@ -1,386 +1,206 @@
+/*
+Package parser accumulates command line arguments
+
+It supports short and long options.
+You define an enum and mapping first.
+You gather all arguments with the Iterate method.
+
+Example
+
+    -a bool
+    -b val
+    -c bool
+
+    --abc bool
+    --def val
+
+    my-program -a target5 --abc -abc -bvalue1 target4 -b value2 --def value1 target2 --def=value2 target1 target3
+
+	Result:
+
+	a    true
+	b    [c value1 value2]
+	c    false
+	abc  true
+	def  [value1 value2]
+
+	targets [target5 target4 target2 target1 target3]
+
+
+Think about counting argument type.
+Think about explicit error types.
+
+TODO: implement strict ordering
+*/
 package parser
 
 import (
 	"bufio"
 	"fmt"
-	"os"
+	"io"
 	"strings"
-
-	"github.com/pkg/errors"
-
-	"github.com/Jguer/yay/v10/pkg/stringset"
-	"github.com/Jguer/yay/v10/pkg/text"
 )
 
-/*
-type option struct {
-	Global bool
-	Args   []string
-}
+type Enum int
 
-func (o *option) Add(args ...string) {
-	if o.Args == nil {
-		o.Args = args
-		return
-	}
-	o.Args = append(o.Args, args...)
-}
+const targetSlot = -1
 
-func (o *option) First() string {
-	if len(o.Args) == 0 {
-		return ""
-	}
-	return o.Args[0]
-}
+const InvalidFlag Enum = -1
 
-func (o *option) Set(arg string) {
-	o.Args = []string{arg}
-}
-
-func (o *option) String() string {
-	return fmt.Sprintf("Global:%v Args:%v", o.Global, o.Args)
-}
-*/
-
-func First(s []string) string {
-	if len(s) == 0 {
-		return ""
-	}
-	return s[0]
-}
-
-func add(a *Arguments, key string, values ...string) {
-	a.Options[key] = append(a.Options[key], values...)
-}
-
-// Arguments Parses command line arguments in a way we can interact with programmatically but
-// also in a way that can easily be passed to pacman later on.
 type Arguments struct {
-	Op      string
-	Options map[string][]string
-	Targets []string
-
-	isArg    stringset.StringSet
-	isOp     stringset.StringSet
-	isGlobal stringset.StringSet
-	hasParam stringset.StringSet
+	options map[Enum][]string
+	alias   func(string) (Enum, bool)
 }
 
-func New(isArg, isOp, isGlobal, hasParam []string) *Arguments {
-	return &Arguments{
-		Op:      "",
-		Options: make(map[string][]string),
-		Targets: nil,
+func Parse(fn func(string) (Enum, bool), args []string, r io.Reader) (Arguments, error) {
 
-		isArg:    stringset.FromSlice(isArg),
-		isOp:     stringset.FromSlice(isOp),
-		isGlobal: stringset.FromSlice(isGlobal),
-		hasParam: stringset.FromSlice(hasParam),
-	}
-}
-
-func (a *Arguments) Parse(args []string) error {
-	usedNext := false
+	var (
+		m        = make(map[Enum][]string)
+		usedNext = false
+		dash     = false
+		ddash    = false
+		err      error
+		a        = Arguments{m, fn}
+	)
 
 	for k, arg := range args {
-		var nextArg string
 
 		if usedNext {
 			usedNext = false
 			continue
 		}
 
+		var nextArg string
+		var nextArgExists bool
 		if k+1 < len(args) {
-			nextArg = args[k+1]
-		}
-
-		var err error
-		switch {
-		case a.ExistsArg("--"):
-			a.AddTarget(arg)
-		case strings.HasPrefix(arg, "--"):
-			usedNext, err = a.parseLongOption(arg, nextArg)
-		case strings.HasPrefix(arg, "-"):
-			usedNext, err = a.parseShortOption(arg, nextArg)
-		default:
-			a.AddTarget(arg)
-		}
-
-		if err != nil {
-			return err
-		}
-	}
-
-	if a.Op == "" {
-		a.Op = "Y"
-	}
-
-	if a.ExistsArg("-") {
-		if err := a.parseStdin(); err != nil {
-			return err
-		}
-		a.DelArg("-")
-
-		file, err := os.Open("/dev/tty")
-		if err != nil {
-			return err
-		}
-
-		os.Stdin = file
-	}
-
-	return nil
-}
-
-func (a *Arguments) String() string {
-	return fmt.Sprintf("Op:%v Options:%+v Targets: %v", a.Op, a.Options, a.Targets)
-}
-
-func (a *Arguments) CreateOrAppendOption(optionStr string, values ...string) {
-	if a.Options[optionStr] == nil {
-		a.Options[optionStr] = values
-	} else {
-		a.Options[optionStr] = append(a.Options[optionStr], values...)
-	}
-}
-
-func (a *Arguments) CopyGlobal() *Arguments {
-	cp := &Arguments{
-		isArg:    a.isArg,
-		isOp:     a.isOp,
-		isGlobal: a.isGlobal,
-		hasParam: a.hasParam,
-
-		Op:      "",
-		Options: make(map[string][]string, len(a.Options)),
-		Targets: nil,
-	}
-
-	for k, v := range a.Options {
-		if a.isGlobal.Get(k) {
-			cp.Options[k] = v
-		}
-	}
-
-	return cp
-}
-
-func (a *Arguments) Copy() *Arguments {
-	cp := &Arguments{
-		Op:       a.Op,
-		isArg:    a.isArg,
-		isOp:     a.isOp,
-		isGlobal: a.isGlobal,
-		hasParam: a.hasParam,
-
-		Options: make(map[string][]string, len(a.Options)),
-		Targets: make([]string, len(a.Targets)),
-	}
-
-	for k, v := range a.Options {
-		cp.Options[k] = v
-	}
-	copy(cp.Targets, a.Targets)
-
-	return cp
-}
-
-func (a *Arguments) DelArg(options ...string) {
-	for _, option := range options {
-		delete(a.Options, option)
-	}
-}
-
-func (a *Arguments) addOP(op string) error {
-	if a.Op != "" {
-		return errors.New(text.T("only one operation may be used at a time"))
-	}
-
-	a.Op = op
-	return nil
-}
-
-func (a *Arguments) addParam(option, arg string) error {
-	if !a.isArg.Get(option) {
-		return errors.New(text.Tf("invalid option '%s'", option))
-	}
-
-	if a.isOp.Get(option) {
-		return a.addOP(option)
-	}
-
-	a.CreateOrAppendOption(option, strings.Split(arg, ",")...)
-
-	return nil
-}
-
-func (a *Arguments) AddArg(options ...string) error {
-	for _, option := range options {
-		err := a.addParam(option, "")
-		if err != nil {
-			return err
-		}
-	}
-	return nil
-}
-
-// Multiple args acts as an OR operator
-func (a *Arguments) ExistsArg(options ...string) bool {
-	for _, option := range options {
-		if _, exists := a.Options[option]; exists {
-			return true
-		}
-	}
-	return false
-}
-
-func (a *Arguments) GetArg(options ...string) (arg string, double, exists bool) {
-	for _, option := range options {
-		value, exists := a.Options[option]
-		if exists {
-			return First(value), len(value) >= 2, len(value) >= 1
-		}
-	}
-
-	return arg, false, false
-}
-
-func (a *Arguments) GetArgs(option string) (args []string) {
-	value, exists := a.Options[option]
-	if exists {
-		return value[0:len(value):len(value)]
-	}
-
-	return nil
-}
-
-func (a *Arguments) AddTarget(targets ...string) { a.Targets = append(a.Targets, targets...) }
-
-func (a *Arguments) ClearTargets() { a.Targets = make([]string, 0) }
-
-// Multiple args acts as an OR operator
-func (a *Arguments) ExistsDouble(options ...string) bool {
-	for _, option := range options {
-		if value, exists := a.Options[option]; exists {
-			return len(value) >= 2
-		}
-	}
-	return false
-}
-
-func formatArg(arg string) string {
-	if len(arg) > 1 {
-		arg = "--" + arg
-	} else {
-		arg = "-" + arg
-	}
-
-	return arg
-}
-
-func (a *Arguments) FormatArgs() (args []string) {
-	if a.Op != "" {
-		args = append(args, formatArg(a.Op))
-	}
-
-	for option, arg := range a.Options {
-		if a.isGlobal.Get(option) || option == "--" {
-			continue
-		}
-
-		formattedOption := formatArg(option)
-		for _, value := range arg {
-			args = append(args, formattedOption)
-			if a.hasParam.Get(option) {
-				args = append(args, value)
-			}
-		}
-	}
-	return args
-}
-
-func (a *Arguments) FormatGlobals() (args []string) {
-	for option, arg := range a.Options {
-		if !a.isGlobal.Get(option) {
-			continue
-		}
-		formattedOption := formatArg(option)
-
-		for _, value := range arg {
-			args = append(args, formattedOption)
-			if a.hasParam.Get(option) {
-				args = append(args, value)
-			}
-		}
-	}
-	return args
-}
-
-// Parses short hand options such as:
-// -Syu -b/some/path -
-func (a *Arguments) parseShortOption(arg, param string) (usedNext bool, err error) {
-	if arg == "-" {
-		err = a.AddArg("-")
-		return
-	}
-
-	arg = arg[1:]
-
-	for k, _char := range arg {
-		char := string(_char)
-
-		if a.hasParam.Get(char) {
-			if k < len(arg)-1 {
-				err = a.addParam(char, arg[k+1:])
+			if false /* len(args[k+1]) > 1 && args[k+1][0] == '-' */ {
+				nextArg = ""
 			} else {
-				usedNext = true
-				err = a.addParam(char, param)
+				nextArg = args[k+1]
+				nextArgExists = true
 			}
-
-			break
 		} else {
-			err = a.AddArg(char)
+			nextArg = ""
+			nextArgExists = false
+		}
 
-			if err != nil {
-				return
-			}
+		switch {
+		case arg == "--":
+			ddash = true
+		case arg == "-":
+			dash = true
+		case strings.HasPrefix(arg, "--"):
+			usedNext, err = parseLongOption(a, arg[2:], nextArg, nextArgExists)
+		case strings.HasPrefix(arg, "-"):
+			usedNext, err = parseShortOption(a, arg[1:], nextArg, nextArgExists)
+		default:
+			fallthrough
+		case ddash:
+			m[targetSlot] = append(m[targetSlot], arg)
+		}
+
+		if err != nil {
+			return Arguments{}, err
 		}
 	}
 
-	return
-}
-
-// Parses full length options such as:
-// --sync --refresh --sysupgrade --dbpath /some/path --
-func (a *Arguments) parseLongOption(arg, param string) (usedNext bool, err error) {
-	if arg == "--" {
-		err = a.AddArg(arg)
-		return
+	if dash {
+		err = parseIn(a, r)
 	}
 
-	arg = arg[2:]
+	return a, err
+}
+
+func parseShortOption(a Arguments, arg, param string, exists bool) (bool, error) {
+
+	for k, char := range arg {
+		alias, wantArg := a.alias(string(char))
+
+		if alias == InvalidFlag {
+			return false, fmt.Errorf("unknown argument %c", char)
+		}
+
+		if wantArg {
+
+			if k == len(arg)-1 {
+				a.options[alias] = append(a.options[alias], param)
+				if !exists {
+					return false, fmt.Errorf("missing value for %c", char)
+				}
+				return true, nil
+			} else {
+				a.options[alias] = append(a.options[alias], arg[k+1:])
+				return false, nil
+			}
+
+		} else {
+			a.options[alias] = make([]string, 0)
+		}
+	}
+	return false, nil
+}
+
+func parseLongOption(a Arguments, arg, param string, exists bool) (bool, error) {
 
 	split := strings.SplitN(arg, "=", 2)
-	switch {
-	case len(split) == 2:
-		err = a.addParam(split[0], split[1])
-	case a.hasParam.Get(arg):
-		err = a.addParam(arg, param)
-		usedNext = true
-	default:
-		err = a.AddArg(arg)
+	arg = split[0]
+	next := true
+	if len(split) == 2 {
+		param = split[1]
+		exists = true
+		next = false
 	}
 
-	return
+	alias, wantArg := a.alias(arg)
+
+	if alias == InvalidFlag {
+		return false, fmt.Errorf("unknown argument %q", arg)
+	}
+	if wantArg && !exists {
+		return false, fmt.Errorf("missing value for %q", arg)
+	}
+	if wantArg {
+		a.options[alias] = append(a.options[alias], param)
+
+	} else {
+		next = false
+		a.options[alias] = make([]string, 0)
+	}
+	return next, nil
 }
 
-func (a *Arguments) parseStdin() error {
-	scanner := bufio.NewScanner(os.Stdin)
-	scanner.Split(bufio.ScanLines)
+func parseIn(a Arguments, r io.Reader) error {
+	scanner := bufio.NewScanner(r)
 
 	for scanner.Scan() {
-		a.AddTarget(scanner.Text())
+		a.options[targetSlot] = append(a.options[targetSlot], scanner.Text())
 	}
 
-	return os.Stdin.Close()
+	return scanner.Err()
+}
+
+func (a Arguments) Exists(option string) bool {
+	op, _ := a.alias(option)
+	_, ok := a.options[op]
+	return ok
+}
+
+func (a Arguments) Get(option string) []string {
+	op, _ := a.alias(option)
+	return a.options[op]
+}
+
+func (a Arguments) Targets() []string {
+	return a.options[targetSlot]
+}
+
+func (a Arguments) Iterate(fn func(Enum, []string) bool) {
+	for k, vv := range a.options {
+		if k == targetSlot {
+			continue
+		}
+		if !fn(k, vv) {
+			break
+		}
+	}
 }
