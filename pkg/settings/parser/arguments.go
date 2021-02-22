@@ -45,18 +45,28 @@ type Enum int
 
 const InvalidFlag Enum = -1
 
+type opArgs struct {
+	Option    Enum
+	Arguments []string
+}
+
 type Arguments struct {
-	optionsIdx map[Enum]int
-	options    []struct {
-		Option    Enum
-		Arguments []string
-	}
+	options []opArgs
 	targets []string
 	alias   func(string) (Enum, bool)
 }
 
+func getIdx(op Enum, ops []opArgs) (int, bool) {
+	for i, v := range ops {
+		if op == v.Option {
+			return i, true
+		}
+	}
+	return 0, false
+}
+
 func put(a *Arguments, e Enum, param string, nonBoolOp bool) {
-	idx, ok := a.optionsIdx[e]
+	idx, ok := getIdx(e, a.options)
 	if ok {
 		if nonBoolOp {
 			a.options[idx].Arguments = append(a.options[idx].Arguments, param)
@@ -64,26 +74,12 @@ func put(a *Arguments, e Enum, param string, nonBoolOp bool) {
 			a.options[idx].Arguments[0] = string([]byte{a.options[idx].Arguments[0][0] + 1})
 		}
 	} else {
-		a.optionsIdx[e] = len(a.options)
 		if nonBoolOp {
-			a.options = append(a.options, struct {
-				Option    Enum
-				Arguments []string
-			}{e, []string{param}})
+			a.options = append(a.options, opArgs{e, []string{param}})
 		} else {
-			a.options = append(a.options, struct {
-				Option    Enum
-				Arguments []string
-			}{e, []string{"\x01"}})
+			a.options = append(a.options, opArgs{e, []string{"\x01"}})
 		}
 	}
-}
-
-func ExtractCount(ss []string) int {
-	if len(ss) != 1 || !(0 < len(ss[0]) && len(ss[0]) < 2) {
-		return 0
-	}
-	return int(ss[0][0])
 }
 
 func Parse(fn func(string) (Enum, bool), args []string, r io.Reader) (*Arguments, error) {
@@ -93,7 +89,7 @@ func Parse(fn func(string) (Enum, bool), args []string, r io.Reader) (*Arguments
 		dash     = false
 		ddash    = false
 		err      error
-		a        = &Arguments{make(map[Enum]int), nil, nil, fn}
+		a        = &Arguments{alias: fn}
 	)
 
 	for k, arg := range args {
@@ -212,19 +208,38 @@ func parseIn(a *Arguments, r io.Reader) error {
 	return scanner.Err()
 }
 
-func (a *Arguments) Exists(option string) bool {
-	op, _ := a.alias(option)
-	_, ok := a.optionsIdx[op]
+func (a *Arguments) Exists(op Enum) bool {
+	_, ok := getIdx(op, a.options)
 	return ok
 }
 
-func (a *Arguments) Get(option string) []string {
-	op, _ := a.alias(option)
-	idx, ok := a.optionsIdx[op]
+func (a *Arguments) Get(op Enum) []string {
+	idx, ok := getIdx(op, a.options)
 	if !ok {
 		return nil
 	}
 	return a.options[idx].Arguments
+}
+
+func (a *Arguments) Last(op Enum) (string, bool) {
+	res := a.Get(op)
+	if len(res) == 0 {
+		return "", false
+	}
+	return res[len(res)-1], true
+}
+
+func (a *Arguments) Count(op Enum) int {
+	idx, ok := getIdx(op, a.options)
+	if !ok {
+		return 0
+	}
+	ss := a.options[idx].Arguments
+	// '!' is 33 and the first ascii non-whitespace character
+	if len(ss) != 1 || len(ss[0]) != 1 || ss[0][0] > '!' {
+		panic("Count likely called on non-bool option")
+	}
+	return int(ss[0][0])
 }
 
 func (a *Arguments) Targets() []string {

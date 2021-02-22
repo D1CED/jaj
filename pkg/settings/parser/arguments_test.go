@@ -74,17 +74,20 @@ func TestParse(t *testing.T) {
 	})
 
 	t.Run("accessors", func(t *testing.T) {
-		assert.True(t, a.Exists("a"))
-		assert.Equal(t, []string{"c", "value1", "value2"}, a.Get("b"))
-		assert.False(t, a.Exists("c"))
-		assert.True(t, a.Exists("abc"), "abc not set")
-		assert.Equal(t, []string{"value1", "value2"}, a.Get("def"))
+		assert.True(t, a.Exists(A))
+		assert.Equal(t, []string{"c", "value1", "value2"}, a.Get(B))
+		assert.False(t, a.Exists(C))
+		assert.True(t, a.Exists(ABC), "abc not set")
+		assert.Equal(t, []string{"value1", "value2"}, a.Get(DEF))
+
+		val, _ := a.Last(DEF)
+		assert.Equal(t, "value2", val)
 	})
 
 	t.Run("count", func(t *testing.T) {
-		assert.Equal(t, parser.ExtractCount(a.Get("a")), 2)
-		assert.Equal(t, parser.ExtractCount(a.Get("c")), 0)
-		assert.Equal(t, parser.ExtractCount(a.Get("abc")), 1)
+		assert.Equal(t, 2, a.Count(A))
+		assert.Equal(t, 0, a.Count(C))
+		assert.Equal(t, 1, a.Count(ABC))
 	})
 
 	t.Run("breaks", func(t *testing.T) {
