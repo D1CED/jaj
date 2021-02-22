@@ -43,24 +43,57 @@ import (
 
 type Enum int
 
-const targetSlot = -1
-
 const InvalidFlag Enum = -1
 
 type Arguments struct {
-	options map[Enum][]string
+	optionsIdx map[Enum]int
+	options    []struct {
+		Option    Enum
+		Arguments []string
+	}
+	targets []string
 	alias   func(string) (Enum, bool)
 }
 
-func Parse(fn func(string) (Enum, bool), args []string, r io.Reader) (Arguments, error) {
+func put(a *Arguments, e Enum, param string, nonBoolOp bool) {
+	idx, ok := a.optionsIdx[e]
+	if ok {
+		if nonBoolOp {
+			a.options[idx].Arguments = append(a.options[idx].Arguments, param)
+		} else {
+			a.options[idx].Arguments[0] = string([]byte{a.options[idx].Arguments[0][0] + 1})
+		}
+	} else {
+		a.optionsIdx[e] = len(a.options)
+		if nonBoolOp {
+			a.options = append(a.options, struct {
+				Option    Enum
+				Arguments []string
+			}{e, []string{param}})
+		} else {
+			a.options = append(a.options, struct {
+				Option    Enum
+				Arguments []string
+			}{e, []string{"\x01"}})
+		}
+	}
+}
+
+func ExtractCount(ss []string) int {
+	if len(ss) != 1 || !(0 < len(ss[0]) && len(ss[0]) < 2) {
+		return 0
+	}
+	return int(ss[0][0])
+}
+
+func Parse(fn func(string) (Enum, bool), args []string, r io.Reader) (*Arguments, error) {
 
 	var (
-		m        = make(map[Enum][]string)
 		usedNext = false
 		dash     = false
 		ddash    = false
 		err      error
-		a        = Arguments{m, fn}
+		a        = &Arguments{make(map[Enum]int), nil, nil, fn}
 	)
 
 	for k, arg := range args {
@@ -96,11 +129,11 @@ func Parse(fn func(string) (Enum, bool), args []string, r io.Reader) (Arguments,
 		default:
 			fallthrough
 		case ddash:
-			m[targetSlot] = append(m[targetSlot], arg)
+			a.targets = append(a.targets, arg)
 		}
 
 		if err != nil {
-			return Arguments{}, err
+			return nil, err
 		}
 	}
 
@@ -111,7 +144,7 @@ func Parse(fn func(string) (Enum, bool), args []string, r io.Reader) (Arguments,
 	return a, err
 }
 
-func parseShortOption(a Arguments, arg, param string, exists bool) (bool, error) {
+func parseShortOption(a *Arguments, arg, param string, exists bool) (bool, error) {
 
 	for k, char := range arg {
 		alias, wantArg := a.alias(string(char))
@@ -123,24 +156,24 @@ func parseShortOption(a Arguments, arg, param string, exists bool) (bool, error)
 		if wantArg {
 
 			if k == len(arg)-1 {
-				a.options[alias] = append(a.options[alias], param)
+				put(a, alias, param, true)
 				if !exists {
 					return false, fmt.Errorf("missing value for %c", char)
 				}
 				return true, nil
 			} else {
-				a.options[alias] = append(a.options[alias], arg[k+1:])
+				put(a, alias, arg[k+1:], true)
 				return false, nil
 			}
 
 		} else {
-			a.options[alias] = make([]string, 0)
+			put(a, alias, "", false)
 		}
 	}
 	return false, nil
 }
 
-func parseLongOption(a Arguments, arg, param string, exists bool) (bool, error) {
+func parseLongOption(a *Arguments, arg, param string, exists bool) (bool, error) {
 
 	split := strings.SplitN(arg, "=", 2)
 	arg = split[0]
@@ -160,47 +193,48 @@ func parseLongOption(a Arguments, arg, param string, exists bool) (bool, error) 
 		return false, fmt.Errorf("missing value for %q", arg)
 	}
 	if wantArg {
-		a.options[alias] = append(a.options[alias], param)
+		put(a, alias, param, true)
 
 	} else {
 		next = false
-		a.options[alias] = make([]string, 0)
+		put(a, alias, "", false)
 	}
 	return next, nil
 }
 
-func parseIn(a Arguments, r io.Reader) error {
+func parseIn(a *Arguments, r io.Reader) error {
 	scanner := bufio.NewScanner(r)
 
 	for scanner.Scan() {
-		a.options[targetSlot] = append(a.options[targetSlot], scanner.Text())
+		a.targets = append(a.targets, scanner.Text())
 	}
 
 	return scanner.Err()
 }
 
-func (a Arguments) Exists(option string) bool {
+func (a *Arguments) Exists(option string) bool {
 	op, _ := a.alias(option)
-	_, ok := a.options[op]
+	_, ok := a.optionsIdx[op]
 	return ok
 }
 
-func (a Arguments) Get(option string) []string {
+func (a *Arguments) Get(option string) []string {
 	op, _ := a.alias(option)
-	return a.options[op]
+	idx, ok := a.optionsIdx[op]
+	if !ok {
+		return nil
+	}
+	return a.options[idx].Arguments
 }
 
-func (a Arguments) Targets() []string {
-	return a.options[targetSlot]
+func (a *Arguments) Targets() []string {
+	return a.targets
 }
 
-func (a Arguments) Iterate(fn func(Enum, []string) bool) {
-	for k, vv := range a.options {
-		if k == targetSlot {
-			continue
-		}
-		if !fn(k, vv) {
-			break
+func (a *Arguments) Iterate(fn func(Enum, []string) bool) {
+	for _, kv := range a.options {
+		if !fn(kv.Option, kv.Arguments) {
+			return
 		}
 	}
 }
