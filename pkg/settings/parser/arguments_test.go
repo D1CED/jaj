@@ -129,3 +129,44 @@ func TestParse(t *testing.T) {
 		assert.Error(t, err)
 	})
 }
+
+func TestEnumerate(t *testing.T) {
+
+	t.Run("short", func(t *testing.T) {
+		my, alias := parser.Enumerate("ab:c", false)
+
+		p, err := parser.Parse(alias, strings.Split("-a -bc -b x target1", " "), nil)
+		assert.NoError(t, err)
+
+		assert.True(t, p.Exists(my("a")))
+		assert.False(t, p.Exists(my("c")))
+		assert.Equal(t, []string{"c", "x"}, p.Get(my("b")))
+		assert.Equal(t, []string{"target1"}, p.Targets())
+	})
+
+	t.Run("short+long", func(t *testing.T) {
+		my, alias := parser.Enumerate("a(foo)b(bar):c(baz)", false)
+
+		p, err := parser.Parse(alias, strings.Split("--foo --bar=c -b x target1", " "), nil)
+		assert.NoError(t, err)
+
+		assert.True(t, p.Exists(my("foo")))
+		assert.False(t, p.Exists(my("c")))
+		assert.Equal(t, []string{"c", "x"}, p.Get(my("b")))
+		assert.Equal(t, []string{"target1"}, p.Targets())
+	})
+
+	t.Run("long", func(t *testing.T) {
+		my, alias := parser.Enumerate("[foo][bar]:[baz]", false)
+
+		p, err := parser.Parse(alias, strings.Split("--foo --bar=c --bar x target1", " "), nil)
+		if !assert.NoError(t, err) {
+			return
+		}
+
+		assert.True(t, p.Exists(my("foo")))
+		assert.False(t, p.Exists(my("baz")))
+		assert.Equal(t, []string{"c", "x"}, p.Get(my("bar")))
+		assert.Equal(t, []string{"target1"}, p.Targets())
+	})
+}
