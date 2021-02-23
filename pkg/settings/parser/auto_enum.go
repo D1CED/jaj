@@ -14,8 +14,8 @@ import (
 // [emit]
 //
 // longid :: alnum ( alnum | '-' )*
-// single ::  ( (alnum '(' longid ')')? | '[' longid ']' ) ws (':' ws)?
-// full   :: ws single+
+// single ::  ws ( (alnum '(' longid ')')? | '[' longid ']' ) ':'?
+// full   :: single+ ws
 
 func Enumerate(enumDescription string, withHelp bool) (func(string) Enum, func(string) (Enum, bool)) {
 	ops, err := parse(enumDescription)
@@ -86,6 +86,7 @@ type option struct {
 func parse(s string) ([]option, error) {
 
 	var ErrParse = errors.New("Parse error")
+	var ErrEmpty = errors.New("Empty")
 
 	const (
 		slong = iota
@@ -128,7 +129,9 @@ func parse(s string) ([]option, error) {
 				break
 			}
 			if isWS(r) {
-				state = end
+				gathered = append(gathered, cur)
+				cur = option{}
+				state = afterEnd
 				break
 			}
 			if r == ':' {
@@ -170,6 +173,9 @@ func parse(s string) ([]option, error) {
 		gathered = append(gathered, cur)
 		fallthrough
 	case afterEnd:
+		if len(gathered) == 0 {
+			return nil, ErrEmpty
+		}
 		return gathered, nil
 	case err, long, slong:
 		return nil, ErrParse

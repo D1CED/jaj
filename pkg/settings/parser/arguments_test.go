@@ -154,6 +154,12 @@ func TestEnumerate(t *testing.T) {
 		assert.False(t, p.Exists(my("c")))
 		assert.Equal(t, []string{"c", "x"}, p.Get(my("b")))
 		assert.Equal(t, []string{"target1"}, p.Targets())
+
+		func() {
+			defer func() { r := recover(); assert.NotNil(t, r) }()
+
+			my("x")
+		}()
 	})
 
 	t.Run("long", func(t *testing.T) {
@@ -168,5 +174,41 @@ func TestEnumerate(t *testing.T) {
 		assert.False(t, p.Exists(my("baz")))
 		assert.Equal(t, []string{"c", "x"}, p.Get(my("bar")))
 		assert.Equal(t, []string{"target1"}, p.Targets())
+	})
+
+	t.Run("multline", func(t *testing.T) {
+		const desc = `
+			a:bc
+			d(def):
+			g(gir)
+			[foo]
+			[bar]:
+			[baz-zing]
+		`
+		my, alias := parser.Enumerate(desc, false)
+
+		p, err := parser.Parse(alias, strings.Split("-ahello --baz-zing --bar=test --def target2 -gcb", " "), nil)
+		assert.NoError(t, err)
+
+		assert.True(t, p.Exists(my("baz-zing")))
+		assert.True(t, p.Exists(my("def")))
+		assert.True(t, p.Exists(my("c")))
+		assert.True(t, p.Exists(my("b")))
+		assert.True(t, p.Exists(my("g")))
+		assert.False(t, p.Exists(my("foo")))
+
+		assert.Equal(t, []string{"hello"}, p.Get(my("a")))
+		assert.Equal(t, []string{"target2"}, p.Get(my("d")))
+		assert.Equal(t, []string{"test"}, p.Get(my("bar")))
+	})
+
+	t.Run("duplicate", func(t *testing.T) {
+		defer func() {
+			r := recover()
+			t.Log(r)
+			assert.NotNil(t, r)
+		}()
+
+		parser.Enumerate("[f]g(f):[baz]", false)
 	})
 }
