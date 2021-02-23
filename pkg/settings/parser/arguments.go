@@ -7,30 +7,36 @@ You gather all arguments with the Iterate method.
 
 Example
 
-    -a bool
-    -b val
-    -c bool
+	const (
+    	a Enum = iota // -a or --all bool
+        b             // -b          val
+        c             // -c          bool
+        abc           // --abc       bool
+        def           // --def       val
+	)
 
-    --abc bool
-    --def val
+	switch flag {
+	case "a", "all": return a, false
+	case "b":        return b, true
+	case "c":        return c, false
+	case "abc":      return abc, false
+	case "def":      return def, true
+	}
 
     my-program -a target5 --abc -abc -bvalue1 target4 -b value2 --def value1 target2 --def=value2 target1 target3
 
 	Result:
 
-	a    true
+	a    true (2)
 	b    [c value1 value2]
 	c    false
-	abc  true
+	abc  true (1)
 	def  [value1 value2]
 
 	targets [target5 target4 target2 target1 target3]
 
 
-Think about counting argument type.
 Think about explicit error types.
-
-TODO: implement strict ordering
 */
 package parser
 
