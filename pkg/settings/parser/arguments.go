@@ -95,7 +95,11 @@ func Parse(fn func(string) (Enum, bool), args []string, r io.Reader) (*Arguments
 		dash     = false
 		ddash    = false
 		err      error
-		a        = &Arguments{alias: fn}
+		a        = &Arguments{
+			alias:   fn,
+			options: make([]opArgs, 0, len(args)),
+			targets: make([]string, 0, len(args)),
+		}
 	)
 
 	for k, arg := range args {

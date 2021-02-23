@@ -194,7 +194,7 @@ func TestEnumerate(t *testing.T) {
 		assert.True(t, p.Exists(my("def")))
 		assert.True(t, p.Exists(my("c")))
 		assert.True(t, p.Exists(my("b")))
-		assert.True(t, p.Exists(my("g")))
+		assert.True(t, p.Exists(my("gir")))
 		assert.False(t, p.Exists(my("foo")))
 
 		assert.Equal(t, []string{"hello"}, p.Get(my("a")))
@@ -210,5 +210,20 @@ func TestEnumerate(t *testing.T) {
 		}()
 
 		parser.Enumerate("[f]g(f):[baz]", false)
+	})
+
+	t.Run("doc", func(t *testing.T) {
+		t.Skip("currently go test does not handle exit(0) as error")
+		const desc = `
+			a:bc
+			d(def):
+			g(gir)
+			[foo]
+			[bar]:
+			[baz-zing]
+		`
+		_, alias := parser.Enumerate(desc, true)
+		parser.Parse(alias, []string{"-h"}, nil)
+		t.Fail()
 	})
 }

@@ -2,6 +2,7 @@ package parser
 
 import (
 	"errors"
+	"os"
 )
 
 // Format:
@@ -14,13 +15,17 @@ import (
 // [emit]
 //
 // longid :: alnum ( alnum | '-' )*
-// single ::  ws ( (alnum '(' longid ')')? | '[' longid ']' ) ':'?
+// single ::  ws ( alnum ['(' longid ')'] | '[' longid ']' ) [ ':' ]
 // full   :: single+ ws
 
 func Enumerate(enumDescription string, withHelp bool) (func(string) Enum, func(string) (Enum, bool)) {
 	ops, err := parse(enumDescription)
 	if err != nil {
 		panic(err)
+	}
+
+	if withHelp {
+		ops = append(ops, option{ShortName: 'h', LongName: "help"})
 	}
 
 	type enArg struct {
@@ -52,13 +57,24 @@ func Enumerate(enumDescription string, withHelp bool) (func(string) Enum, func(s
 		return ea.enum, ea.takesArg
 	}
 
+	hfn := fn
+	if withHelp {
+		hfn = func(s string) (Enum, bool) {
+			r, b := fn(s)
+			if r == m["help"].enum {
+				printDoc(ops)
+			}
+			return r, b
+		}
+	}
+
 	return func(s string) Enum {
 		e, _ := fn(s)
 		if e == InvalidFlag {
 			panic("unknown arg")
 		}
 		return e
-	}, fn
+	}, hfn
 }
 
 func isWS(r rune) bool {
@@ -89,79 +105,100 @@ func parse(s string) ([]option, error) {
 	var ErrEmpty = errors.New("Empty")
 
 	const (
-		slong = iota
-		long
-		end
-		afterEnd
-		err
+		start    = iota // a
+		short           // abe
+		afterEnd        // ae
+		long            // c, f
+		lend            // d, g
+
+		err // s
 	)
 
 	gathered := []option{}
 	startIdx := 0
 	cur := option{}
-	state := afterEnd
+	state := start
 
 	for i, r := range s {
 		switch state {
-		case afterEnd:
+		case start:
 			if isWS(r) {
-				break
-			}
-			if r == '[' {
-				state = slong
 				break
 			}
 			if isAlnum(r) {
 				cur.ShortName = r
-				state = end
+				state = short
+				break
+			}
+			if '[' == r {
+				state = long
 				break
 			}
 			state = err
-		case end:
-			if r == '(' {
-				state = slong
-				break
-			}
-			if r == '[' {
-				gathered = append(gathered, cur)
-				cur = option{}
-				state = slong
-				break
-			}
+		case short:
 			if isWS(r) {
 				gathered = append(gathered, cur)
 				cur = option{}
-				state = afterEnd
+				state = start
 				break
 			}
 			if r == ':' {
 				cur.TakesArg = true
 				gathered = append(gathered, cur)
 				cur = option{}
-				state = afterEnd
+				state = start
 				break
 			}
 			if isAlnum(r) {
 				gathered = append(gathered, cur)
 				cur = option{ShortName: r}
-				state = end
+				break
+			}
+			if '[' == r || '(' == r {
+				state = long
 				break
 			}
 			state = err
-		case slong:
-			if !isAlnum(r) {
-				state = err
+		case afterEnd:
+			if isAlnum(r) {
+				if cur != (option{}) {
+					gathered = append(gathered, cur)
+					cur = option{ShortName: r}
+				}
+				cur.ShortName = r
+				state = short
 				break
 			}
-			startIdx = i
-			state = long
+			if r == '[' {
+				state = long
+			}
+			if isWS(r) {
+				state = start
+			}
+			if r == ':' {
+				cur.TakesArg = true
+				state = start
+			}
+			if r == ':' || r == '[' || isWS(r) {
+				gathered = append(gathered, cur)
+				cur = option{}
+				break
+			}
+			state = err
 		case long:
+			if isAlnum(r) {
+				startIdx = i
+				state = lend
+				break
+			}
+			state = err
+		case lend:
 			if isAlnum(r) || r == '-' {
 				break
 			}
 			if r == ')' || r == ']' {
 				cur.LongName = s[startIdx:i]
-				state = end
+				state = afterEnd
 				break
 			}
 			state = err
@@ -169,17 +206,44 @@ func parse(s string) ([]option, error) {
 	}
 
 	switch state {
-	case end:
-		gathered = append(gathered, cur)
-		fallthrough
-	case afterEnd:
+	case start, afterEnd, short:
+		if cur != (option{}) {
+			gathered = append(gathered, cur)
+		}
 		if len(gathered) == 0 {
 			return nil, ErrEmpty
 		}
 		return gathered, nil
-	case err, long, slong:
+	case err, lend, long:
 		return nil, ErrParse
 	default:
 		panic("invalid state")
 	}
+}
+
+func printDoc(opts []option) {
+	os.Stdout.WriteString(os.Args[0])
+	os.Stdout.WriteString(" [options] <arguments>\n\n")
+	os.Stdout.WriteString("OPTIONS\n")
+	os.Stdout.WriteString(doc(opts))
+	os.Exit(0)
+}
+
+func doc(opts []option) string {
+	var d = make([]byte, 0, len(opts)*20)
+	for _, o := range opts {
+		if o.ShortName != 0 && o.LongName != "" {
+			d = append(d, "  -"+string(o.ShortName)+"\t--"+o.LongName...)
+		} else if o.ShortName != 0 {
+			d = append(d, "  -"+string(o.ShortName)+"\t"...)
+		} else {
+			d = append(d, "    \t--"+o.LongName...)
+		}
+		if o.TakesArg {
+			d = append(d, " \t<arg>\n"...)
+		} else {
+			d = append(d, '\n')
+		}
+	}
+	return string(d)
 }
