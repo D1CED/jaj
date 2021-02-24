@@ -7,7 +7,6 @@ import (
 	"github.com/Jguer/yay/v10/pkg/db"
 	"github.com/Jguer/yay/v10/pkg/query"
 	"github.com/Jguer/yay/v10/pkg/settings"
-	"github.com/Jguer/yay/v10/pkg/settings/parser"
 	"github.com/Jguer/yay/v10/pkg/settings/runtime"
 	"github.com/Jguer/yay/v10/pkg/stringset"
 	"github.com/Jguer/yay/v10/pkg/text"
@@ -15,10 +14,10 @@ import (
 )
 
 // PrintSearch handles printing search results in a given format
-func (q aurQuery) printSearch(dbExecutor db.Executor, start int, searchMode enum, sortOrder enum) {
+func (q aurQuery) printSearch(dbExecutor db.Executor, start int, searchMode settings.SearchMode, sortOrder enum) {
 	for i := range q {
 		var toprint string
-		if searchMode == numberMenu {
+		if searchMode == settings.NumberMenu {
 			switch sortOrder {
 			case settings.TopDown:
 				toprint += text.Magenta(strconv.Itoa(start+i) + " ")
@@ -27,7 +26,7 @@ func (q aurQuery) printSearch(dbExecutor db.Executor, start int, searchMode enum
 			default:
 				text.Warnln(text.T("invalid sort mode. Fix with yay -Y --bottomup --save"))
 			}
-		} else if searchMode == minimal {
+		} else if searchMode == settings.Minimal {
 			text.Println(q[i].Name)
 			continue
 		}
@@ -58,10 +57,10 @@ func (q aurQuery) printSearch(dbExecutor db.Executor, start int, searchMode enum
 }
 
 // PrintSearch receives a RepoSearch type and outputs pretty text.
-func (s repoQuery) printSearch(dbExecutor db.Executor, searchMode enum, sortMode enum) {
+func (s repoQuery) printSearch(dbExecutor db.Executor, searchMode settings.SearchMode, sortMode enum) {
 	for i, res := range s {
 		var toprint string
-		if searchMode == numberMenu {
+		if searchMode == settings.NumberMenu {
 			switch sortMode {
 			case settings.TopDown:
 				toprint += text.Magenta(strconv.Itoa(i+1) + " ")
@@ -70,7 +69,7 @@ func (s repoQuery) printSearch(dbExecutor db.Executor, searchMode enum, sortMode
 			default:
 				text.Warnln(text.T("invalid sort mode. Fix with yay -Y --bottomup --save"))
 			}
-		} else if searchMode == minimal {
+		} else if searchMode == settings.Minimal {
 			text.Println(res.Name())
 			continue
 		}
@@ -199,7 +198,7 @@ func printNumberOfUpdates(rt *runtime.Runtime, enableDowngrade bool) error {
 	return nil
 }
 
-func printUpdateList(cmdArgs *parser.Arguments, rt *runtime.Runtime, enableDowngrade bool) error {
+func printUpdateList(cmdArgs *settings.PacmanConf, rt *runtime.Runtime, enableDowngrade bool) error {
 	targets := stringset.FromSlice(cmdArgs.Targets)
 	warnings := query.NewWarnings()
 
@@ -225,10 +224,12 @@ func printUpdateList(cmdArgs *parser.Arguments, rt *runtime.Runtime, enableDowng
 
 	noTargets := len(targets) == 0
 
-	if !cmdArgs.ExistsArg("m", "foreign") {
+	qconf := cmdArgs.ModeConf.(*settings.QConf)
+
+	if !qconf.Foreign {
 		for _, pkg := range repoUp {
 			if noTargets || targets.Get(pkg.Name) {
-				if cmdArgs.ExistsArg("q", "quiet") {
+				if qconf.Quiet {
 					text.Printf("%s\n", pkg.Name)
 				} else {
 					text.Printf("%s %s -> %s\n", text.Bold(pkg.Name), text.Green(pkg.LocalVersion), text.Green(pkg.RemoteVersion))
@@ -238,10 +239,10 @@ func printUpdateList(cmdArgs *parser.Arguments, rt *runtime.Runtime, enableDowng
 		}
 	}
 
-	if !cmdArgs.ExistsArg("n", "native") {
+	if !qconf.Native {
 		for _, pkg := range aurUp {
 			if noTargets || targets.Get(pkg.Name) {
-				if cmdArgs.ExistsArg("q", "quiet") {
+				if qconf.Quiet {
 					text.Printf("%s\n", pkg.Name)
 				} else {
 					text.Printf("%s %s -> %s\n", text.Bold(pkg.Name), text.Green(pkg.LocalVersion), text.Green(pkg.RemoteVersion))

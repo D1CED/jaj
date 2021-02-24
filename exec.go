@@ -9,28 +9,27 @@ import (
 
 	"github.com/Jguer/yay/v10/pkg/settings"
 	"github.com/Jguer/yay/v10/pkg/settings/exe"
-	"github.com/Jguer/yay/v10/pkg/settings/parser"
 	"github.com/Jguer/yay/v10/pkg/settings/runtime"
 	"github.com/Jguer/yay/v10/pkg/text"
 )
 
-func sudoLoopBackground(cmdRunner exe.Runner, conf *settings.Configuration) {
+func sudoLoopBackground(cmdRunner exe.Runner, conf *settings.YayConfig) {
 	updateSudo(cmdRunner, conf)
 	go sudoLoop(cmdRunner, conf)
 }
 
-func sudoLoop(cmdRunner exe.Runner, conf *settings.Configuration) {
+func sudoLoop(cmdRunner exe.Runner, conf *settings.YayConfig) {
 	for {
 		updateSudo(cmdRunner, conf)
 		time.Sleep(298 * time.Second)
 	}
 }
 
-func updateSudo(cmdRunner exe.Runner, conf *settings.Configuration) {
+func updateSudo(cmdRunner exe.Runner, conf *settings.YayConfig) {
 	for {
-		mSudoFlags := strings.Fields(conf.SudoFlags)
+		mSudoFlags := strings.Fields(conf.Conf.SudoFlags)
 		mSudoFlags = append([]string{"-v"}, mSudoFlags...)
-		err := cmdRunner.Show(exec.Command(conf.SudoBin, mSudoFlags...))
+		err := cmdRunner.Show(exec.Command(conf.Conf.SudoBin, mSudoFlags...))
 		if err != nil {
 			text.EPrintln(err)
 		} else {
@@ -58,26 +57,26 @@ func waitLock(dbPath string) {
 	}
 }
 
-func passToPacman(rt *runtime.Runtime, args *parser.Arguments) *exec.Cmd {
+func passToPacman(rt *runtime.Runtime, args *settings.PacmanConf) *exec.Cmd {
 	argArr := make([]string, 0, 32)
 
-	if settings.NeedRoot(args, rt.Mode) {
-		argArr = append(argArr, rt.Config.SudoBin)
-		argArr = append(argArr, strings.Fields(rt.Config.SudoFlags)...)
+	if settings.NeedRoot(args, rt.Config.Mode) {
+		argArr = append(argArr, rt.Config.Conf.SudoBin)
+		argArr = append(argArr, strings.Fields(rt.Config.Conf.SudoFlags)...)
 	}
 
-	argArr = append(argArr, rt.Config.PacmanBin)
-	argArr = append(argArr, args.FormatGlobals()...)
-	argArr = append(argArr, args.FormatArgs()...)
-	if settings.NoConfirm {
+	argArr = append(argArr, rt.Config.Conf.PacmanBin)
+	argArr = append(argArr, args.FormatGlobalArgs()...)
+	argArr = append(argArr, args.FormatAsArgs()...)
+	if rt.Config.Pacman.NoConfirm {
 		argArr = append(argArr, "--noconfirm")
 	}
 
-	argArr = append(argArr, "--config", rt.Config.PacmanConf, "--")
+	argArr = append(argArr, "--config", rt.Config.Conf.PacmanConf, "--")
 	argArr = append(argArr, args.Targets...)
 
-	if settings.NeedRoot(args, rt.Mode) {
-		waitLock(rt.PacmanConf.DBPath)
+	if settings.NeedRoot(args, rt.Config.Mode) {
+		waitLock(rt.Config.Pacman.DBPath)
 	}
 	return exec.Command(argArr[0], argArr[1:]...)
 }

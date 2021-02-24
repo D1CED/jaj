@@ -31,7 +31,7 @@ func upList(warnings *query.AURWarnings, rt *runtime.Runtime, enableDowngrade bo
 		}
 	}
 
-	if rt.Mode == settings.ModeAny || rt.Mode == settings.ModeRepo {
+	if rt.Config.Mode == settings.ModeAny || rt.Config.Mode == settings.ModeRepo {
 		text.OperationInfoln(text.T("Searching databases for updates..."))
 		wg.Add(1)
 		go func() {
@@ -41,11 +41,11 @@ func upList(warnings *query.AURWarnings, rt *runtime.Runtime, enableDowngrade bo
 		}()
 	}
 
-	if rt.Mode == settings.ModeAny || rt.Mode == settings.ModeAUR {
+	if rt.Config.Mode == settings.ModeAny || rt.Config.Mode == settings.ModeAUR {
 		text.OperationInfoln(text.T("Searching AUR for updates..."))
 
 		var _aurdata []*query.Pkg
-		_aurdata, err = query.AURInfo(remoteNames, warnings, rt.Config.RequestSplitN)
+		_aurdata, err = query.AURInfo(remoteNames, warnings, rt.Config.Conf.RequestSplitN)
 		errs.Add(err)
 		if err == nil {
 			for _, pkg := range _aurdata {
@@ -54,11 +54,11 @@ func upList(warnings *query.AURWarnings, rt *runtime.Runtime, enableDowngrade bo
 
 			wg.Add(1)
 			go func() {
-				aurUp = upgrade.UpAUR(remote, aurdata, rt.Config.TimeUpdate)
+				aurUp = upgrade.UpAUR(remote, aurdata, rt.Config.Conf.TimeUpdate)
 				wg.Done()
 			}()
 
-			if rt.Config.Devel {
+			if rt.Config.Conf.Devel {
 				text.OperationInfoln(text.T("Checking development packages..."))
 				wg.Add(1)
 				go func() {
@@ -123,7 +123,7 @@ func isDevelPackage(pkg db.IPackage) bool {
 }
 
 // upgradePkgs handles updating the cache and installing updates.
-func upgradePkgs(conf *settings.Configuration, aurUp, repoUp upgrade.UpSlice) (ignore, aurNames stringset.StringSet, err error) {
+func upgradePkgs(conf *settings.YayConfig, aurUp, repoUp upgrade.UpSlice) (ignore, aurNames stringset.StringSet, err error) {
 	ignore = make(stringset.StringSet)
 	aurNames = make(stringset.StringSet)
 
@@ -132,7 +132,7 @@ func upgradePkgs(conf *settings.Configuration, aurUp, repoUp upgrade.UpSlice) (i
 		return ignore, aurNames, nil
 	}
 
-	if !conf.UpgradeMenu {
+	if !conf.Conf.UpgradeMenu {
 		for _, pkg := range aurUp {
 			aurNames.Set(pkg.Name)
 		}
@@ -148,7 +148,7 @@ func upgradePkgs(conf *settings.Configuration, aurUp, repoUp upgrade.UpSlice) (i
 
 	text.Infoln(text.T("Packages to exclude: (eg: \"1 2 3\", \"1-3\", \"^4\" or repo name)"))
 
-	numbers, err := getInput(conf.AnswerUpgrade)
+	numbers, err := getInput(conf.Conf.AnswerUpgrade, conf.Pacman.NoConfirm)
 	if err != nil {
 		return nil, nil, err
 	}

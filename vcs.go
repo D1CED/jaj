@@ -20,19 +20,19 @@ func createDevelDB(rt *runtime.Runtime) error {
 		return err
 	}
 
-	info, err := query.AURInfoPrint(remoteNames, rt.Config.RequestSplitN)
+	info, err := query.AURInfoPrint(remoteNames, rt.Config.Conf.RequestSplitN)
 	if err != nil {
 		return err
 	}
 
 	bases := dep.GetBases(info)
-	toSkip := pkgbuildsToSkip(bases, stringset.FromSlice(remoteNames), rt.Config.ReDownload, rt.Config.BuildDir)
-	_, err = downloadPkgbuilds(BuildRun{rt.CmdBuilder, rt.CmdRunner}, bases, toSkip, rt.Config.BuildDir, rt.Config.AURURL)
+	toSkip := pkgbuildsToSkip(bases, stringset.FromSlice(remoteNames), rt.Config.Conf.ReDownload, rt.Config.Conf.BuildDir)
+	_, err = downloadPkgbuilds(BuildRun{rt.CmdBuilder, rt.CmdRunner}, bases, toSkip, rt.Config.Conf.BuildDir, rt.Config.Conf.AURURL)
 	if err != nil {
 		return err
 	}
 
-	srcinfos, err := parseSrcinfoFiles(bases, false, rt.Config.BuildDir)
+	srcinfos, err := parseSrcinfoFiles(bases, false, rt.Config.Conf.BuildDir)
 	if err != nil {
 		return err
 	}

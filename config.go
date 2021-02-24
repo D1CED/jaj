@@ -6,23 +6,15 @@ import (
 	"os/exec"
 	"strings"
 
-	"github.com/Jguer/yay/v10/pkg/settings"
 	"github.com/Jguer/yay/v10/pkg/text"
 )
 
-// Verbosity settings for search
-const (
-	numberMenu = iota
-	detailed
-	minimal
-)
-
-var yayVersion = "10.1.0"
+const yayVersion = "devel"
 
 var localePath = "/usr/share/locale"
 
 // Editor returns the preferred system editor.
-func editor(edt, editFlags string) (editor string, args []string) {
+func editor(edt, editFlags string, noConfirm bool) (editor string, args []string) {
 	switch {
 	case edt != "":
 		editor, err := exec.LookPath(edt)
@@ -59,7 +51,7 @@ func editor(edt, editFlags string) (editor string, args []string) {
 
 		for {
 			text.Infoln(text.T("Edit PKGBUILD with?"))
-			editorInput, err := getInput("")
+			editorInput, err := getInput("", noConfirm)
 			if err != nil {
 				text.EPrintln(err)
 				continue
@@ -80,9 +72,9 @@ func editor(edt, editFlags string) (editor string, args []string) {
 	}
 }
 
-func getInput(defaultValue string) (string, error) {
+func getInput(defaultValue string, noConfirm bool) (string, error) {
 	text.Info()
-	if defaultValue != "" || settings.NoConfirm {
+	if defaultValue != "" || noConfirm {
 		text.Println(defaultValue)
 		return defaultValue, nil
 	}

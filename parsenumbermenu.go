@@ -21,6 +21,7 @@ import (
 // the input and organizes it
 func ParseNumberMenu(input string) (include, exclude intrange.IntRanges,
 	otherInclude, otherExclude stringset.StringSet) {
+
 	include = make(intrange.IntRanges, 0)
 	exclude = make(intrange.IntRanges, 0)
 	otherInclude = make(stringset.StringSet)

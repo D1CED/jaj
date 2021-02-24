@@ -3,16 +3,36 @@ package settings
 import (
 	"bytes"
 	"encoding/json"
+	"fmt"
 	"os"
 	"path/filepath"
 
 	"github.com/Jguer/yay/v10/pkg/text"
 )
 
+// Describes Sorting method for numberdisplay
 const (
-	// Describes Sorting method for numberdisplay
-	BottomUp = iota
+	BottomUp int = iota
 	TopDown
+)
+
+type OpMode byte
+
+const (
+	OpDatabase OpMode = 'D'
+	OpFiles    OpMode = 'F'
+	OpQuery    OpMode = 'Q'
+	OpRemove   OpMode = 'R'
+	OpSync     OpMode = 'S'
+	OpDepTest  OpMode = 'T'
+	OpUpgrade  OpMode = 'U'
+
+	OpVersion OpMode = 'V'
+	OpHelp    OpMode = 'h'
+
+	OpYay         OpMode = 'Y'
+	OpShow        OpMode = 'P'
+	OpGetPkgbuild OpMode = 'G'
 )
 
 type TargetMode int
@@ -23,19 +43,55 @@ const (
 	ModeRepo
 )
 
+type SearchMode int
+
+// Verbosity settings for search
+const (
+	NumberMenu SearchMode = iota
+	Detailed
+	Minimal
+)
+const completionFileName = "completion.cache"
+
 // HideMenus indicates if pacman's provider menus must be hidden
-var HideMenus = false
+var hideMenus = false
 
 // NoConfirm indicates if user input should be skipped
-var NoConfirm = false
+var userNoConfirm = false // use PacmanConf.NoConfirm
 
-type AdditionalFlags struct {
-	SaveConfig bool
-	Mode       TargetMode
+type YayConfig struct {
+	MainOperation  OpMode
+	SaveConfig     bool
+	Mode           TargetMode
+	SearchMode     SearchMode
+	CompletionPath string
+	ConfigPath     string
+
+	Conf     PersistentYayConfig
+	ModeConf interface{} // *XConf
+	Pacman   *PacmanConf
+}
+
+type PConf struct {
+	Complete      bool
+	DefaultConfig bool
+	CurrentConfig bool
+	LocalStats    bool
+	News          bool
+	Quiet         bool
+}
+
+type YConf struct {
+	GenDevDB bool
+	Clean    bool
+}
+
+type GConf struct {
+	Force bool
 }
 
 // Configuration stores yay's config.
-type Configuration struct {
+type PersistentYayConfig struct {
 	AURURL             string `json:"aururl"`
 	BuildDir           string `json:"buildDir"`
 	ABSDir             string `json:"absdir"`
@@ -62,7 +118,6 @@ type Configuration struct {
 	SudoBin            string `json:"sudobin"`
 	SudoFlags          string `json:"sudoflags"`
 	RequestSplitN      int    `json:"requestsplitn"`
-	SearchMode         int    `json:"-"`
 	SortMode           int    `json:"sortmode"`
 	CompletionInterval int    `json:"completionrefreshtime"`
 	SudoLoop           bool   `json:"sudoloop"`
@@ -80,54 +135,58 @@ type Configuration struct {
 	BatchInstall       bool   `json:"batchinstall"`
 }
 
-func DefaultConfig() *Configuration {
-	return &Configuration{
-		AURURL:             "https://aur.archlinux.org",
-		BuildDir:           os.ExpandEnv("$HOME/.cache/yay"),
-		ABSDir:             os.ExpandEnv("$HOME/.cache/yay/abs"),
-		CleanAfter:         false,
-		Editor:             "",
-		EditorFlags:        "",
-		Devel:              false,
-		MakepkgBin:         "makepkg",
-		MakepkgConf:        "",
-		PacmanBin:          "pacman",
-		PGPFetch:           true,
-		PacmanConf:         "/etc/pacman.conf",
-		GpgFlags:           "",
-		MFlags:             "",
-		GitFlags:           "",
-		SortMode:           BottomUp,
-		CompletionInterval: 7,
-		SortBy:             "votes",
-		SearchBy:           "name-desc",
-		SudoLoop:           false,
-		GitBin:             "git",
-		GpgBin:             "gpg",
-		SudoBin:            "sudo",
-		SudoFlags:          "",
-		TimeUpdate:         false,
-		RequestSplitN:      150,
-		ReDownload:         "no",
-		ReBuild:            "no",
-		BatchInstall:       false,
-		AnswerClean:        "",
-		AnswerDiff:         "",
-		AnswerEdit:         "",
-		AnswerUpgrade:      "",
-		RemoveMake:         "ask",
-		Provides:           true,
-		UpgradeMenu:        true,
-		CleanMenu:          true,
-		DiffMenu:           true,
-		EditMenu:           false,
-		UseAsk:             false,
-		CombinedUpgrade:    false,
-	}
+var defaultYayConfig = PersistentYayConfig{
+	AURURL:             "https://aur.archlinux.org",
+	BuildDir:           os.ExpandEnv("$HOME/.cache/yay"),
+	ABSDir:             os.ExpandEnv("$HOME/.cache/yay/abs"),
+	CleanAfter:         false,
+	Editor:             "",
+	EditorFlags:        "",
+	Devel:              false,
+	MakepkgBin:         "makepkg",
+	MakepkgConf:        "",
+	PacmanBin:          "pacman",
+	PGPFetch:           true,
+	PacmanConf:         "/etc/pacman.conf",
+	GpgFlags:           "",
+	MFlags:             "",
+	GitFlags:           "",
+	SortMode:           BottomUp,
+	CompletionInterval: 7,
+	SortBy:             "votes",
+	SearchBy:           "name-desc",
+	SudoLoop:           false,
+	GitBin:             "git",
+	GpgBin:             "gpg",
+	SudoBin:            "sudo",
+	SudoFlags:          "",
+	TimeUpdate:         false,
+	RequestSplitN:      150,
+	ReDownload:         "no",
+	ReBuild:            "no",
+	BatchInstall:       false,
+	AnswerClean:        "",
+	AnswerDiff:         "",
+	AnswerEdit:         "",
+	AnswerUpgrade:      "",
+	RemoveMake:         "ask",
+	Provides:           true,
+	UpgradeMenu:        true,
+	CleanMenu:          true,
+	DiffMenu:           true,
+	EditMenu:           false,
+	UseAsk:             false,
+	CombinedUpgrade:    false,
 }
 
-func NewConfig() (*Configuration, error) {
-	new := DefaultConfig()
+func Defaults() *PersistentYayConfig {
+	dc := new(PersistentYayConfig)
+	*dc = defaultYayConfig
+	return dc
+}
+
+func newConfig() (*PersistentYayConfig, error) {
+	new := defaultYayConfig
 
 	cacheHome := GetCacheHome()
 	new.BuildDir = cacheHome
@@ -143,11 +202,11 @@ func NewConfig() (*Configuration, error) {
 
 	err := initDir(new.BuildDir)
 
-	return new, err
+	return &new, err
 }
 
 // SaveConfig writes yay config to file.
-func (c *Configuration) Save(configPath string) error {
+func (c *PersistentYayConfig) Save(configPath string) error {
 	marshalledinfo, err := json.MarshalIndent(c, "", "\t")
 	if err != nil {
 		return err
@@ -172,7 +231,7 @@ func (c *Configuration) Save(configPath string) error {
 	return in.Sync()
 }
 
-func (c *Configuration) AsJSONString() string {
+func (c *PersistentYayConfig) AsJSONString() string {
 	var buf bytes.Buffer
 	enc := json.NewEncoder(&buf)
 	enc.SetIndent("", "\t")
@@ -182,7 +241,7 @@ func (c *Configuration) AsJSONString() string {
 	return buf.String()
 }
 
-func (c *Configuration) expandEnv() {
+func (c *PersistentYayConfig) expandEnv() {
 	c.AURURL = os.ExpandEnv(c.AURURL)
 	c.ABSDir = os.ExpandEnv(c.ABSDir)
 	c.BuildDir = os.ExpandEnv(c.BuildDir)
@@ -210,18 +269,19 @@ func (c *Configuration) expandEnv() {
 	c.RemoveMake = os.ExpandEnv(c.RemoveMake)
 }
 
-func (c *Configuration) load(configPath string) {
+func (c *PersistentYayConfig) load(configPath string) error {
 	cfile, err := os.Open(configPath)
-	if !os.IsNotExist(err) && err != nil {
-		text.EPrintln(text.Tf("failed to open config file '%s': %s", configPath, err))
-		return
+	if os.IsNotExist(err) {
+		return nil
 	}
-
+	if err != nil {
+		return fmt.Errorf(text.Tf("failed to open config file '%s': %s", configPath, err))
+	}
 	defer cfile.Close()
-	if !os.IsNotExist(err) {
-		decoder := json.NewDecoder(cfile)
-		if err = decoder.Decode(c); err != nil {
-			text.EPrintln(text.Tf("failed to read config file '%s': %s", configPath, err))
-		}
+
+	err = json.NewDecoder(cfile).Decode(c)
+	if err != nil {
+		return fmt.Errorf(text.Tf("failed to read config file '%s': %s", configPath, err))
 	}
+	return nil
 }

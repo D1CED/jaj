@@ -160,15 +160,15 @@ func getPkgbuilds(pkgs []string, rt *runtime.Runtime, force bool) error {
 		return err
 	}
 
-	pkgs = query.RemoveInvalidTargets(pkgs, rt.Mode)
-	aur, repo := packageSlices(pkgs, rt.DB, rt.Mode)
+	pkgs = query.RemoveInvalidTargets(pkgs, rt.Config.Mode)
+	aur, repo := packageSlices(pkgs, rt.DB, rt.Config.Mode)
 
 	for n := range aur {
 		_, pkg := text.SplitDBFromName(aur[n])
 		aur[n] = pkg
 	}
 
-	info, err := query.AURInfoPrint(aur, rt.Config.RequestSplitN)
+	info, err := query.AURInfoPrint(aur, rt.Config.Conf.RequestSplitN)
 	if err != nil {
 		return err
 	}
@@ -207,7 +207,7 @@ func getPkgbuilds(pkgs []string, rt *runtime.Runtime, force bool) error {
 			}
 		}
 
-		if _, err = downloadPkgbuilds(BuildRun{rt.CmdBuilder, rt.CmdRunner}, bases, nil, wd, rt.Config.AURURL); err != nil {
+		if _, err = downloadPkgbuilds(BuildRun{rt.CmdBuilder, rt.CmdRunner}, bases, nil, wd, rt.Config.Conf.AURURL); err != nil {
 			return err
 		}
 
@@ -289,7 +289,7 @@ func getPkgbuildsfromABS(pkgs []string, path string, force bool, rt *runtime.Run
 
 	download := func(pkg string, url string) {
 		defer wg.Done()
-		if _, err := gitDownloadABS(BuildRun{rt.CmdBuilder, rt.CmdRunner}, url, rt.Config.ABSDir, pkg); err != nil {
+		if _, err := gitDownloadABS(BuildRun{rt.CmdBuilder, rt.CmdRunner}, url, rt.Config.Conf.ABSDir, pkg); err != nil {
 			errs.Add(errors.New(text.Tf("failed to get pkgbuild: %s: %s", text.Cyan(pkg), err.Error())))
 			return
 		}
@@ -297,7 +297,7 @@ func getPkgbuildsfromABS(pkgs []string, path string, force bool, rt *runtime.Run
 		_, stderr, err := rt.CmdRunner.Capture(
 			exec.Command(
 				"cp", "-r",
-				filepath.Join(rt.Config.ABSDir, pkg, "trunk"),
+				filepath.Join(rt.Config.Conf.ABSDir, pkg, "trunk"),
 				filepath.Join(path, pkg)), 0)
 		mux.Lock()
 		downloaded++

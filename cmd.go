@@ -10,288 +10,154 @@ import (
 	"github.com/Jguer/yay/v10/pkg/news"
 	"github.com/Jguer/yay/v10/pkg/query"
 	"github.com/Jguer/yay/v10/pkg/settings"
-	"github.com/Jguer/yay/v10/pkg/settings/parser"
 	"github.com/Jguer/yay/v10/pkg/settings/runtime"
 	"github.com/Jguer/yay/v10/pkg/text"
 )
 
-func usage() {
-	text.Println(`Usage:
-    yay
-    yay <operation> [...]
-    yay <package(s)>
+func usage() { text.Print(settings.Usage) }
 
-operations:
-    yay {-h --help}
-    yay {-V --version}
-    yay {-D --database}    <options> <package(s)>
-    yay {-F --files}       [options] [package(s)]
-    yay {-Q --query}       [options] [package(s)]
-    yay {-R --remove}      [options] <package(s)>
-    yay {-S --sync}        [options] [package(s)]
-    yay {-T --deptest}     [options] [package(s)]
-    yay {-U --upgrade}     [options] <file(s)>
+func handleCmd(rt *runtime.Runtime) error {
 
-New operations:
-    yay {-Y --yay}         [options] [package(s)]
-    yay {-P --show}        [options]
-    yay {-G --getpkgbuild} [package(s)]
-
-If no arguments are provided 'yay -Syu' will be performed
-If no operation is provided -Y will be assumed
-
-New options:
-       --repo             Assume targets are from the repositories
-    -a --aur              Assume targets are from the AUR
-
-Permanent configuration options:
-    --save                Causes the following options to be saved back to the
-                          config file when used
-
-    --aururl      <url>   Set an alternative AUR URL
-    --builddir    <dir>   Directory used to download and run PKGBUILDS
-    --absdir      <dir>   Directory used to store downloads from the ABS
-    --editor      <file>  Editor to use when editing PKGBUILDs
-    --editorflags <flags> Pass arguments to editor
-    --makepkg     <file>  makepkg command to use
-    --mflags      <flags> Pass arguments to makepkg
-    --pacman      <file>  pacman command to use
-    --git         <file>  git command to use
-    --gitflags    <flags> Pass arguments to git
-    --gpg         <file>  gpg command to use
-    --gpgflags    <flags> Pass arguments to gpg
-    --config      <file>  pacman.conf file to use
-    --makepkgconf <file>  makepkg.conf file to use
-    --nomakepkgconf       Use the default makepkg.conf
-
-    --requestsplitn <n>   Max amount of packages to query per AUR request
-    --completioninterval  <n> Time in days to refresh completion cache
-    --sortby    <field>   Sort AUR results by a specific field during search
-    --searchby  <field>   Search for packages using a specified field
-    --answerclean   <a>   Set a predetermined answer for the clean build menu
-    --answerdiff    <a>   Set a predetermined answer for the diff menu
-    --answeredit    <a>   Set a predetermined answer for the edit pkgbuild menu
-    --answerupgrade <a>   Set a predetermined answer for the upgrade menu
-    --noanswerclean       Unset the answer for the clean build menu
-    --noanswerdiff        Unset the answer for the edit diff menu
-    --noansweredit        Unset the answer for the edit pkgbuild menu
-    --noanswerupgrade     Unset the answer for the upgrade menu
-    --cleanmenu           Give the option to clean build PKGBUILDS
-    --diffmenu            Give the option to show diffs for build files
-    --editmenu            Give the option to edit/view PKGBUILDS
-    --upgrademenu         Show a detailed list of updates with the option to skip any
-    --nocleanmenu         Don't clean build PKGBUILDS
-    --nodiffmenu          Don't show diffs for build files
-    --noeditmenu          Don't edit/view PKGBUILDS
-    --noupgrademenu       Don't show the upgrade menu
-    --askremovemake       Ask to remove makedepends after install
-    --removemake          Remove makedepends after install
-    --noremovemake        Don't remove makedepends after install
-
-    --cleanafter          Remove package sources after successful install
-    --nocleanafter        Do not remove package sources after successful build
-    --bottomup            Shows AUR's packages first and then repository's
-    --topdown             Shows repository's packages first and then AUR's
-
-    --devel               Check development packages during sysupgrade
-    --nodevel             Do not check development packages
-    --rebuild             Always build target packages
-    --rebuildall          Always build all AUR packages
-    --norebuild           Skip package build if in cache and up to date
-    --rebuildtree         Always build all AUR packages even if installed
-    --redownload          Always download pkgbuilds of targets
-    --noredownload        Skip pkgbuild download if in cache and up to date
-    --redownloadall       Always download pkgbuilds of all AUR packages
-    --provides            Look for matching providers when searching for packages
-    --noprovides          Just look for packages by pkgname
-    --pgpfetch            Prompt to import PGP keys from PKGBUILDs
-    --nopgpfetch          Don't prompt to import PGP keys
-    --useask              Automatically resolve conflicts using pacman's ask flag
-    --nouseask            Confirm conflicts manually during the install
-    --combinedupgrade     Refresh then perform the repo and AUR upgrade together
-    --nocombinedupgrade   Perform the repo upgrade and AUR upgrade separately
-    --batchinstall        Build multiple AUR packages then install them together
-    --nobatchinstall      Build and install each AUR package one by one
-
-    --sudo                <file>  sudo command to use
-    --sudoflags           <flags> Pass arguments to sudo
-    --sudoloop            Loop sudo calls in the background to avoid timeout
-    --nosudoloop          Do not loop sudo calls in the background
-
-    --timeupdate          Check packages' AUR page for changes during sysupgrade
-    --notimeupdate        Do not check packages' AUR page for changes
-
-show specific options:
-    -c --complete         Used for completions
-    -d --defaultconfig    Print default yay configuration
-    -g --currentconfig    Print current yay configuration
-    -s --stats            Display system package statistics
-    -w --news             Print arch news
-
-yay specific options:
-    -c --clean            Remove unneeded dependencies
-       --gendb            Generates development package DB used for updating
-
-getpkgbuild specific options:
-    -f --force            Force download for existing ABS packages`)
-}
-
-func handleCmd(cmdArgs *parser.Arguments, rt *runtime.Runtime) error {
-	if cmdArgs.ExistsArg("h", "help") {
-		return handleHelp(cmdArgs, rt)
-	}
-
-	if rt.Config.SudoLoop && settings.NeedRoot(cmdArgs, rt.Mode) {
+	if rt.Config.Conf.SudoLoop && settings.NeedRoot(rt.Config.Pacman, rt.Config.Mode) {
 		sudoLoopBackground(rt.CmdRunner, rt.Config)
 	}
 
-	switch cmdArgs.Op {
-	case "V", "version":
+	switch rt.Config.MainOperation {
+	case settings.OpDatabase, settings.OpFiles, settings.OpDepTest, settings.OpUpgrade:
+		return rt.CmdRunner.Show(passToPacman(rt, rt.Config.Pacman))
+	case settings.OpHelp:
+		return handleHelp(rt)
+	case settings.OpVersion:
 		handleVersion()
 		return nil
-	case "D", "database":
-		return rt.CmdRunner.Show(passToPacman(rt, cmdArgs))
-	case "F", "files":
-		return rt.CmdRunner.Show(passToPacman(rt, cmdArgs))
-	case "Q", "query":
-		return handleQuery(cmdArgs, rt)
-	case "R", "remove":
-		return handleRemove(cmdArgs, rt)
-	case "S", "sync":
-		return handleSync(cmdArgs, rt)
-	case "T", "deptest":
-		return rt.CmdRunner.Show(passToPacman(rt, cmdArgs))
-	case "U", "upgrade":
-		return rt.CmdRunner.Show(passToPacman(rt, cmdArgs))
-	case "G", "getpkgbuild":
-		return handleGetpkgbuild(cmdArgs, rt)
-	case "P", "show":
-		return handlePrint(cmdArgs, rt)
-	case "Y", "--yay":
-		return handleYay(cmdArgs, rt)
+	case settings.OpQuery:
+		return handleQuery(rt, rt.Config.Pacman.ModeConf.(*settings.QConf))
+	case settings.OpRemove:
+		return handleRemove(rt.Config.Pacman.ModeConf.(*settings.RConf), rt)
+	case settings.OpSync:
+		return handleSync(rt.Config.Pacman.ModeConf.(*settings.SConf), rt)
+	case settings.OpGetPkgbuild:
+		return handleGetpkgbuild(rt.Config.Pacman.ModeConf.(*settings.GConf), rt)
+	case settings.OpShow:
+		return handlePrint(rt.Config.Pacman.ModeConf.(*settings.PConf), rt)
+	case settings.OpYay:
+		return handleYay(rt.Config.Pacman.ModeConf.(*settings.YConf), rt)
+	default:
+		return text.ErrT("unhandled operation")
 	}
-
-	return text.ErrT("unhandled operation")
 }
 
-func handleQuery(cmdArgs *parser.Arguments, rt *runtime.Runtime) error {
-	if cmdArgs.ExistsArg("u", "upgrades") {
-		return printUpdateList(cmdArgs, rt, cmdArgs.ExistsDouble("u", "sysupgrade"))
-	}
-	return rt.CmdRunner.Show(passToPacman(rt, cmdArgs))
-}
-
-func handleHelp(cmdArgs *parser.Arguments, rt *runtime.Runtime) error {
-	if cmdArgs.Op == "Y" || cmdArgs.Op == "yay" {
+func handleHelp(rt *runtime.Runtime) error {
+	if rt.Config.Pacman == nil {
 		usage()
 		return nil
 	}
-	return rt.CmdRunner.Show(passToPacman(rt, cmdArgs))
+	return rt.CmdRunner.Show(passToPacman(rt, rt.Config.Pacman))
+}
+
+func handleQuery(rt *runtime.Runtime, cmdArgs *settings.QConf) error {
+	if cmdArgs.Upgrades {
+		return printUpdateList(rt.Config.Pacman, rt, len(cmdArgs.SysUpgrade) > 1)
+	}
+	return rt.CmdRunner.Show(passToPacman(rt, rt.Config.Pacman))
 }
 
 func handleVersion() {
 	text.Printf("yay v%s - libalpm v%s\n", yayVersion, alpm.Version())
 }
 
-func handlePrint(cmdArgs *parser.Arguments, rt *runtime.Runtime) (err error) {
+func handlePrint(cmdArgs *settings.PConf, rt *runtime.Runtime) (err error) {
+	completions, completionsSet := cmdArgs.Complete
+
 	switch {
-	case cmdArgs.ExistsArg("d", "defaultconfig"):
-		tmpConfig := settings.DefaultConfig()
-		text.Printf("%v", tmpConfig)
-	case cmdArgs.ExistsArg("g", "currentconfig"):
-		text.Printf("%v", rt.Config)
-	case cmdArgs.ExistsArg("n", "numberupgrades"):
-		err = printNumberOfUpdates(rt, cmdArgs.ExistsDouble("u", "sysupgrade"))
-	case cmdArgs.ExistsArg("w", "news"):
-		double := cmdArgs.ExistsDouble("w", "news")
-		quiet := cmdArgs.ExistsArg("q", "quiet")
-		err = news.PrintNewsFeed(rt.DB.LastBuildTime(), rt.Config.SortMode, double, quiet)
-	case cmdArgs.ExistsDouble("c", "complete"):
-		err = completion.Show(rt.DB, rt.Config.AURURL, rt.CompletionPath, rt.Config.CompletionInterval, true)
-	case cmdArgs.ExistsArg("c", "complete"):
-		err = completion.Show(rt.DB, rt.Config.AURURL, rt.CompletionPath, rt.Config.CompletionInterval, false)
-	case cmdArgs.ExistsArg("s", "stats"):
-		err = localStatistics(rt.DB, rt.Config.RequestSplitN)
-	default:
-		err = nil
+	case cmdArgs.DefaultConfig:
+		text.Println(settings.Defaults().AsJSONString())
+	case cmdArgs.CurrentConfig:
+		text.Printf("%v", rt.Config.Conf.AsJSONString())
+	case cmdArgs.NumberUpgrades:
+		err = printNumberOfUpdates(rt, len(cmdArgs.SysUpgrade) > 1)
+	case cmdArgs.News:
+		double := cmdArgs.News
+		quiet := cmdArgs.Quiet
+		err = news.PrintNewsFeed(rt.DB.LastBuildTime(), rt.Config.Conf.SortMode, double, quiet)
+	case completionsSet:
+		err = completion.Show(rt.DB, rt.Config.Conf.AURURL, rt.Config.CompletionPath, rt.Config.Conf.CompletionInterval, len(completions) > 1)
+	case cmdArgs.LocalStats:
+		err = localStatistics(rt.DB, rt.Config.Conf.RequestSplitN)
 	}
 	return err
 }
 
-func handleYay(cmdArgs *parser.Arguments, rt *runtime.Runtime) error {
-	if cmdArgs.ExistsArg("gendb") {
+func handleYay(cmdArgs *settings.YConf, rt *runtime.Runtime) error {
+	if cmdArgs.GenDevDB {
 		return createDevelDB(rt)
 	}
-	if cmdArgs.ExistsDouble("c") {
-		return cleanDependencies(rt, cmdArgs, true)
+	if cmdArgs.Clean {
+		return cleanDependencies(rt, rt.Config.Pacman, len(clean) > 1)
 	}
-	if cmdArgs.ExistsArg("c", "clean") {
-		return cleanDependencies(rt, cmdArgs, false)
-	}
-	if len(cmdArgs.Targets) > 0 {
-		return handleYogurt(cmdArgs, rt)
+	if len(rt.Config.Pacman.Targets) > 0 {
+		return handleYogurt(rt.Config.Pacman, rt)
 	}
 	return nil
 }
 
-func handleGetpkgbuild(cmdArgs *parser.Arguments, rt *runtime.Runtime) error {
-	return getPkgbuilds(cmdArgs.Targets, rt, cmdArgs.ExistsArg("f", "force"))
+func handleGetpkgbuild(cmdArgs *settings.GConf, rt *runtime.Runtime) error {
+	return getPkgbuilds(rt.Config.Pacman.Targets, rt, cmdArgs.Force)
 }
 
-func handleYogurt(cmdArgs *parser.Arguments, rt *runtime.Runtime) error {
-	rt.Config.SearchMode = numberMenu
-	return displayNumberMenu(cmdArgs.Targets, cmdArgs, rt)
+func handleYogurt(cmdArgs *settings.PacmanConf, rt *runtime.Runtime) error {
+	rt.Config.SearchMode = settings.NumberMenu
+	return displayNumberMenu(cmdArgs.Targets, rt)
 }
 
-func handleSync(cmdArgs *parser.Arguments, rt *runtime.Runtime) error {
-	targets := cmdArgs.Targets
+func handleSync(cmdArgs *settings.SConf, rt *runtime.Runtime) error {
+	targets := rt.Config.Pacman.Targets
 
-	if cmdArgs.ExistsArg("s", "search") {
-		if cmdArgs.ExistsArg("q", "quiet") {
-			rt.Config.SearchMode = minimal
+	if cmdArgs.Search != "" {
+		if cmdArgs.Quiet {
+			rt.Config.SearchMode = settings.Minimal
 		} else {
-			rt.Config.SearchMode = detailed
+			rt.Config.SearchMode = settings.Detailed
 		}
 		return syncSearch(targets, rt)
 	}
-	if cmdArgs.ExistsArg("p", "print", "print-format") {
-		return rt.CmdRunner.Show(passToPacman(rt, cmdArgs))
+	if cmdArgs.Print {
+		return rt.CmdRunner.Show(passToPacman(rt, rt.Config.Pacman))
 	}
-	if cmdArgs.ExistsArg("c", "clean") {
-		return syncClean(rt, cmdArgs)
+	if cmdArgs.Clean {
+		return syncClean(rt)
 	}
-	if cmdArgs.ExistsArg("l", "list") {
-		return syncList(cmdArgs, rt)
+	if cmdArgs.List {
+		return syncList(rt, cmdArgs.Quiet)
 	}
-	if cmdArgs.ExistsArg("g", "groups") {
-		return rt.CmdRunner.Show(passToPacman(rt, cmdArgs))
+	if cmdArgs.Groups {
+		return rt.CmdRunner.Show(passToPacman(rt, rt.Config.Pacman))
 	}
-	if cmdArgs.ExistsArg("i", "info") {
-		return syncInfo(cmdArgs, targets, rt)
+	if cmdArgs.Info {
+		return syncInfo(rt.Config.Pacman, targets, rt)
 	}
-	if cmdArgs.ExistsArg("u", "sysupgrade") {
-		return install(cmdArgs, rt, false)
+	if cmdArgs.SysUpgrade {
+		return install(rt, rt.Config.Pacman, cmdArgs, false)
 	}
-	if len(cmdArgs.Targets) > 0 {
-		return install(cmdArgs, rt, false)
+	if len(rt.Config.Pacman.Targets) > 0 {
+		return install(rt, rt.Config.Pacman, cmdArgs, false)
 	}
-	if cmdArgs.ExistsArg("y", "refresh") {
-		return rt.CmdRunner.Show(passToPacman(rt, cmdArgs))
+	if cmdArgs.Refresh {
+		return rt.CmdRunner.Show(passToPacman(rt, rt.Config.Pacman))
 	}
 	return nil
 }
 
-func handleRemove(cmdArgs *parser.Arguments, rt *runtime.Runtime) error {
-	err := rt.CmdRunner.Show(passToPacman(rt, cmdArgs))
+func handleRemove(cmdArgs *settings.RConf, rt *runtime.Runtime) error {
+	err := rt.CmdRunner.Show(passToPacman(rt, rt.Config.Pacman))
 	if err == nil {
-		rt.VCSStore.RemovePackage(cmdArgs.Targets)
+		rt.VCSStore.RemovePackage(rt.Config.Pacman.Targets)
 	}
-
 	return err
 }
 
 // NumberMenu presents a CLI for selecting packages to install.
-func displayNumberMenu(pkgS []string, cmdArgs *parser.Arguments, rt *runtime.Runtime) error {
+func displayNumberMenu(pkgS []string, rt *runtime.Runtime) error {
 	var (
 		aurErr, repoErr error
 		aq              aurQuery
@@ -299,14 +165,14 @@ func displayNumberMenu(pkgS []string, cmdArgs *parser.Arguments, rt *runtime.Run
 		lenaq, lenpq    int
 	)
 
-	pkgS = query.RemoveInvalidTargets(pkgS, rt.Mode)
+	pkgS = query.RemoveInvalidTargets(pkgS, rt.Config.Mode)
 
-	if rt.Mode == settings.ModeAUR || rt.Mode == settings.ModeAny {
-		aq, aurErr = narrowSearch(pkgS, true, rt.Config.SearchBy, rt.Config.SortBy)
+	if rt.Config.Mode == settings.ModeAUR || rt.Config.Mode == settings.ModeAny {
+		aq, aurErr = narrowSearch(pkgS, true, rt.Config.Conf.SearchBy, rt.Config.Conf.SortBy)
 		lenaq = len(aq)
 	}
-	if rt.Mode == settings.ModeRepo || rt.Mode == settings.ModeAny {
-		pq = queryRepo(pkgS, rt.DB, rt.Config.SortMode)
+	if rt.Config.Mode == settings.ModeRepo || rt.Config.Mode == settings.ModeAny {
+		pq = queryRepo(pkgS, rt.DB, rt.Config.Conf.SortMode)
 		lenpq = len(pq)
 		if repoErr != nil {
 			return repoErr
@@ -317,20 +183,20 @@ func displayNumberMenu(pkgS []string, cmdArgs *parser.Arguments, rt *runtime.Run
 		return text.ErrT("no packages match search")
 	}
 
-	switch rt.Config.SortMode {
+	switch rt.Config.Conf.SortMode {
 	case settings.TopDown:
-		if rt.Mode == settings.ModeRepo || rt.Mode == settings.ModeAny {
-			pq.printSearch(rt.DB, rt.Config.SearchMode, rt.Config.SortMode)
+		if rt.Config.Mode == settings.ModeRepo || rt.Config.Mode == settings.ModeAny {
+			pq.printSearch(rt.DB, rt.Config.SearchMode, rt.Config.Conf.SortMode)
 		}
-		if rt.Mode == settings.ModeAUR || rt.Mode == settings.ModeAny {
-			aq.printSearch(rt.DB, lenpq+1, rt.Config.SearchMode, rt.Config.SortMode)
+		if rt.Config.Mode == settings.ModeAUR || rt.Config.Mode == settings.ModeAny {
+			aq.printSearch(rt.DB, lenpq+1, rt.Config.SearchMode, rt.Config.Conf.SortMode)
 		}
 	case settings.BottomUp:
-		if rt.Mode == settings.ModeAUR || rt.Mode == settings.ModeAny {
-			aq.printSearch(rt.DB, lenpq+1, rt.Config.SearchMode, rt.Config.SortMode)
+		if rt.Config.Mode == settings.ModeAUR || rt.Config.Mode == settings.ModeAny {
+			aq.printSearch(rt.DB, lenpq+1, rt.Config.SearchMode, rt.Config.Conf.SortMode)
 		}
-		if rt.Mode == settings.ModeRepo || rt.Mode == settings.ModeAny {
-			pq.printSearch(rt.DB, rt.Config.SearchMode, rt.Config.SortMode)
+		if rt.Config.Mode == settings.ModeRepo || rt.Config.Mode == settings.ModeAny {
+			pq.printSearch(rt.DB, rt.Config.SearchMode, rt.Config.Conf.SortMode)
 		}
 	default:
 		return text.ErrT("invalid sort mode. Fix with yay -Y --bottomup --save")
@@ -355,13 +221,13 @@ func displayNumberMenu(pkgS []string, cmdArgs *parser.Arguments, rt *runtime.Run
 	}
 
 	include, exclude, _, otherExclude := ParseNumberMenu(string(numberBuf))
-	arguments := cmdArgs.CopyGlobal()
+	arguments := rt.Config.Pacman.DeepCopy()
 
 	isInclude := len(exclude) == 0 && len(otherExclude) == 0
 
 	for i, pkg := range pq {
 		var target int
-		switch rt.Config.SortMode {
+		switch rt.Config.Conf.SortMode {
 		case settings.TopDown:
 			target = i + 1
 		case settings.BottomUp:
@@ -371,14 +237,14 @@ func displayNumberMenu(pkgS []string, cmdArgs *parser.Arguments, rt *runtime.Run
 		}
 
 		if (isInclude && include.Get(target)) || (!isInclude && !exclude.Get(target)) {
-			arguments.AddTarget(pkg.DB().Name() + "/" + pkg.Name())
+			arguments.Targets = append(arguments.Targets, pkg.DB().Name()+"/"+pkg.Name())
 		}
 	}
 
 	for i := range aq {
 		var target int
 
-		switch rt.Config.SortMode {
+		switch rt.Config.Conf.SortMode {
 		case settings.TopDown:
 			target = i + 1 + len(pq)
 		case settings.BottomUp:
@@ -388,7 +254,7 @@ func displayNumberMenu(pkgS []string, cmdArgs *parser.Arguments, rt *runtime.Run
 		}
 
 		if (isInclude && include.Get(target)) || (!isInclude && !exclude.Get(target)) {
-			arguments.AddTarget("aur/" + aq[i].Name)
+			arguments.Targets = append(arguments.Targets, "aur/"+aq[i].Name)
 		}
 	}
 
@@ -397,25 +263,26 @@ func displayNumberMenu(pkgS []string, cmdArgs *parser.Arguments, rt *runtime.Run
 		return nil
 	}
 
-	if rt.Config.SudoLoop {
+	if rt.Config.Conf.SudoLoop {
 		sudoLoopBackground(rt.CmdRunner, rt.Config)
 	}
 
-	return install(arguments, rt, true)
+	return install(rt, arguments, true)
 }
 
-func syncList(cmdArgs *parser.Arguments, rt *runtime.Runtime) error {
+func syncList(rt *runtime.Runtime, quiet bool) error {
 	aur := false
 
-	for i := len(cmdArgs.Targets) - 1; i >= 0; i-- {
-		if cmdArgs.Targets[i] == "aur" && (rt.Mode == settings.ModeAny || rt.Mode == settings.ModeAUR) {
-			cmdArgs.Targets = append(cmdArgs.Targets[:i], cmdArgs.Targets[i+1:]...)
+	for i := len(rt.Config.Pacman.Targets) - 1; i >= 0; i-- {
+		if rt.Config.Pacman.Targets[i] == "aur" && (rt.Config.Mode == settings.ModeAny || rt.Config.Mode == settings.ModeAUR) {
+
+			rt.Config.Pacman.Targets = append(rt.Config.Pacman.Targets[:i], rt.Config.Pacman.Targets[i+1:]...)
 			aur = true
 		}
 	}
 
-	if (rt.Mode == settings.ModeAny || rt.Mode == settings.ModeAUR) && (len(cmdArgs.Targets) == 0 || aur) {
-		resp, err := http.Get(rt.Config.AURURL + "/packages.gz")
+	if (rt.Config.Mode == settings.ModeAny || rt.Config.Mode == settings.ModeAUR) && (len(rt.Config.Pacman.Targets) == 0 || aur) {
+		resp, err := http.Get(rt.Config.Conf.AURURL + "/packages.gz")
 		if err != nil {
 			return err
 		}
@@ -426,7 +293,7 @@ func syncList(cmdArgs *parser.Arguments, rt *runtime.Runtime) error {
 		scanner.Scan()
 		for scanner.Scan() {
 			name := scanner.Text()
-			if cmdArgs.ExistsArg("q", "quiet") {
+			if quiet {
 				text.Println(name)
 			} else {
 				text.Printf("%s %s %s", text.Magenta("aur"), text.Bold(name), text.Bold(text.Green(text.T("unknown-version"))))
@@ -440,8 +307,8 @@ func syncList(cmdArgs *parser.Arguments, rt *runtime.Runtime) error {
 		}
 	}
 
-	if (rt.Mode == settings.ModeAny || rt.Mode == settings.ModeRepo) && (len(cmdArgs.Targets) != 0 || !aur) {
-		return rt.CmdRunner.Show(passToPacman(rt, cmdArgs))
+	if (rt.Config.Mode == settings.ModeAny || rt.Config.Mode == settings.ModeRepo) && (len(rt.Config.Pacman.Targets) != 0 || !aur) {
+		return rt.CmdRunner.Show(passToPacman(rt, rt.Config.Pacman))
 	}
 
 	return nil

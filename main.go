@@ -5,22 +5,20 @@ import (
 	"os"
 
 	pacmanconf "github.com/Morganamilo/go-pacmanconf"
+	rpc "github.com/mikkeloscar/aur"
 	"golang.org/x/term"
 
 	"github.com/Jguer/yay/v10/pkg/db/ialpm"
 	"github.com/Jguer/yay/v10/pkg/settings"
-	"github.com/Jguer/yay/v10/pkg/settings/parser"
 	"github.com/Jguer/yay/v10/pkg/settings/runtime"
 	"github.com/Jguer/yay/v10/pkg/text"
 )
 
-// YayConf holds the current config values for yay.
-// var rt *runtime.Runtime
+func initAlpm(cmdArgs *settings.PacmanConf, pacmanConfigPath string) (*pacmanconf.Config, bool, error) {
 
-func initAlpm(cmdArgs *parser.Arguments, pacmanConfigPath string) (*pacmanconf.Config, bool, error) {
 	root := "/"
-	if value, _, exists := cmdArgs.GetArg("root", "r"); exists {
-		root = value
+	if cmdArgs.Root != "" {
+		root = cmdArgs.Root
 	}
 
 	pacmanConf, stderr, err := pacmanconf.PacmanConf("--config", pacmanConfigPath, "--root", root)
@@ -28,37 +26,39 @@ func initAlpm(cmdArgs *parser.Arguments, pacmanConfigPath string) (*pacmanconf.C
 		return nil, false, fmt.Errorf("%s", stderr)
 	}
 
-	if dbPath, _, exists := cmdArgs.GetArg("dbpath", "b"); exists {
-		pacmanConf.DBPath = dbPath
+	if cmdArgs.DBPath != "" {
+		pacmanConf.DBPath = cmdArgs.DBPath
 	}
 
-	if arch, _, exists := cmdArgs.GetArg("arch"); exists {
-		pacmanConf.Architecture = arch
+	if cmdArgs.Arch != "" {
+		pacmanConf.Architecture = cmdArgs.Arch
 	}
 
-	if ignoreArray := cmdArgs.GetArgs("ignore"); ignoreArray != nil {
-		pacmanConf.IgnorePkg = append(pacmanConf.IgnorePkg, ignoreArray...)
+	sconf, ok := cmdArgs.ModeConf.(*settings.SConf)
+	if ok && len(sconf.Ignore) > 0 {
+		pacmanConf.IgnorePkg = append(pacmanConf.IgnorePkg, sconf.Ignore...)
 	}
 
-	if ignoreGroupsArray := cmdArgs.GetArgs("ignoregroup"); ignoreGroupsArray != nil {
-		pacmanConf.IgnoreGroup = append(pacmanConf.IgnoreGroup, ignoreGroupsArray...)
+	if ok && len(sconf.IgnoreGroup) > 0 {
+		pacmanConf.IgnoreGroup = append(pacmanConf.IgnoreGroup, sconf.IgnoreGroup...)
 	}
 
-	if cacheArray := cmdArgs.GetArgs("cachedir"); cacheArray != nil {
-		pacmanConf.CacheDir = cacheArray
+	if cmdArgs.CacheDir != "" {
+		pacmanConf.CacheDir = []string{cmdArgs.CacheDir}
 	}
 
-	if gpgDir, _, exists := cmdArgs.GetArg("gpgdir"); exists {
-		pacmanConf.GPGDir = gpgDir
+	if cmdArgs.GPGDir != "" {
+		pacmanConf.GPGDir = cmdArgs.GPGDir
 	}
 
-	useColor := pacmanConf.Color && term.IsTerminal(int(os.Stdout.Fd()))
-	switch value, _, _ := cmdArgs.GetArg("color"); value {
-	case "always":
+	outIsTerm := term.IsTerminal(int(os.Stdout.Fd()))
+	useColor := pacmanConf.Color && outIsTerm
+	switch cmdArgs.Color {
+	case settings.ColorAlways:
 		useColor = true
-	case "auto":
-		useColor = term.IsTerminal(int(os.Stdout.Fd()))
-	case "never":
+	case settings.ColorAuto:
+		useColor = outIsTerm
+	case settings.ColorNever:
 		useColor = false
 	}
 
@@ -80,19 +80,14 @@ func main() {
 }
 
 func appMain() (int, error) {
-	config, err := settings.NewConfig()
+
+	config, err := settings.ParseCommandLine(os.Args[1:])
 	if err != nil {
 		return 1, err
 	}
+	rpc.AURURL = config.Conf.AURURL + "/rpc.php?"
 
-	fl := &settings.AdditionalFlags{}
-	cmdArgs := settings.NewFlagParser()
-	err = settings.ParseCommandLine(cmdArgs, os.Args[1:], config, fl)
-	if err != nil {
-		return 1, err
-	}
-
-	pacmanConf, useColor, err := initAlpm(cmdArgs, config.PacmanConf)
+	pacmanConf, useColor, err := initAlpm(config.Pacman, config.Conf.PacmanConf)
 	if err != nil {
 		return 1, err
 	}
@@ -105,18 +100,18 @@ func appMain() (int, error) {
 	}
 	defer dbExecutor.Cleanup()
 
-	runt, err := runtime.New(config, pacmanConf, dbExecutor, fl.SaveConfig, fl.Mode)
+	runt, err := runtime.New(config, pacmanConf, dbExecutor)
 	if err != nil {
 		return 1, err
 	}
 
-	if runt.SaveConfig {
-		if errS := config.Save(runt.ConfigPath); errS != nil {
+	if config.SaveConfig {
+		if errS := config.Conf.Save(runt.Config.ConfigPath); errS != nil {
 			text.EPrintln(err)
 		}
 	}
 
-	err = handleCmd(cmdArgs, runt)
+	err = handleCmd(runt)
 	if err != nil {
 		return 1, err
 	}

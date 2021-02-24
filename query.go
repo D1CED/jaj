@@ -11,7 +11,6 @@ import (
 	"github.com/Jguer/yay/v10/pkg/db"
 	"github.com/Jguer/yay/v10/pkg/query"
 	"github.com/Jguer/yay/v10/pkg/settings"
-	"github.com/Jguer/yay/v10/pkg/settings/parser"
 	"github.com/Jguer/yay/v10/pkg/settings/runtime"
 	"github.com/Jguer/yay/v10/pkg/stringset"
 	"github.com/Jguer/yay/v10/pkg/text"
@@ -145,32 +144,32 @@ func narrowSearch(pkgS []string, sortS bool, searchBy string, sortBy string) (au
 
 // SyncSearch presents a query to the local repos and to the AUR.
 func syncSearch(pkgS []string, rt *runtime.Runtime) (err error) {
-	pkgS = query.RemoveInvalidTargets(pkgS, rt.Mode)
+	pkgS = query.RemoveInvalidTargets(pkgS, rt.Config.Mode)
 	var aurErr error
 	var aq aurQuery
 	var pq repoQuery
 
-	if rt.Mode == settings.ModeAUR || rt.Mode == settings.ModeAny {
-		aq, aurErr = narrowSearch(pkgS, true, rt.Config.SearchBy, rt.Config.SortBy)
+	if rt.Config.Mode == settings.ModeAUR || rt.Config.Mode == settings.ModeAny {
+		aq, aurErr = narrowSearch(pkgS, true, rt.Config.Conf.SearchBy, rt.Config.Conf.SortBy)
 	}
-	if rt.Mode == settings.ModeRepo || rt.Mode == settings.ModeAny {
-		pq = queryRepo(pkgS, rt.DB, rt.Config.SortMode)
+	if rt.Config.Mode == settings.ModeRepo || rt.Config.Mode == settings.ModeAny {
+		pq = queryRepo(pkgS, rt.DB, rt.Config.Conf.SortMode)
 	}
 
-	switch rt.Config.SortMode {
+	switch rt.Config.Conf.SortMode {
 	case settings.TopDown:
-		if rt.Mode == settings.ModeRepo || rt.Mode == settings.ModeAny {
-			pq.printSearch(rt.DB, rt.Config.SearchMode, rt.Config.SortMode)
+		if rt.Config.Mode == settings.ModeRepo || rt.Config.Mode == settings.ModeAny {
+			pq.printSearch(rt.DB, rt.Config.SearchMode, rt.Config.Conf.SortMode)
 		}
-		if rt.Mode == settings.ModeAUR || rt.Mode == settings.ModeAny {
-			aq.printSearch(rt.DB, 1, rt.Config.SearchMode, rt.Config.SortMode)
+		if rt.Config.Mode == settings.ModeAUR || rt.Config.Mode == settings.ModeAny {
+			aq.printSearch(rt.DB, 1, rt.Config.SearchMode, rt.Config.Conf.SortMode)
 		}
 	case settings.BottomUp:
-		if rt.Mode == settings.ModeAUR || rt.Mode == settings.ModeAny {
-			aq.printSearch(rt.DB, 1, rt.Config.SearchMode, rt.Config.SortMode)
+		if rt.Config.Mode == settings.ModeAUR || rt.Config.Mode == settings.ModeAny {
+			aq.printSearch(rt.DB, 1, rt.Config.SearchMode, rt.Config.Conf.SortMode)
 		}
-		if rt.Mode == settings.ModeRepo || rt.Mode == settings.ModeAny {
-			pq.printSearch(rt.DB, rt.Config.SearchMode, rt.Config.SortMode)
+		if rt.Config.Mode == settings.ModeRepo || rt.Config.Mode == settings.ModeAny {
+			pq.printSearch(rt.DB, rt.Config.SearchMode, rt.Config.Conf.SortMode)
 		}
 	default:
 		return errors.New(text.T("invalid sort mode. Fix with yay -Y --bottomup --save"))
@@ -185,12 +184,12 @@ func syncSearch(pkgS []string, rt *runtime.Runtime) (err error) {
 }
 
 // SyncInfo serves as a pacman -Si for repo packages and AUR packages.
-func syncInfo(cmdArgs *parser.Arguments, pkgS []string, rt *runtime.Runtime) error {
+func syncInfo(cmdArgs *settings.PacmanConf, pkgS []string, rt *runtime.Runtime) error {
 	var info []*rpc.Pkg
 	var err error
 	missing := false
-	pkgS = query.RemoveInvalidTargets(pkgS, rt.Mode)
-	aurS, repoS := packageSlices(pkgS, rt.DB, rt.Mode)
+	pkgS = query.RemoveInvalidTargets(pkgS, rt.Config.Mode)
+	aurS, repoS := packageSlices(pkgS, rt.DB, rt.Config.Mode)
 
 	if len(aurS) != 0 {
 		noDB := make([]string, 0, len(aurS))
@@ -200,7 +199,7 @@ func syncInfo(cmdArgs *parser.Arguments, pkgS []string, rt *runtime.Runtime) err
 			noDB = append(noDB, name)
 		}
 
-		info, err = query.AURInfoPrint(noDB, rt.Config.RequestSplitN)
+		info, err = query.AURInfoPrint(noDB, rt.Config.Conf.RequestSplitN)
 		if err != nil {
 			missing = true
 			text.EPrintln(err)
@@ -209,9 +208,9 @@ func syncInfo(cmdArgs *parser.Arguments, pkgS []string, rt *runtime.Runtime) err
 
 	// Repo always goes first
 	if len(repoS) != 0 {
-		arguments := cmdArgs.Copy()
-		arguments.ClearTargets()
-		arguments.AddTarget(repoS...)
+		arguments := cmdArgs.DeepCopy()
+		arguments.Targets = nil
+		arguments.Targets = append(arguments.Targets, repoS...)
 		err = rt.CmdRunner.Show(passToPacman(rt, arguments))
 
 		if err != nil {
@@ -225,7 +224,7 @@ func syncInfo(cmdArgs *parser.Arguments, pkgS []string, rt *runtime.Runtime) err
 
 	if len(info) != 0 {
 		for _, pkg := range info {
-			PrintInfo(pkg, rt.Config.AURURL, cmdArgs.ExistsDouble("i"))
+			PrintInfo(pkg, rt.Config.Conf.AURURL, cmdArgs.ModeConf.(*settings.QConf).Info)
 		}
 	}
 
