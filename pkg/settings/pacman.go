@@ -36,7 +36,7 @@ const (
 )
 
 type PacmanConf struct {
-	ModeConf interface{} // *XConf struct
+	ModeConf interface{ formatAsArgs(s []string) []string } // *XConf struct
 	Targets  []string
 
 	DBPath                 string
@@ -474,32 +474,35 @@ func (F *FConf) formatAsArgs(s []string) []string {
 	}
 	return s
 }
+func (*TConf) formatAsArgs(s []string) []string { return s }
+func (*HConf) formatAsArgs(s []string) []string { return s }
+func (*VConf) formatAsArgs(s []string) []string { return s }
 
 func NeedRoot(p *PacmanConf, tMode TargetMode) bool {
 	switch mode := p.ModeConf.(type) {
 	default:
 		return false
-	case DConf:
+	case *DConf:
 		if mode.Check {
 			return false
 		}
 		return true
-	case FConf:
+	case *FConf:
 		if mode.Refresh {
 			return true
 		}
 		return false
-	case QConf:
+	case *QConf:
 		if mode.Check {
 			return true
 		}
 		return false
-	case RConf:
+	case *RConf:
 		if mode.Print {
 			return false
 		}
 		return true
-	case SConf:
+	case *SConf:
 		if mode.Refresh {
 			return true
 		}
@@ -522,7 +525,7 @@ func NeedRoot(p *PacmanConf, tMode TargetMode) bool {
 			return false
 		}
 		return true
-	case UConf:
+	case *UConf:
 		return true
 	}
 }

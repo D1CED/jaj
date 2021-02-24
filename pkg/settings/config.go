@@ -68,7 +68,7 @@ type YayConfig struct {
 	ConfigPath     string
 
 	Conf     PersistentYayConfig
-	ModeConf interface{} // *XConf
+	ModeConf interface{ mark() } // *XConf
 	Pacman   *PacmanConf
 }
 
@@ -89,6 +89,10 @@ type YConf struct {
 type GConf struct {
 	Force bool
 }
+
+func (*PConf) mark() {}
+func (*YConf) mark() {}
+func (*GConf) mark() {}
 
 // Configuration stores yay's config.
 type PersistentYayConfig struct {

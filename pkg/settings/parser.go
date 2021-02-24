@@ -460,18 +460,18 @@ func handleConfig(conf *YayConfig, err *error) func(option parser.Enum, value []
 		// -- Pacman Sync Options --
 
 		case clean:
-			conf.ModeConf.(*SConf).Clean = true
+			conf.Pacman.ModeConf.(*SConf).Clean = true
 		case sysUpgrade:
-			conf.ModeConf.(*SConf).SysUpgrade = true
+			conf.Pacman.ModeConf.(*SConf).SysUpgrade = true
 		case downloadOnly:
-			conf.ModeConf.(*SConf).DownloadOnly = true
+			conf.Pacman.ModeConf.(*SConf).DownloadOnly = true
 
 		// -- Pacman File Options --
 
 		case regex:
-			conf.ModeConf.(*FConf).Regex = true
+			conf.Pacman.ModeConf.(*FConf).Regex = true
 		case machineReadable:
-			conf.ModeConf.(*FConf).MachineReadable = true
+			conf.Pacman.ModeConf.(*FConf).MachineReadable = true
 
 		// -- Persistent Yay Options --
 
