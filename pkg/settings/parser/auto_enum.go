@@ -118,6 +118,7 @@ func parse(s string) ([]option, error) {
 	startIdx := 0
 	cur := option{}
 	state := start
+	endToken := ')'
 
 	for i, r := range s {
 		switch state {
@@ -132,6 +133,7 @@ func parse(s string) ([]option, error) {
 			}
 			if '[' == r {
 				state = long
+				endToken = ']'
 				break
 			}
 			state = err
@@ -154,7 +156,13 @@ func parse(s string) ([]option, error) {
 				cur = option{ShortName: r}
 				break
 			}
-			if '[' == r || '(' == r {
+			if '[' == r {
+				endToken = ']'
+				state = long
+				break
+			}
+			if '(' == r {
+				endToken = ')'
 				state = long
 				break
 			}
@@ -170,6 +178,7 @@ func parse(s string) ([]option, error) {
 				break
 			}
 			if r == '[' {
+				endToken = ']'
 				state = long
 			}
 			if isWS(r) {
@@ -196,7 +205,7 @@ func parse(s string) ([]option, error) {
 			if isAlnum(r) || r == '-' {
 				break
 			}
-			if r == ')' || r == ']' {
+			if r == endToken {
 				cur.LongName = s[startIdx:i]
 				state = afterEnd
 				break
