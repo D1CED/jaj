@@ -69,9 +69,9 @@ func ParseCommandLine(args []string) (*YayConfig, error) {
 		return nil, err
 	}
 	yay := &YayConfig{
-		Conf:           *conf,
-		CompletionPath: filepath.Join(GetCacheHome(), completionFileName),
-		ConfigPath:     GetConfigPath(),
+		PersistentYayConfig: *conf,
+		CompletionPath:      filepath.Join(GetCacheHome(), completionFileName),
+		ConfigPath:          GetConfigPath(),
 	}
 
 	a, err := parser.Parse(mappingFunc(), args, text.In())
@@ -182,7 +182,7 @@ func handleConfig(conf *YayConfig, err *error) func(option parser.Enum, value []
 			if conf.Pacman != nil {
 				conf.Pacman.Config = last(value)
 			}
-			conf.Conf.PacmanConf = last(value)
+			conf.PacmanConf = last(value)
 
 		case noConfirm:
 			if conf.Pacman != nil {
@@ -476,168 +476,168 @@ func handleConfig(conf *YayConfig, err *error) func(option parser.Enum, value []
 		// -- Persistent Yay Options --
 
 		case aurURL:
-			conf.Conf.AURURL = strings.TrimRight(last(value), "/")
+			conf.AURURL = strings.TrimRight(last(value), "/")
 		case buildDir:
-			conf.Conf.BuildDir = last(value)
+			conf.BuildDir = last(value)
 		case absDir:
-			conf.Conf.ABSDir = last(value)
+			conf.ABSDir = last(value)
 
 		case cleanAfter:
-			conf.Conf.CleanAfter = true
+			conf.CleanAfter = true
 		case noCleanAfter:
-			conf.Conf.CleanAfter = false
+			conf.CleanAfter = false
 
 		case devel:
-			conf.Conf.Devel = true
+			conf.Devel = true
 		case noDevel:
-			conf.Conf.Devel = false
+			conf.Devel = false
 
 		case timeUpdate:
-			conf.Conf.TimeUpdate = true
+			conf.TimeUpdate = true
 		case noTimeUpdate:
-			conf.Conf.TimeUpdate = false
+			conf.TimeUpdate = false
 
 		case topdown:
-			conf.Conf.SortMode = TopDown
+			conf.SortMode = TopDown
 		case bottomup:
-			conf.Conf.SortMode = BottomUp
+			conf.SortMode = BottomUp
 
 		case completionInterval:
 			n, err := strconv.Atoi(last(value))
 			if err == nil {
-				conf.Conf.CompletionInterval = n
+				conf.CompletionInterval = n
 			}
 
 		case sortBy:
-			conf.Conf.SortBy = last(value)
+			conf.SortBy = last(value)
 
 		case searchBy:
-			conf.Conf.SearchBy = last(value)
+			conf.SearchBy = last(value)
 
 		case redownload:
-			conf.Conf.ReDownload = "yes"
+			conf.ReDownload = "yes"
 		case redownloadAll:
-			conf.Conf.ReDownload = "all"
+			conf.ReDownload = "all"
 		case noRedownload:
-			conf.Conf.ReDownload = "no"
+			conf.ReDownload = "no"
 
 		case rebuild:
-			conf.Conf.ReBuild = "yes"
+			conf.ReBuild = "yes"
 		case rebuildAll:
-			conf.Conf.ReBuild = "all"
+			conf.ReBuild = "all"
 		case rebuildTree:
-			conf.Conf.ReBuild = "tree"
+			conf.ReBuild = "tree"
 		case noRebuild:
-			conf.Conf.ReBuild = "no"
+			conf.ReBuild = "no"
 
 		case batchInstall:
-			conf.Conf.BatchInstall = true
+			conf.BatchInstall = true
 		case noBatchInstall:
-			conf.Conf.BatchInstall = false
+			conf.BatchInstall = false
 
 		case answerClean:
-			conf.Conf.AnswerClean = last(value)
+			conf.AnswerClean = last(value)
 		case noAnswerClean:
-			conf.Conf.AnswerClean = ""
+			conf.AnswerClean = ""
 		case answerDiff:
-			conf.Conf.AnswerDiff = last(value)
+			conf.AnswerDiff = last(value)
 		case noAnswerDiff:
-			conf.Conf.AnswerDiff = ""
+			conf.AnswerDiff = ""
 		case answerEdit:
-			conf.Conf.AnswerEdit = last(value)
+			conf.AnswerEdit = last(value)
 		case noAnswerEdit:
-			conf.Conf.AnswerEdit = ""
+			conf.AnswerEdit = ""
 		case answerUpgrade:
-			conf.Conf.AnswerUpgrade = last(value)
+			conf.AnswerUpgrade = last(value)
 		case noAnswerUpgrade:
-			conf.Conf.AnswerUpgrade = ""
+			conf.AnswerUpgrade = ""
 
 		case gpg:
-			conf.Conf.GpgBin = last(value)
+			conf.GpgBin = last(value)
 		case gpgFlags:
-			conf.Conf.GpgFlags = last(value)
+			conf.GpgFlags = last(value)
 
 		case git:
-			conf.Conf.GitBin = last(value)
+			conf.GitBin = last(value)
 		case gitFlags:
-			conf.Conf.GitFlags = last(value)
+			conf.GitFlags = last(value)
 
 		case editor:
-			conf.Conf.Editor = last(value)
+			conf.Editor = last(value)
 		case editorFlags:
-			conf.Conf.EditorFlags = last(value)
+			conf.EditorFlags = last(value)
 
 		case mFlags:
-			conf.Conf.MFlags = last(value)
+			conf.MFlags = last(value)
 		case makepkg:
-			conf.Conf.MakepkgBin = last(value)
+			conf.MakepkgBin = last(value)
 		case makePkgconf:
-			conf.Conf.MakepkgConf = last(value)
+			conf.MakepkgConf = last(value)
 		case noMakePkgconf:
-			conf.Conf.MakepkgConf = ""
+			conf.MakepkgConf = ""
 
 		case pacman:
-			conf.Conf.PacmanBin = last(value)
+			conf.PacmanBin = last(value)
 
 		case sudo:
-			conf.Conf.SudoBin = last(value)
+			conf.SudoBin = last(value)
 		case sudoFlags:
-			conf.Conf.SudoFlags = last(value)
+			conf.SudoFlags = last(value)
 
 		case sudoLoop:
-			conf.Conf.SudoLoop = true
+			conf.SudoLoop = true
 		case noSudoLoop:
-			conf.Conf.SudoLoop = false
+			conf.SudoLoop = false
 
 		case requestSplitN:
 			n, _ := strconv.Atoi(last(value))
 			if n > 0 {
-				conf.Conf.RequestSplitN = n
+				conf.RequestSplitN = n
 			}
 
 		case provides:
-			conf.Conf.Provides = true
+			conf.Provides = true
 		case noProvides:
-			conf.Conf.Provides = false
+			conf.Provides = false
 
 		case pgpFetch:
-			conf.Conf.PGPFetch = true
+			conf.PGPFetch = true
 		case noPGPFetch:
-			conf.Conf.PGPFetch = false
+			conf.PGPFetch = false
 
 		case upgradeMenu:
-			conf.Conf.UpgradeMenu = true
+			conf.UpgradeMenu = true
 		case noUpgradeMenu:
-			conf.Conf.UpgradeMenu = false
+			conf.UpgradeMenu = false
 		case cleanMenu:
-			conf.Conf.CleanMenu = true
+			conf.CleanMenu = true
 		case noCleanMenu:
-			conf.Conf.CleanMenu = false
+			conf.CleanMenu = false
 		case diffMenu:
-			conf.Conf.DiffMenu = true
+			conf.DiffMenu = true
 		case noDiffMenu:
-			conf.Conf.DiffMenu = false
+			conf.DiffMenu = false
 		case editMenu:
-			conf.Conf.EditMenu = true
+			conf.EditMenu = true
 		case noEditMenu:
-			conf.Conf.EditMenu = false
+			conf.EditMenu = false
 
 		case useAsk:
-			conf.Conf.UseAsk = true
+			conf.UseAsk = true
 		case noUseAsk:
-			conf.Conf.UseAsk = false
+			conf.UseAsk = false
 
 		case combinedUpgrade:
-			conf.Conf.CombinedUpgrade = true
+			conf.CombinedUpgrade = true
 		case noCombinedUpgrade:
-			conf.Conf.CombinedUpgrade = false
+			conf.CombinedUpgrade = false
 
 		case removeMake:
-			conf.Conf.RemoveMake = "yes"
+			conf.RemoveMake = "yes"
 		case noRemoveMake:
-			conf.Conf.RemoveMake = "no"
+			conf.RemoveMake = "no"
 		case askRemoveMake:
-			conf.Conf.RemoveMake = "ask"
+			conf.RemoveMake = "ask"
 
 		// -- Yay Show Options --
 

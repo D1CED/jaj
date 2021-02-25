@@ -85,16 +85,16 @@ func appMain() (int, error) {
 	if err != nil {
 		return 1, err
 	}
-	rpc.AURURL = config.Conf.AURURL + "/rpc.php?"
+	rpc.AURURL = config.AURURL + "/rpc.php?"
 
-	pacmanConf, useColor, err := initAlpm(config.Pacman, config.Conf.PacmanConf)
+	pacmanConf, useColor, err := initAlpm(config.Pacman, config.PacmanConf)
 	if err != nil {
 		return 1, err
 	}
 
 	text.UseColor = useColor
 
-	dbExecutor, err := ialpm.NewExecutor(pacmanConf)
+	dbExecutor, err := ialpm.NewExecutor(pacmanConf, false, config.Pacman.NoConfirm)
 	if err != nil {
 		return 1, err
 	}
@@ -106,7 +106,7 @@ func appMain() (int, error) {
 	}
 
 	if config.SaveConfig {
-		if errS := config.Conf.Save(runt.Config.ConfigPath); errS != nil {
+		if errS := config.Save(runt.Config.ConfigPath); errS != nil {
 			text.EPrintln(err)
 		}
 	}

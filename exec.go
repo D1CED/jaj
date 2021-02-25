@@ -27,9 +27,9 @@ func sudoLoop(cmdRunner exe.Runner, conf *settings.YayConfig) {
 
 func updateSudo(cmdRunner exe.Runner, conf *settings.YayConfig) {
 	for {
-		mSudoFlags := strings.Fields(conf.Conf.SudoFlags)
+		mSudoFlags := strings.Fields(conf.SudoFlags)
 		mSudoFlags = append([]string{"-v"}, mSudoFlags...)
-		err := cmdRunner.Show(exec.Command(conf.Conf.SudoBin, mSudoFlags...))
+		err := cmdRunner.Show(exec.Command(conf.SudoBin, mSudoFlags...))
 		if err != nil {
 			text.EPrintln(err)
 		} else {
@@ -61,18 +61,18 @@ func passToPacman(rt *runtime.Runtime, args *settings.PacmanConf) *exec.Cmd {
 	argArr := make([]string, 0, 32)
 
 	if settings.NeedRoot(args, rt.Config.Mode) {
-		argArr = append(argArr, rt.Config.Conf.SudoBin)
-		argArr = append(argArr, strings.Fields(rt.Config.Conf.SudoFlags)...)
+		argArr = append(argArr, rt.Config.SudoBin)
+		argArr = append(argArr, strings.Fields(rt.Config.SudoFlags)...)
 	}
 
-	argArr = append(argArr, rt.Config.Conf.PacmanBin)
+	argArr = append(argArr, rt.Config.PacmanBin)
 	argArr = append(argArr, args.FormatGlobalArgs()...)
 	argArr = append(argArr, args.FormatAsArgs()...)
 	if rt.Config.Pacman.NoConfirm {
 		argArr = append(argArr, "--noconfirm")
 	}
 
-	argArr = append(argArr, "--config", rt.Config.Conf.PacmanConf, "--")
+	argArr = append(argArr, "--config", rt.Config.PacmanConf, "--")
 	argArr = append(argArr, args.Targets...)
 
 	if settings.NeedRoot(args, rt.Config.Mode) {

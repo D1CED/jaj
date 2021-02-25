@@ -39,7 +39,7 @@ func TestAlpmExecutor(t *testing.T) {
 		},
 	}
 
-	aExec, err := NewExecutor(pacmanConf)
+	aExec, err := NewExecutor(pacmanConf, true, true)
 	assert.NoError(t, err)
 
 	assert.NotNil(t, aExec.conf)

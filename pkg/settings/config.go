@@ -67,8 +67,8 @@ type YayConfig struct {
 	CompletionPath string
 	ConfigPath     string
 
-	Conf     PersistentYayConfig
-	ModeConf interface{ mark() } // *XConf
+	PersistentYayConfig
+	ModeConf interface{ mark() } // *(P|Y|G)Conf
 	Pacman   *PacmanConf
 }
 

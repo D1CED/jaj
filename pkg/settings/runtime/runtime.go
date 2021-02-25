@@ -28,11 +28,11 @@ func New(conf *settings.YayConfig, pac *pacmanconf.Config, db db.Executor) (*Run
 
 	cmdRunner := &exe.OSRunner{}
 	cmdBuilder := &exe.CmdBuilder{
-		GitBin:          conf.Conf.GitBin,
-		GitFlags:        strings.Fields(conf.Conf.GitFlags),
-		MakepkgFlags:    strings.Fields(conf.Conf.MFlags),
-		MakepkgConfPath: conf.Conf.MakepkgConf,
-		MakepkgBin:      conf.Conf.MakepkgBin,
+		GitBin:          conf.GitBin,
+		GitFlags:        strings.Fields(conf.GitFlags),
+		MakepkgFlags:    strings.Fields(conf.MFlags),
+		MakepkgConfPath: conf.MakepkgConf,
+		MakepkgBin:      conf.MakepkgBin,
 	}
 
 	vcsStore := vcs.NewInfoStore(filepath.Join(settings.GetCacheHome(), vcsFileName), cmdRunner, cmdBuilder)

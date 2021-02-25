@@ -68,10 +68,10 @@ func syncClean(rt *runtime.Runtime) error {
 		question = text.T("Do you want to remove all other AUR packages from cache?")
 	}
 
-	text.Println(text.T("\nBuild directory:"), rt.Config.Conf.BuildDir)
+	text.Println(text.T("\nBuild directory:"), rt.Config.BuildDir)
 
 	if text.ContinueTask(question, true, rt.Config.Pacman.NoConfirm) {
-		if err := cleanAUR(&rt.Config.Conf, keepInstalled, keepCurrent, removeAll > 0, rt.DB); err != nil {
+		if err := cleanAUR(&rt.Config.PersistentYayConfig, keepInstalled, keepCurrent, removeAll > 0, rt.DB); err != nil {
 			return err
 		}
 	}
@@ -159,7 +159,7 @@ func cleanAUR(conf *settings.PersistentYayConfig, keepInstalled, keepCurrent, re
 func cleanUntracked(rt *runtime.Runtime) error {
 	text.Println(text.T("removing untracked AUR files from cache..."))
 
-	files, err := ioutil.ReadDir(rt.Config.Conf.BuildDir)
+	files, err := ioutil.ReadDir(rt.Config.BuildDir)
 	if err != nil {
 		return err
 	}
@@ -169,7 +169,7 @@ func cleanUntracked(rt *runtime.Runtime) error {
 			continue
 		}
 
-		dir := filepath.Join(rt.Config.Conf.BuildDir, file.Name())
+		dir := filepath.Join(rt.Config.BuildDir, file.Name())
 		if isGitRepository(dir) {
 			if err := rt.CmdRunner.Show(rt.CmdBuilder.BuildGitCmd(dir, "clean", "-fx")); err != nil {
 				text.Warnln(text.T("Unable to clean:"), dir)
@@ -189,7 +189,7 @@ func cleanAfter(rt *runtime.Runtime, bases []dep.Base) {
 	text.Println(text.T("removing untracked AUR files from cache..."))
 
 	for i, base := range bases {
-		dir := filepath.Join(rt.Config.Conf.BuildDir, base.Pkgbase())
+		dir := filepath.Join(rt.Config.BuildDir, base.Pkgbase())
 		if !isGitRepository(dir) {
 			continue
 		}

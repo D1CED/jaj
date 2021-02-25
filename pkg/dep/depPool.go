@@ -299,10 +299,10 @@ func (dp *Pool) resolveAURPackages(pkgs stringset.StringSet,
 		}
 
 		isInstalled := dp.AlpmExecutor.LocalSatisfierExists(dep)
-		hm := settings.HideMenus
-		settings.HideMenus = isInstalled
+		hm := dp.AlpmExecutor.HideMenus()
+		dp.AlpmExecutor.SetHideMenus(isInstalled)
 		repoPkg := dp.AlpmExecutor.SyncSatisfier(dep) // has satisfier in repo: fetch it
-		settings.HideMenus = hm
+		dp.AlpmExecutor.SetHideMenus(hm)
 		if isInstalled && (rebuild != "tree" || repoPkg != nil) {
 			continue
 		}

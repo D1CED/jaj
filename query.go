@@ -150,26 +150,26 @@ func syncSearch(pkgS []string, rt *runtime.Runtime) (err error) {
 	var pq repoQuery
 
 	if rt.Config.Mode == settings.ModeAUR || rt.Config.Mode == settings.ModeAny {
-		aq, aurErr = narrowSearch(pkgS, true, rt.Config.Conf.SearchBy, rt.Config.Conf.SortBy)
+		aq, aurErr = narrowSearch(pkgS, true, rt.Config.SearchBy, rt.Config.SortBy)
 	}
 	if rt.Config.Mode == settings.ModeRepo || rt.Config.Mode == settings.ModeAny {
-		pq = queryRepo(pkgS, rt.DB, rt.Config.Conf.SortMode)
+		pq = queryRepo(pkgS, rt.DB, rt.Config.SortMode)
 	}
 
-	switch rt.Config.Conf.SortMode {
+	switch rt.Config.SortMode {
 	case settings.TopDown:
 		if rt.Config.Mode == settings.ModeRepo || rt.Config.Mode == settings.ModeAny {
-			pq.printSearch(rt.DB, rt.Config.SearchMode, rt.Config.Conf.SortMode)
+			pq.printSearch(rt.DB, rt.Config.SearchMode, rt.Config.SortMode)
 		}
 		if rt.Config.Mode == settings.ModeAUR || rt.Config.Mode == settings.ModeAny {
-			aq.printSearch(rt.DB, 1, rt.Config.SearchMode, rt.Config.Conf.SortMode)
+			aq.printSearch(rt.DB, 1, rt.Config.SearchMode, rt.Config.SortMode)
 		}
 	case settings.BottomUp:
 		if rt.Config.Mode == settings.ModeAUR || rt.Config.Mode == settings.ModeAny {
-			aq.printSearch(rt.DB, 1, rt.Config.SearchMode, rt.Config.Conf.SortMode)
+			aq.printSearch(rt.DB, 1, rt.Config.SearchMode, rt.Config.SortMode)
 		}
 		if rt.Config.Mode == settings.ModeRepo || rt.Config.Mode == settings.ModeAny {
-			pq.printSearch(rt.DB, rt.Config.SearchMode, rt.Config.Conf.SortMode)
+			pq.printSearch(rt.DB, rt.Config.SearchMode, rt.Config.SortMode)
 		}
 	default:
 		return errors.New(text.T("invalid sort mode. Fix with yay -Y --bottomup --save"))
@@ -199,7 +199,7 @@ func syncInfo(cmdArgs *settings.PacmanConf, pkgS []string, rt *runtime.Runtime) 
 			noDB = append(noDB, name)
 		}
 
-		info, err = query.AURInfoPrint(noDB, rt.Config.Conf.RequestSplitN)
+		info, err = query.AURInfoPrint(noDB, rt.Config.RequestSplitN)
 		if err != nil {
 			missing = true
 			text.EPrintln(err)
@@ -224,7 +224,7 @@ func syncInfo(cmdArgs *settings.PacmanConf, pkgS []string, rt *runtime.Runtime) 
 
 	if len(info) != 0 {
 		for _, pkg := range info {
-			PrintInfo(pkg, rt.Config.Conf.AURURL, cmdArgs.ModeConf.(*settings.QConf).Info > 1)
+			PrintInfo(pkg, rt.Config.AURURL, cmdArgs.ModeConf.(*settings.QConf).Info > 1)
 		}
 	}
 

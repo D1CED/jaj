@@ -81,7 +81,7 @@ func install(rt *runtime.Runtime, pacmanConf *settings.PacmanConf, sconf *settin
 	warnings := query.NewWarnings()
 
 	if rt.Config.Mode == settings.ModeAny || rt.Config.Mode == settings.ModeRepo {
-		if rt.Config.Conf.CombinedUpgrade {
+		if rt.Config.CombinedUpgrade {
 			if sconf.Refresh != 0 {
 				err = earlyRefresh(pacmanConf, rt)
 				if err != nil {
@@ -160,8 +160,8 @@ func install(rt *runtime.Runtime, pacmanConf *settings.PacmanConf, sconf *settin
 
 	dp, err := dep.GetPool(
 		requestTargets, warnings, rt.DB, rt.Config.Mode, ignoreProviders,
-		pacmanConf.NoConfirm, rt.Config.Conf.Provides, rt.Config.Conf.ReBuild,
-		rt.Config.Conf.RequestSplitN,
+		pacmanConf.NoConfirm, rt.Config.Provides, rt.Config.ReBuild,
+		rt.Config.RequestSplitN,
 	)
 	if err != nil {
 		return err
@@ -175,7 +175,7 @@ func install(rt *runtime.Runtime, pacmanConf *settings.PacmanConf, sconf *settin
 	}
 
 	if len(dp.Aur) == 0 {
-		if !rt.Config.Conf.CombinedUpgrade {
+		if !rt.Config.CombinedUpgrade {
 			if sconf.SysUpgrade != 0 {
 				text.Println(text.T(" there is nothing to do"))
 			}
@@ -196,7 +196,7 @@ func install(rt *runtime.Runtime, pacmanConf *settings.PacmanConf, sconf *settin
 
 	var conflicts stringset.MapStringSet
 	if sconf.NoDeps == 1 {
-		conflicts, err = dp.CheckConflicts(rt.Config.Conf.UseAsk, pacmanConf.NoConfirm)
+		conflicts, err = dp.CheckConflicts(rt.Config.UseAsk, pacmanConf.NoConfirm)
 		if err != nil {
 			return err
 		}
@@ -223,12 +223,12 @@ func install(rt *runtime.Runtime, pacmanConf *settings.PacmanConf, sconf *settin
 	do.Print()
 	text.Println()
 
-	if rt.Config.Conf.CleanAfter {
+	if rt.Config.CleanAfter {
 		defer cleanAfter(rt, do.Aur)
 	}
 
 	if do.HasMake() {
-		switch rt.Config.Conf.RemoveMake {
+		switch rt.Config.RemoveMake {
 		case "yes":
 			defer func() {
 				err = removeMake(do, rt)
@@ -237,7 +237,7 @@ func install(rt *runtime.Runtime, pacmanConf *settings.PacmanConf, sconf *settin
 		case "no":
 			break
 		default:
-			if text.ContinueTask(text.T("Remove make dependencies after install?"), false, settings.UserNoConfirm) {
+			if text.ContinueTask(text.T("Remove make dependencies after install?"), false, rt.DB.NoConfirm()) {
 				defer func() {
 					err = removeMake(do, rt)
 				}()
@@ -245,20 +245,20 @@ func install(rt *runtime.Runtime, pacmanConf *settings.PacmanConf, sconf *settin
 		}
 	}
 
-	if rt.Config.Conf.CleanMenu {
-		if anyExistInCache(do.Aur, rt.Config.Conf.BuildDir) {
-			askClean := pkgbuildNumberMenu(do.Aur, remoteNamesCache, rt.Config.Conf.BuildDir)
-			toClean, errClean := cleanNumberMenu(do.Aur, remoteNamesCache, askClean, rt.Config.Conf.AnswerClean, rt.Config.Conf.BuildDir, pacmanConf.NoConfirm)
+	if rt.Config.CleanMenu {
+		if anyExistInCache(do.Aur, rt.Config.BuildDir) {
+			askClean := pkgbuildNumberMenu(do.Aur, remoteNamesCache, rt.Config.BuildDir)
+			toClean, errClean := cleanNumberMenu(do.Aur, remoteNamesCache, askClean, rt.Config.AnswerClean, rt.Config.BuildDir, pacmanConf.NoConfirm)
 			if errClean != nil {
 				return errClean
 			}
 
-			cleanBuilds(rt.Config.Conf.BuildDir, toClean)
+			cleanBuilds(rt.Config.BuildDir, toClean)
 		}
 	}
 
-	toSkip := pkgbuildsToSkip(do.Aur, targets, rt.Config.Conf.ReDownload, rt.Config.Conf.BuildDir)
-	cloned, err := downloadPkgbuilds(BuildRun{rt.CmdBuilder, rt.CmdRunner}, do.Aur, toSkip, rt.Config.Conf.BuildDir, rt.Config.Conf.AURURL)
+	toSkip := pkgbuildsToSkip(do.Aur, targets, rt.Config.ReDownload, rt.Config.BuildDir)
+	cloned, err := downloadPkgbuilds(BuildRun{rt.CmdBuilder, rt.CmdRunner}, do.Aur, toSkip, rt.Config.BuildDir, rt.Config.AURURL)
 	if err != nil {
 		return err
 	}
@@ -266,15 +266,15 @@ func install(rt *runtime.Runtime, pacmanConf *settings.PacmanConf, sconf *settin
 	var toDiff []dep.Base
 	var toEdit []dep.Base
 
-	if rt.Config.Conf.DiffMenu {
-		pkgbuildNumberMenu(do.Aur, remoteNamesCache, rt.Config.Conf.BuildDir)
-		toDiff, err = diffNumberMenu(do.Aur, remoteNamesCache, rt.Config.Conf.AnswerDiff, rt.Config.Conf.AnswerEdit, pacmanConf.NoConfirm)
+	if rt.Config.DiffMenu {
+		pkgbuildNumberMenu(do.Aur, remoteNamesCache, rt.Config.BuildDir)
+		toDiff, err = diffNumberMenu(do.Aur, remoteNamesCache, rt.Config.AnswerDiff, rt.Config.AnswerEdit, pacmanConf.NoConfirm)
 		if err != nil {
 			return err
 		}
 
 		if len(toDiff) > 0 {
-			err = showPkgbuildDiffs(BuildRun{rt.CmdBuilder, rt.CmdRunner}, &rt.Config.Conf, toDiff, cloned)
+			err = showPkgbuildDiffs(BuildRun{rt.CmdBuilder, rt.CmdRunner}, &rt.Config.PersistentYayConfig, toDiff, cloned)
 			if err != nil {
 				return err
 			}
@@ -282,33 +282,33 @@ func install(rt *runtime.Runtime, pacmanConf *settings.PacmanConf, sconf *settin
 	}
 
 	if len(toDiff) > 0 {
-		oldValue := settings.UserNoConfirm
-		settings.UserNoConfirm = false
+		oldValue := rt.DB.NoConfirm()
+		rt.DB.SetNoConfirm(false)
 		text.Println()
-		if !text.ContinueTask(text.T("Proceed with install?"), true, settings.UserNoConfirm) {
+		if !text.ContinueTask(text.T("Proceed with install?"), true, false) {
 			return text.ErrT("aborting due to user")
 		}
-		err = updatePkgbuildSeenRef(BuildRun{rt.CmdBuilder, rt.CmdRunner}, toDiff, rt.Config.Conf.BuildDir)
+		err = updatePkgbuildSeenRef(BuildRun{rt.CmdBuilder, rt.CmdRunner}, toDiff, rt.Config.BuildDir)
 		if err != nil {
 			text.Errorln(err.Error())
 		}
 
-		settings.UserNoConfirm = oldValue
+		rt.DB.SetNoConfirm(oldValue)
 	}
 
-	err = mergePkgbuilds(BuildRun{rt.CmdBuilder, rt.CmdRunner}, do.Aur, rt.Config.Conf.BuildDir)
+	err = mergePkgbuilds(BuildRun{rt.CmdBuilder, rt.CmdRunner}, do.Aur, rt.Config.BuildDir)
 	if err != nil {
 		return err
 	}
 
-	srcinfos, err = parseSrcinfoFiles(do.Aur, true, rt.Config.Conf.BuildDir)
+	srcinfos, err = parseSrcinfoFiles(do.Aur, true, rt.Config.BuildDir)
 	if err != nil {
 		return err
 	}
 
-	if rt.Config.Conf.EditMenu {
-		pkgbuildNumberMenu(do.Aur, remoteNamesCache, rt.Config.Conf.BuildDir)
-		toEdit, err = editNumberMenu(do.Aur, remoteNamesCache, rt.Config.Conf.AnswerDiff, rt.Config.Conf.AnswerEdit, pacmanConf.NoConfirm)
+	if rt.Config.EditMenu {
+		pkgbuildNumberMenu(do.Aur, remoteNamesCache, rt.Config.BuildDir)
+		toEdit, err = editNumberMenu(do.Aur, remoteNamesCache, rt.Config.AnswerDiff, rt.Config.AnswerEdit, pacmanConf.NoConfirm)
 		if err != nil {
 			return err
 		}
@@ -333,14 +333,14 @@ func install(rt *runtime.Runtime, pacmanConf *settings.PacmanConf, sconf *settin
 		return err
 	}
 
-	if rt.Config.Conf.PGPFetch {
-		err = pgp.CheckPgpKeys(do.Aur, srcinfos, rt.Config.Conf.GpgBin, rt.Config.Conf.GpgFlags, pacmanConf.NoConfirm)
+	if rt.Config.PGPFetch {
+		err = pgp.CheckPgpKeys(do.Aur, srcinfos, rt.Config.GpgBin, rt.Config.GpgFlags, pacmanConf.NoConfirm)
 		if err != nil {
 			return err
 		}
 	}
 
-	if !rt.Config.Conf.CombinedUpgrade {
+	if !rt.Config.CombinedUpgrade {
 		argumentsSConf.SysUpgrade = 0
 	}
 
@@ -374,10 +374,10 @@ func install(rt *runtime.Runtime, pacmanConf *settings.PacmanConf, sconf *settin
 	}
 
 	go func() {
-		_ = completion.Update(rt.DB, rt.Config.Conf.AURURL, rt.Config.CompletionPath, rt.Config.Conf.CompletionInterval, false)
+		_ = completion.Update(rt.DB, rt.Config.AURURL, rt.Config.CompletionPath, rt.Config.CompletionInterval, false)
 	}()
 
-	err = downloadPkgbuildsSources(BuildRun{rt.CmdBuilder, rt.CmdRunner}, do.Aur, incompatible, rt.Config.Conf.BuildDir)
+	err = downloadPkgbuildsSources(BuildRun{rt.CmdBuilder, rt.CmdRunner}, do.Aur, incompatible, rt.Config.BuildDir)
 	if err != nil {
 		return err
 	}
@@ -408,10 +408,10 @@ func removeMake(do *dep.Order, rt *runtime.Runtime) error {
 		removeArguments.AddTarget(pkg)
 	}
 
-	oldValue := settings.UserNoConfirm
-	settings.UserNoConfirm = true
+	oldValue := rt.DB.NoConfirm()
+	rt.DB.SetNoConfirm(true)
 	err = rt.CmdRunner.Show(passToPacman(rt, removeArguments))
-	settings.UserNoConfirm = oldValue
+	rt.DB.SetNoConfirm(oldValue)
 
 	return err
 }
@@ -425,10 +425,10 @@ func inRepos(dbExecutor db.Executor, pkg string) bool {
 		return true
 	}
 
-	previousHideMenus := settings.HideMenus
-	settings.HideMenus = false
+	previousHideMenus := dbExecutor.HideMenus()
+	dbExecutor.SetHideMenus(false)
 	exists := dbExecutor.SyncSatisfierExists(target.DepString())
-	settings.HideMenus = previousHideMenus
+	dbExecutor.SetHideMenus(previousHideMenus)
 
 	return exists || len(dbExecutor.PackagesFromGroup(target.Name)) > 0
 }
@@ -797,7 +797,7 @@ func editPkgbuilds(bases []dep.Base, srcinfos map[string]*gosrc.Srcinfo, conf *s
 	pkgbuilds := make([]string, 0, len(bases))
 	for _, base := range bases {
 		pkg := base.Pkgbase()
-		dir := filepath.Join(conf.Conf.BuildDir, pkg)
+		dir := filepath.Join(conf.BuildDir, pkg)
 		pkgbuilds = append(pkgbuilds, filepath.Join(dir, "PKGBUILD"))
 
 		for _, splitPkg := range srcinfos[pkg].SplitPackages() {
@@ -808,7 +808,7 @@ func editPkgbuilds(bases []dep.Base, srcinfos map[string]*gosrc.Srcinfo, conf *s
 	}
 
 	if len(pkgbuilds) > 0 {
-		editor, editorArgs := editor(conf.Conf.Editor, conf.Conf.EditorFlags, conf.Pacman.NoConfirm)
+		editor, editorArgs := editor(conf.Editor, conf.EditorFlags, conf.Pacman.NoConfirm)
 		editorArgs = append(editorArgs, pkgbuilds...)
 		editcmd := exec.Command(editor, editorArgs...)
 		editcmd.Stdin, editcmd.Stdout, editcmd.Stderr = text.AllPorts()
@@ -979,8 +979,8 @@ func buildInstallPkgbuilds(
 	deps := make([]string, 0)
 	exp := make([]string, 0)
 
-	oldConfirm := settings.UserNoConfirm
-	settings.UserNoConfirm = true
+	oldConfirm := rt.DB.NoConfirm()
+	rt.DB.SetNoConfirm(true)
 
 	//remotenames: names of all non repo packages on the system
 	localNames, remoteNames, err := query.GetPackageNamesBySource(rt.DB)
@@ -1013,18 +1013,18 @@ func buildInstallPkgbuilds(
 			return errExps
 		}
 
-		settings.UserNoConfirm = oldConfirm
+		rt.DB.SetNoConfirm(oldConfirm)
 
 		arguments.Targets = []string{}
 		deps = make([]string, 0)
 		exp = make([]string, 0)
-		settings.UserNoConfirm = true
+		rt.DB.SetNoConfirm(true)
 		return nil
 	}
 
 	for _, base := range do.Aur {
 		pkg := base.Pkgbase()
-		dir := filepath.Join(rt.Config.Conf.BuildDir, pkg)
+		dir := filepath.Join(rt.Config.BuildDir, pkg)
 		built := true
 
 		satisfied := true
@@ -1041,7 +1041,7 @@ func buildInstallPkgbuilds(
 			}
 		}
 
-		if !satisfied || !rt.Config.Conf.BatchInstall {
+		if !satisfied || !rt.Config.BatchInstall {
 			err = doInstall()
 			if err != nil {
 				return err
@@ -1070,7 +1070,7 @@ func buildInstallPkgbuilds(
 		for _, b := range base {
 			isExplicit = isExplicit || dp.Explicit.Get(b.Name)
 		}
-		if rt.Config.Conf.ReBuild == "no" || (rt.Config.Conf.ReBuild == "yes" && !isExplicit) {
+		if rt.Config.ReBuild == "no" || (rt.Config.ReBuild == "yes" && !isExplicit) {
 			for _, split := range base {
 				pkgdest, ok := pkgdests[split.Name]
 				if !ok {
@@ -1130,7 +1130,7 @@ func buildInstallPkgbuilds(
 		}
 
 		// conflicts have been checked so answer y for them
-		if asks, ok := cmdArgs.GetArgument(settings.Ask); rt.Config.Conf.UseAsk && ok {
+		if asks, ok := cmdArgs.GetArgument(settings.Ask); rt.Config.UseAsk && ok {
 
 			ask, _ := strconv.Atoi(asks)
 			uask := alpm.QuestionType(ask) | alpm.QuestionTypeConflictPkg
@@ -1139,7 +1139,7 @@ func buildInstallPkgbuilds(
 		} else {
 			for _, split := range base {
 				if _, ok := conflicts[split.Name]; ok {
-					settings.UserNoConfirm = false
+					rt.DB.SetNoConfirm(false)
 					break
 				}
 			}
@@ -1199,6 +1199,6 @@ func buildInstallPkgbuilds(
 	}
 
 	err = doInstall()
-	settings.UserNoConfirm = oldConfirm
+	rt.DB.SetNoConfirm(oldConfirm)
 	return err
 }

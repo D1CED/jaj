@@ -314,8 +314,7 @@ const (
 	// misc options
 	save
 
-	// unused yay op
-	ask
+	ask // deprecated pacman option
 )
 
 func mapping(option string, mainOp OpMode) parser.Enum {

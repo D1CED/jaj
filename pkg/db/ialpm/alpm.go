@@ -11,7 +11,6 @@ import (
 	pacmanconf "github.com/Morganamilo/go-pacmanconf"
 
 	"github.com/Jguer/yay/v10/pkg/db"
-	"github.com/Jguer/yay/v10/pkg/settings"
 	"github.com/Jguer/yay/v10/pkg/text"
 	"github.com/Jguer/yay/v10/pkg/upgrade"
 )
@@ -22,10 +21,17 @@ type AlpmExecutor struct {
 	syncDB       alpm.IDBList
 	syncDBsCache []alpm.IDB
 	conf         *pacmanconf.Config
+
+	hideMenus bool
+	noConfirm bool
 }
 
-func NewExecutor(pacmanConf *pacmanconf.Config) (*AlpmExecutor, error) {
-	ae := &AlpmExecutor{conf: pacmanConf}
+func NewExecutor(pacmanConf *pacmanconf.Config, hideMenus, noConfirm bool) (*AlpmExecutor, error) {
+	ae := &AlpmExecutor{
+		conf:      pacmanConf,
+		hideMenus: hideMenus,
+		noConfirm: noConfirm,
+	}
 
 	err := ae.RefreshHandle()
 	if err != nil {
@@ -153,7 +159,7 @@ func logCallback(level alpm.LogLevel, str string) {
 	}
 }
 
-func (ae *AlpmExecutor) questionCallback() func(question alpm.QuestionAny) {
+func (ae *AlpmExecutor) questionCallback() func(alpm.QuestionAny) {
 	return func(question alpm.QuestionAny) {
 		if qi, err := question.QuestionInstallIgnorepkg(); err == nil {
 			qi.SetInstall(true)
@@ -164,7 +170,7 @@ func (ae *AlpmExecutor) questionCallback() func(question alpm.QuestionAny) {
 			return
 		}
 
-		if settings.HideMenus {
+		if ae.hideMenus {
 			return
 		}
 
@@ -197,8 +203,7 @@ func (ae *AlpmExecutor) questionCallback() func(question alpm.QuestionAny) {
 		for {
 			text.Print(text.T("\nEnter a number (default=1): "))
 
-			// TODO: reenable noconfirm
-			if settings.NoConfirm {
+			if ae.noConfirm {
 				text.Println()
 				break
 			}
@@ -473,3 +478,9 @@ func (ae *AlpmExecutor) Cleanup() {
 		}
 	}
 }
+
+func (ae *AlpmExecutor) SetNoConfirm(v bool) { ae.noConfirm = v }
+func (ae *AlpmExecutor) NoConfirm() bool     { return ae.noConfirm }
+
+func (ae *AlpmExecutor) SetHideMenus(v bool) { ae.hideMenus = v }
+func (ae *AlpmExecutor) HideMenus() bool     { return ae.hideMenus }

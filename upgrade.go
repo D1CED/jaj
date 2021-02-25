@@ -45,7 +45,7 @@ func upList(warnings *query.AURWarnings, rt *runtime.Runtime, enableDowngrade bo
 		text.OperationInfoln(text.T("Searching AUR for updates..."))
 
 		var _aurdata []*query.Pkg
-		_aurdata, err = query.AURInfo(remoteNames, warnings, rt.Config.Conf.RequestSplitN)
+		_aurdata, err = query.AURInfo(remoteNames, warnings, rt.Config.RequestSplitN)
 		errs.Add(err)
 		if err == nil {
 			for _, pkg := range _aurdata {
@@ -54,11 +54,11 @@ func upList(warnings *query.AURWarnings, rt *runtime.Runtime, enableDowngrade bo
 
 			wg.Add(1)
 			go func() {
-				aurUp = upgrade.UpAUR(remote, aurdata, rt.Config.Conf.TimeUpdate)
+				aurUp = upgrade.UpAUR(remote, aurdata, rt.Config.TimeUpdate)
 				wg.Done()
 			}()
 
-			if rt.Config.Conf.Devel {
+			if rt.Config.Devel {
 				text.OperationInfoln(text.T("Checking development packages..."))
 				wg.Add(1)
 				go func() {
@@ -132,7 +132,7 @@ func upgradePkgs(conf *settings.YayConfig, aurUp, repoUp upgrade.UpSlice) (ignor
 		return ignore, aurNames, nil
 	}
 
-	if !conf.Conf.UpgradeMenu {
+	if !conf.UpgradeMenu {
 		for _, pkg := range aurUp {
 			aurNames.Set(pkg.Name)
 		}
@@ -148,7 +148,7 @@ func upgradePkgs(conf *settings.YayConfig, aurUp, repoUp upgrade.UpSlice) (ignor
 
 	text.Infoln(text.T("Packages to exclude: (eg: \"1 2 3\", \"1-3\", \"^4\" or repo name)"))
 
-	numbers, err := getInput(conf.Conf.AnswerUpgrade, conf.Pacman.NoConfirm)
+	numbers, err := getInput(conf.AnswerUpgrade, conf.Pacman.NoConfirm)
 	if err != nil {
 		return nil, nil, err
 	}

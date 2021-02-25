@@ -42,4 +42,9 @@ type Executor interface {
 	SyncPackages(...string) []IPackage
 	SyncSatisfier(string) IPackage
 	SyncSatisfierExists(string) bool
+
+	NoConfirm() bool
+	SetNoConfirm(bool)
+	HideMenus() bool
+	SetHideMenus(bool)
 }

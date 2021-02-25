@@ -18,7 +18,7 @@ func usage() { text.Print(settings.Usage) }
 
 func handleCmd(rt *runtime.Runtime) error {
 
-	if rt.Config.Conf.SudoLoop && settings.NeedRoot(rt.Config.Pacman, rt.Config.Mode) {
+	if rt.Config.SudoLoop && settings.NeedRoot(rt.Config.Pacman, rt.Config.Mode) {
 		sudoLoopBackground(rt.CmdRunner, rt.Config)
 	}
 
@@ -71,17 +71,17 @@ func handlePrint(cmdArgs *settings.PConf, rt *runtime.Runtime) (err error) {
 	case cmdArgs.DefaultConfig:
 		text.Println(settings.Defaults().AsJSONString())
 	case cmdArgs.CurrentConfig:
-		text.Printf("%v", rt.Config.Conf.AsJSONString())
+		text.Printf("%v", rt.Config.AsJSONString())
 	case cmdArgs.NumberUpgrades:
 		err = printNumberOfUpdates(rt, cmdArgs.SysUpgrade > 1)
 	case cmdArgs.News:
 		double := cmdArgs.News
 		quiet := cmdArgs.Quiet
-		err = news.PrintNewsFeed(rt.DB.LastBuildTime(), rt.Config.Conf.SortMode, double, quiet)
+		err = news.PrintNewsFeed(rt.DB.LastBuildTime(), rt.Config.SortMode, double, quiet)
 	case cmdArgs.Complete != 0:
-		err = completion.Show(rt.DB, rt.Config.Conf.AURURL, rt.Config.CompletionPath, rt.Config.Conf.CompletionInterval, cmdArgs.Complete > 1)
+		err = completion.Show(rt.DB, rt.Config.AURURL, rt.Config.CompletionPath, rt.Config.CompletionInterval, cmdArgs.Complete > 1)
 	case cmdArgs.LocalStats:
-		err = localStatistics(rt.DB, rt.Config.Conf.RequestSplitN)
+		err = localStatistics(rt.DB, rt.Config.RequestSplitN)
 	}
 	return err
 }
@@ -166,11 +166,11 @@ func displayNumberMenu(pkgS []string, rt *runtime.Runtime) error {
 	pkgS = query.RemoveInvalidTargets(pkgS, rt.Config.Mode)
 
 	if rt.Config.Mode == settings.ModeAUR || rt.Config.Mode == settings.ModeAny {
-		aq, aurErr = narrowSearch(pkgS, true, rt.Config.Conf.SearchBy, rt.Config.Conf.SortBy)
+		aq, aurErr = narrowSearch(pkgS, true, rt.Config.SearchBy, rt.Config.SortBy)
 		lenaq = len(aq)
 	}
 	if rt.Config.Mode == settings.ModeRepo || rt.Config.Mode == settings.ModeAny {
-		pq = queryRepo(pkgS, rt.DB, rt.Config.Conf.SortMode)
+		pq = queryRepo(pkgS, rt.DB, rt.Config.SortMode)
 		lenpq = len(pq)
 		if repoErr != nil {
 			return repoErr
@@ -181,20 +181,20 @@ func displayNumberMenu(pkgS []string, rt *runtime.Runtime) error {
 		return text.ErrT("no packages match search")
 	}
 
-	switch rt.Config.Conf.SortMode {
+	switch rt.Config.SortMode {
 	case settings.TopDown:
 		if rt.Config.Mode == settings.ModeRepo || rt.Config.Mode == settings.ModeAny {
-			pq.printSearch(rt.DB, rt.Config.SearchMode, rt.Config.Conf.SortMode)
+			pq.printSearch(rt.DB, rt.Config.SearchMode, rt.Config.SortMode)
 		}
 		if rt.Config.Mode == settings.ModeAUR || rt.Config.Mode == settings.ModeAny {
-			aq.printSearch(rt.DB, lenpq+1, rt.Config.SearchMode, rt.Config.Conf.SortMode)
+			aq.printSearch(rt.DB, lenpq+1, rt.Config.SearchMode, rt.Config.SortMode)
 		}
 	case settings.BottomUp:
 		if rt.Config.Mode == settings.ModeAUR || rt.Config.Mode == settings.ModeAny {
-			aq.printSearch(rt.DB, lenpq+1, rt.Config.SearchMode, rt.Config.Conf.SortMode)
+			aq.printSearch(rt.DB, lenpq+1, rt.Config.SearchMode, rt.Config.SortMode)
 		}
 		if rt.Config.Mode == settings.ModeRepo || rt.Config.Mode == settings.ModeAny {
-			pq.printSearch(rt.DB, rt.Config.SearchMode, rt.Config.Conf.SortMode)
+			pq.printSearch(rt.DB, rt.Config.SearchMode, rt.Config.SortMode)
 		}
 	default:
 		return text.ErrT("invalid sort mode. Fix with yay -Y --bottomup --save")
@@ -225,7 +225,7 @@ func displayNumberMenu(pkgS []string, rt *runtime.Runtime) error {
 
 	for i, pkg := range pq {
 		var target int
-		switch rt.Config.Conf.SortMode {
+		switch rt.Config.SortMode {
 		case settings.TopDown:
 			target = i + 1
 		case settings.BottomUp:
@@ -242,7 +242,7 @@ func displayNumberMenu(pkgS []string, rt *runtime.Runtime) error {
 	for i := range aq {
 		var target int
 
-		switch rt.Config.Conf.SortMode {
+		switch rt.Config.SortMode {
 		case settings.TopDown:
 			target = i + 1 + len(pq)
 		case settings.BottomUp:
@@ -261,7 +261,7 @@ func displayNumberMenu(pkgS []string, rt *runtime.Runtime) error {
 		return nil
 	}
 
-	if rt.Config.Conf.SudoLoop {
+	if rt.Config.SudoLoop {
 		sudoLoopBackground(rt.CmdRunner, rt.Config)
 	}
 
@@ -280,7 +280,7 @@ func syncList(rt *runtime.Runtime, quiet bool) error {
 	}
 
 	if (rt.Config.Mode == settings.ModeAny || rt.Config.Mode == settings.ModeAUR) && (len(rt.Config.Pacman.Targets) == 0 || aur) {
-		resp, err := http.Get(rt.Config.Conf.AURURL + "/packages.gz")
+		resp, err := http.Get(rt.Config.AURURL + "/packages.gz")
 		if err != nil {
 			return err
 		}
