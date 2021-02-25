@@ -224,7 +224,7 @@ func syncInfo(cmdArgs *settings.PacmanConf, pkgS []string, rt *runtime.Runtime) 
 
 	if len(info) != 0 {
 		for _, pkg := range info {
-			PrintInfo(pkg, rt.Config.Conf.AURURL, cmdArgs.ModeConf.(*settings.QConf).Info)
+			PrintInfo(pkg, rt.Config.Conf.AURURL, cmdArgs.ModeConf.(*settings.QConf).Info > 1)
 		}
 	}
 

@@ -254,11 +254,11 @@ func handleConfig(conf *YayConfig, err *error) func(option parser.Enum, value []
 		case noDeps:
 			switch t := conf.Pacman.ModeConf.(type) {
 			case *SConf:
-				t.NoDeps = true
+				t.NoDeps = Trilean(parser.GetCount(value))
 			case *RConf:
-				t.NoDeps = true
+				t.NoDeps = Trilean(parser.GetCount(value))
 			case *UConf:
-				t.NoDeps = true
+				t.NoDeps = Trilean(parser.GetCount(value))
 			}
 		case assumeInstalled:
 			pvs := toPackageVersion(value)
@@ -388,14 +388,14 @@ func handleConfig(conf *YayConfig, err *error) func(option parser.Enum, value []
 			case *QConf:
 				t.Groups = true
 			case *SConf:
-				t.Groups = true
+				t.Groups = Trilean(parser.GetCount(value))
 			}
 		case info:
 			switch t := conf.Pacman.ModeConf.(type) {
 			case *QConf:
-				t.Info = true
+				t.Info = Trilean(parser.GetCount(value))
 			case *SConf:
-				t.Info = true
+				t.Info = Trilean(parser.GetCount(value))
 			}
 		case search:
 			switch t := conf.Pacman.ModeConf.(type) {
@@ -410,9 +410,9 @@ func handleConfig(conf *YayConfig, err *error) func(option parser.Enum, value []
 		case refresh:
 			switch t := conf.Pacman.ModeConf.(type) {
 			case *SConf:
-				t.Refresh = true
+				t.Refresh = Trilean(parser.GetCount(value))
 			case *FConf:
-				t.Refresh = true
+				t.Refresh = Trilean(parser.GetCount(value))
 			}
 
 		// -- Pacman Options (QD) --
@@ -420,9 +420,9 @@ func handleConfig(conf *YayConfig, err *error) func(option parser.Enum, value []
 		case check:
 			switch t := conf.Pacman.ModeConf.(type) {
 			case *QConf:
-				t.Check = true
+				t.Check = Trilean(parser.GetCount(value))
 			case *DConf:
-				t.Check = true
+				t.Check = Trilean(parser.GetCount(value))
 			}
 
 		// -- Pacman Query Options --
@@ -442,7 +442,7 @@ func handleConfig(conf *YayConfig, err *error) func(option parser.Enum, value []
 		case file:
 			conf.Pacman.ModeConf.(*QConf).File = true
 		case unrequired:
-			conf.Pacman.ModeConf.(*QConf).Unrequired = true
+			conf.Pacman.ModeConf.(*QConf).Unrequired = Trilean(parser.GetCount(value))
 		case upgrades:
 			conf.Pacman.ModeConf.(*QConf).Upgrades = true
 
@@ -453,16 +453,16 @@ func handleConfig(conf *YayConfig, err *error) func(option parser.Enum, value []
 		case noSave:
 			conf.Pacman.ModeConf.(*RConf).NoSave = true
 		case recursive:
-			conf.Pacman.ModeConf.(*RConf).Recursive = true
+			conf.Pacman.ModeConf.(*RConf).Recursive = Trilean(parser.GetCount(value))
 		case unneeded:
 			conf.Pacman.ModeConf.(*RConf).Unneeded = true
 
 		// -- Pacman Sync Options --
 
 		case clean:
-			conf.Pacman.ModeConf.(*SConf).Clean = true
+			conf.Pacman.ModeConf.(*SConf).Clean = Trilean(parser.GetCount(value))
 		case sysUpgrade:
-			conf.Pacman.ModeConf.(*SConf).SysUpgrade = true
+			conf.Pacman.ModeConf.(*SConf).SysUpgrade = Trilean(parser.GetCount(value))
 		case downloadOnly:
 			conf.Pacman.ModeConf.(*SConf).DownloadOnly = true
 
@@ -642,7 +642,7 @@ func handleConfig(conf *YayConfig, err *error) func(option parser.Enum, value []
 		// -- Yay Show Options --
 
 		case complete:
-			conf.ModeConf.(*PConf).Complete = true
+			conf.ModeConf.(*PConf).Complete = Trilean(parser.GetCount(value))
 		case defaultConfig:
 			conf.ModeConf.(*PConf).DefaultConfig = true
 		case currentConfig:
@@ -651,11 +651,13 @@ func handleConfig(conf *YayConfig, err *error) func(option parser.Enum, value []
 			conf.ModeConf.(*PConf).LocalStats = true
 		case news:
 			conf.ModeConf.(*PConf).News = true
+		case numberUpgrades:
+			conf.ModeConf.(*PConf).NumberUpgrades = true
 
 		// -- Yay yay-mode Options --
 
 		case yayClean:
-			conf.ModeConf.(*YConf).Clean = true
+			conf.ModeConf.(*YConf).Clean = Trilean(parser.GetCount(value))
 		case genDB:
 			conf.ModeConf.(*YConf).GenDevDB = true
 

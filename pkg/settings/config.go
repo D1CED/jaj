@@ -73,17 +73,19 @@ type YayConfig struct {
 }
 
 type PConf struct {
-	Complete      bool
+	Complete      Trilean
 	DefaultConfig bool
 	CurrentConfig bool
 	LocalStats    bool
 	News          bool
 	Quiet         bool
+
+	NumberUpgrades bool
 }
 
 type YConf struct {
 	GenDevDB bool
-	Clean    bool
+	Clean    Trilean
 }
 
 type GConf struct {

@@ -297,6 +297,7 @@ const (
 	currentConfig
 	stats
 	news
+	numberUpgrades // deprecated
 
 	// Yay yay-mode options (Y)
 	yayClean
@@ -365,6 +366,9 @@ func mapping(option string, mainOp OpMode) parser.Enum {
 		}
 		return parser.InvalidFlag
 	case "n":
+		if mainOp == OpShow {
+			return numberUpgrades
+		}
 		if mainOp == OpQuery {
 			return native
 		}
@@ -680,6 +684,8 @@ func mapping(option string, mainOp OpMode) parser.Enum {
 		return defaultConfig
 	case "currentconfig":
 		return currentConfig
+	case "numberupgrades":
+		return numberUpgrades
 	case "ask":
 		return ask
 	}

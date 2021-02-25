@@ -82,13 +82,13 @@ func install(rt *runtime.Runtime, pacmanConf *settings.PacmanConf, sconf *settin
 
 	if rt.Config.Mode == settings.ModeAny || rt.Config.Mode == settings.ModeRepo {
 		if rt.Config.Conf.CombinedUpgrade {
-			if sconf.Refresh {
+			if sconf.Refresh != 0 {
 				err = earlyRefresh(pacmanConf, rt)
 				if err != nil {
 					return text.ErrT("error refreshing databases")
 				}
 			}
-		} else if sconf.Refresh || sconf.SysUpgrade || len(rt.Config.Pacman.Targets) > 0 {
+		} else if sconf.Refresh != 0 || sconf.SysUpgrade != 0 || len(rt.Config.Pacman.Targets) > 0 {
 			err = earlyPacmanCall(rt, rt.Config.Pacman, sconf)
 			if err != nil {
 				return err
@@ -122,12 +122,12 @@ func install(rt *runtime.Runtime, pacmanConf *settings.PacmanConf, sconf *settin
 	arguments.Targets = nil
 
 	if rt.Config.Mode == settings.ModeAUR {
-		argumentsSConf.SysUpgrade = false
+		argumentsSConf.SysUpgrade = 0
 	}
 
 	// if we are doing -u also request all packages needing update
-	if sconf.SysUpgrade {
-		aurUp, repoUp, err = upList(warnings, rt, cmdArgs.ExistsDouble("u", "sysupgrade"))
+	if sconf.SysUpgrade != 0 {
+		aurUp, repoUp, err = upList(warnings, rt, sconf.SysUpgrade > 1)
 		if err != nil {
 			return err
 		}
@@ -167,7 +167,7 @@ func install(rt *runtime.Runtime, pacmanConf *settings.PacmanConf, sconf *settin
 		return err
 	}
 
-	if !cmdArgs.ExistsDouble("d", "nodeps") {
+	if sconf.NoDeps == 1 {
 		err = dp.CheckMissing()
 		if err != nil {
 			return err
@@ -176,18 +176,18 @@ func install(rt *runtime.Runtime, pacmanConf *settings.PacmanConf, sconf *settin
 
 	if len(dp.Aur) == 0 {
 		if !rt.Config.Conf.CombinedUpgrade {
-			if sconf.SysUpgrade {
+			if sconf.SysUpgrade != 0 {
 				text.Println(text.T(" there is nothing to do"))
 			}
 			return nil
 		}
 
-		cmdArgs.Op = settings.Sync
-		delete(cmdArgs.Options, settings.Refresh)
-		if _, ok := arguments.Options[settings.Ignore]; ok {
-			cmdArgs.Options[settings.Ignore] = append(cmdArgs.Options[settings.Ignore], arguments.Options[settings.Ignore]...)
+		pacmanConf.ModeConf = &settings.SConf{}
+
+		if len(argumentsSConf.Ignore) > 0 {
+			argumentsSConf.Ignore = append(argumentsSConf.Ignore, argumentsSConf.Ignore...)
 		}
-		return rt.CmdRunner.Show(passToPacman(rt, cmdArgs))
+		return rt.CmdRunner.Show(passToPacman(rt, pacmanConf))
 	}
 
 	if len(dp.Aur) > 0 && os.Geteuid() == 0 {
@@ -195,7 +195,7 @@ func install(rt *runtime.Runtime, pacmanConf *settings.PacmanConf, sconf *settin
 	}
 
 	var conflicts stringset.MapStringSet
-	if !cmdArgs.ExistsDouble("d", "nodeps") {
+	if sconf.NoDeps == 1 {
 		conflicts, err = dp.CheckConflicts(rt.Config.Conf.UseAsk, pacmanConf.NoConfirm)
 		if err != nil {
 			return err
@@ -215,7 +215,7 @@ func install(rt *runtime.Runtime, pacmanConf *settings.PacmanConf, sconf *settin
 		arguments.Targets = append(arguments.Targets, pkg)
 	}
 
-	if len(do.Aur) == 0 && len(arguments.Targets) == 0 && (!sconf.SysUpgrade || rt.Config.Mode == settings.ModeAUR) {
+	if len(do.Aur) == 0 && len(arguments.Targets) == 0 && (sconf.SysUpgrade == 0 || rt.Config.Mode == settings.ModeAUR) {
 		text.Println(text.T(" there is nothing to do"))
 		return nil
 	}
@@ -341,10 +341,10 @@ func install(rt *runtime.Runtime, pacmanConf *settings.PacmanConf, sconf *settin
 	}
 
 	if !rt.Config.Conf.CombinedUpgrade {
-		argumentsSConf.SysUpgrade = false
+		argumentsSConf.SysUpgrade = 0
 	}
 
-	if len(arguments.Targets) > 0 || argumentsSConf.SysUpgrade {
+	if len(arguments.Targets) > 0 || argumentsSConf.SysUpgrade != 0 {
 		if errShow := rt.CmdRunner.Show(passToPacman(rt, arguments)); errShow != nil {
 			return errors.New(text.T("error installing repo packages"))
 		}
@@ -455,7 +455,7 @@ func earlyPacmanCall(rt *runtime.Runtime, pacmanConf *settings.PacmanConf, sconf
 		}
 	}
 
-	if sconf.Refresh || sconf.SysUpgrade || len(arguments.Targets) > 0 {
+	if sconf.Refresh != 0 || sconf.SysUpgrade != 0 || len(arguments.Targets) > 0 {
 		if err := rt.CmdRunner.Show(passToPacman(rt, arguments)); err != nil {
 			return errors.New(text.T("error installing repo packages"))
 		}
@@ -466,13 +466,13 @@ func earlyPacmanCall(rt *runtime.Runtime, pacmanConf *settings.PacmanConf, sconf
 
 func earlyRefresh(cmdArgs *settings.PacmanConf, rt *runtime.Runtime) error {
 
-	cmdArgs.ModeConf.(*settings.SConf).Refresh = false
+	cmdArgs.ModeConf.(*settings.SConf).Refresh = 0
 
 	arguments := cmdArgs.DeepCopy()
 	arguments.ModeConf = &settings.SConf{ // TODO
-		SysUpgrade: false,
+		SysUpgrade: 0,
 		Search:     "",
-		Info:       false,
+		Info:       0,
 		List:       false,
 	}
 	arguments.Targets = []string{}
@@ -1131,8 +1131,10 @@ func buildInstallPkgbuilds(
 
 		// conflicts have been checked so answer y for them
 		if asks, ok := cmdArgs.GetArgument(settings.Ask); rt.Config.Conf.UseAsk && ok {
+
 			ask, _ := strconv.Atoi(asks)
 			uask := alpm.QuestionType(ask) | alpm.QuestionTypeConflictPkg
+
 			cmdArgs.Options[settings.Ask] = []string{fmt.Sprint(uask)}
 		} else {
 			for _, split := range base {

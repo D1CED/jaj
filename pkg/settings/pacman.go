@@ -5,8 +5,29 @@ import (
 	"strings"
 )
 
+type Trilean uint8
+
+const (
+	Unset Trilean = 0
+	Once  Trilean = 1
+	Twice Trilean = 2
+)
+
+func (t Trilean) repeat(r rune) string {
+	switch t {
+	case Unset:
+		return ""
+	case Once:
+		return string(r)
+	default:
+		fallthrough
+	case Twice:
+		return string(r) + string(r)
+	}
+}
+
 type Transaction struct {
-	NoDeps          bool
+	NoDeps          Trilean
 	AssumeInstalled []struct {
 		Package string
 		Version string
@@ -58,7 +79,7 @@ type PacmanConf struct {
 type DConf struct {
 	AsDeps     string
 	AsExplicit string
-	Check      bool
+	Check      Trilean
 	Quiet      bool
 }
 type QConf struct {
@@ -66,8 +87,8 @@ type QConf struct {
 	Deps       bool
 	Explicit   bool
 	Groups     bool
-	Info       bool
-	Check      bool
+	Info       Trilean
+	Check      Trilean
 	List       bool
 	Foreign    bool
 	Native     bool
@@ -75,7 +96,7 @@ type QConf struct {
 	File       bool
 	Quiet      bool
 	Search     string
-	Unrequired bool
+	Unrequired Trilean
 	Upgrades   bool
 }
 type RConf struct {
@@ -83,29 +104,29 @@ type RConf struct {
 
 	Cascade   bool
 	NoSave    bool
-	Recursive bool
+	Recursive Trilean
 	Unneeded  bool
 }
 type SConf struct {
 	Transaction
 	Upgrade
 
-	Clean        bool
-	Groups       bool
-	Info         bool
+	Clean        Trilean
+	Groups       Trilean
+	Info         Trilean
 	List         bool
 	Quiet        bool
 	Search       string
-	SysUpgrade   bool
+	SysUpgrade   Trilean
 	DownloadOnly bool
-	Refresh      bool
+	Refresh      Trilean
 }
 type UConf struct {
 	Transaction
 	Upgrade
 }
 type FConf struct {
-	Refresh         bool
+	Refresh         Trilean
 	List            bool
 	Regex           bool
 	Quiet           bool
@@ -249,8 +270,8 @@ func (D *DConf) formatAsArgs(s []string) []string {
 	if D.AsExplicit != "" {
 		s = append(s, "--asexplicit="+D.AsDeps)
 	}
-	if D.Check {
-		s = append(s, "-k")
+	if D.Check != 0 {
+		s = append(s, "-"+D.Check.repeat('k'))
 	}
 	if D.Quiet {
 		s = append(s, "-q")
@@ -270,11 +291,11 @@ func (Q *QConf) formatAsArgs(s []string) []string {
 	if Q.Groups {
 		s = append(s, "-g")
 	}
-	if Q.Info {
-		s = append(s, "-i")
+	if Q.Info != 0 {
+		s = append(s, "-"+Q.Info.repeat('i'))
 	}
-	if Q.Check {
-		s = append(s, "-k")
+	if Q.Check != 0 {
+		s = append(s, "-"+Q.Check.repeat('k'))
 	}
 	if Q.List {
 		s = append(s, "-l")
@@ -297,8 +318,8 @@ func (Q *QConf) formatAsArgs(s []string) []string {
 	if Q.Search != "" {
 		s = append(s, "--search="+Q.Search)
 	}
-	if Q.Unrequired {
-		s = append(s, "-t")
+	if Q.Unrequired != 0 {
+		s = append(s, "-"+Q.Unrequired.repeat('t'))
 	}
 	if Q.Upgrades {
 		s = append(s, "-u")
@@ -306,8 +327,8 @@ func (Q *QConf) formatAsArgs(s []string) []string {
 	return s
 }
 func (R *RConf) formatAsArgs(s []string) []string {
-	if R.NoDeps {
-		s = append(s, "-d")
+	if R.NoDeps != 0 {
+		s = append(s, "-"+R.NoDeps.repeat('d'))
 	}
 	for _, kv := range R.AssumeInstalled {
 		s = append(s, "--assume-installed="+kv.Package+"="+kv.Version)
@@ -334,8 +355,8 @@ func (R *RConf) formatAsArgs(s []string) []string {
 	if R.NoSave {
 		s = append(s, "-n")
 	}
-	if R.Recursive {
-		s = append(s, "-s")
+	if R.Recursive != 0 {
+		s = append(s, "-"+R.Recursive.repeat('s'))
 	}
 	if R.Unneeded {
 		s = append(s, "-u")
@@ -343,8 +364,8 @@ func (R *RConf) formatAsArgs(s []string) []string {
 	return s
 }
 func (S *SConf) formatAsArgs(s []string) []string {
-	if S.NoDeps {
-		s = append(s, "-d")
+	if S.NoDeps != 0 {
+		s = append(s, "-"+S.NoDeps.repeat('d'))
 	}
 	for _, kv := range S.AssumeInstalled {
 		s = append(s, "--assume-installed="+kv.Package+"="+kv.Version)
@@ -384,14 +405,14 @@ func (S *SConf) formatAsArgs(s []string) []string {
 		s = append(s, "--overwrite="+S.Overwrite)
 	}
 
-	if S.Clean {
-		s = append(s, "-c")
+	if S.Clean != 0 {
+		s = append(s, "-"+S.Clean.repeat('c'))
 	}
-	if S.Groups {
-		s = append(s, "-g")
+	if S.Groups != 0 {
+		s = append(s, "-"+S.Groups.repeat('g'))
 	}
-	if S.Info {
-		s = append(s, "-i")
+	if S.Info != 0 {
+		s = append(s, "-"+S.Info.repeat('i'))
 	}
 	if S.List {
 		s = append(s, "-l")
@@ -402,20 +423,20 @@ func (S *SConf) formatAsArgs(s []string) []string {
 	if S.Search != "" {
 		s = append(s, "--search="+S.Search)
 	}
-	if S.SysUpgrade {
-		s = append(s, "-u")
+	if S.SysUpgrade != 0 {
+		s = append(s, "-"+S.SysUpgrade.repeat('u'))
 	}
 	if S.DownloadOnly {
 		s = append(s, "-w")
 	}
-	if S.Refresh {
-		s = append(s, "-y")
+	if S.Refresh != 0 {
+		s = append(s, "-"+S.SysUpgrade.repeat('y'))
 	}
 	return s
 }
 func (U *UConf) formatAsArgs(s []string) []string {
-	if U.NoDeps {
-		s = append(s, "-d")
+	if U.NoDeps != 0 {
+		s = append(s, "-"+U.NoDeps.repeat('d'))
 	}
 	for _, kv := range U.AssumeInstalled {
 		s = append(s, "--assume-installed="+kv.Package+"="+kv.Version)
@@ -457,8 +478,8 @@ func (U *UConf) formatAsArgs(s []string) []string {
 	return s
 }
 func (F *FConf) formatAsArgs(s []string) []string {
-	if F.Refresh {
-		s = append(s, "-y")
+	if F.Refresh != 0 {
+		s = append(s, "-"+F.Refresh.repeat('y'))
 	}
 	if F.List {
 		s = append(s, "-l")
@@ -483,17 +504,17 @@ func NeedRoot(p *PacmanConf, tMode TargetMode) bool {
 	default:
 		return false
 	case *DConf:
-		if mode.Check {
+		if mode.Check != 0 {
 			return false
 		}
 		return true
 	case *FConf:
-		if mode.Refresh {
+		if mode.Refresh != 0 {
 			return true
 		}
 		return false
 	case *QConf:
-		if mode.Check {
+		if mode.Check != 0 {
 			return true
 		}
 		return false
@@ -503,7 +524,7 @@ func NeedRoot(p *PacmanConf, tMode TargetMode) bool {
 		}
 		return true
 	case *SConf:
-		if mode.Refresh {
+		if mode.Refresh != 0 {
 			return true
 		}
 		if mode.Print {
@@ -515,13 +536,13 @@ func NeedRoot(p *PacmanConf, tMode TargetMode) bool {
 		if mode.List {
 			return false
 		}
-		if mode.Groups {
+		if mode.Groups != 0 {
 			return false
 		}
-		if mode.Info {
+		if mode.Info != 0 {
 			return false
 		}
-		if mode.Clean && tMode == ModeAUR {
+		if mode.Clean != 0 && tMode == ModeAUR {
 			return false
 		}
 		return true

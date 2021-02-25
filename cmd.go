@@ -37,11 +37,11 @@ func handleCmd(rt *runtime.Runtime) error {
 	case settings.OpSync:
 		return handleSync(rt.Config.Pacman.ModeConf.(*settings.SConf), rt)
 	case settings.OpGetPkgbuild:
-		return handleGetpkgbuild(rt.Config.Pacman.ModeConf.(*settings.GConf), rt)
+		return handleGetpkgbuild(rt.Config.ModeConf.(*settings.GConf), rt)
 	case settings.OpShow:
-		return handlePrint(rt.Config.Pacman.ModeConf.(*settings.PConf), rt)
+		return handlePrint(rt.Config.ModeConf.(*settings.PConf), rt)
 	case settings.OpYay:
-		return handleYay(rt.Config.Pacman.ModeConf.(*settings.YConf), rt)
+		return handleYay(rt.Config.ModeConf.(*settings.YConf), rt)
 	default:
 		return text.ErrT("unhandled operation")
 	}
@@ -57,7 +57,7 @@ func handleHelp(rt *runtime.Runtime) error {
 
 func handleQuery(rt *runtime.Runtime, cmdArgs *settings.QConf) error {
 	if cmdArgs.Upgrades {
-		return printUpdateList(rt.Config.Pacman, rt, len(cmdArgs.SysUpgrade) > 1)
+		return printUpdateList(rt.Config.Pacman, rt, cmdArgs.SysUpgrade > 1)
 	}
 	return rt.CmdRunner.Show(passToPacman(rt, rt.Config.Pacman))
 }
@@ -67,21 +67,19 @@ func handleVersion() {
 }
 
 func handlePrint(cmdArgs *settings.PConf, rt *runtime.Runtime) (err error) {
-	completions, completionsSet := cmdArgs.Complete
-
 	switch {
 	case cmdArgs.DefaultConfig:
 		text.Println(settings.Defaults().AsJSONString())
 	case cmdArgs.CurrentConfig:
 		text.Printf("%v", rt.Config.Conf.AsJSONString())
 	case cmdArgs.NumberUpgrades:
-		err = printNumberOfUpdates(rt, len(cmdArgs.SysUpgrade) > 1)
+		err = printNumberOfUpdates(rt, cmdArgs.SysUpgrade > 1)
 	case cmdArgs.News:
 		double := cmdArgs.News
 		quiet := cmdArgs.Quiet
 		err = news.PrintNewsFeed(rt.DB.LastBuildTime(), rt.Config.Conf.SortMode, double, quiet)
-	case completionsSet:
-		err = completion.Show(rt.DB, rt.Config.Conf.AURURL, rt.Config.CompletionPath, rt.Config.Conf.CompletionInterval, len(completions) > 1)
+	case cmdArgs.Complete != 0:
+		err = completion.Show(rt.DB, rt.Config.Conf.AURURL, rt.Config.CompletionPath, rt.Config.Conf.CompletionInterval, cmdArgs.Complete > 1)
 	case cmdArgs.LocalStats:
 		err = localStatistics(rt.DB, rt.Config.Conf.RequestSplitN)
 	}
@@ -92,8 +90,8 @@ func handleYay(cmdArgs *settings.YConf, rt *runtime.Runtime) error {
 	if cmdArgs.GenDevDB {
 		return createDevelDB(rt)
 	}
-	if cmdArgs.Clean {
-		return cleanDependencies(rt, rt.Config.Pacman, len(clean) > 1)
+	if cmdArgs.Clean != 0 {
+		return cleanDependencies(rt, rt.Config.Pacman, cmdArgs.Clean > 1)
 	}
 	if len(rt.Config.Pacman.Targets) > 0 {
 		return handleYogurt(rt.Config.Pacman, rt)
@@ -124,25 +122,25 @@ func handleSync(cmdArgs *settings.SConf, rt *runtime.Runtime) error {
 	if cmdArgs.Print {
 		return rt.CmdRunner.Show(passToPacman(rt, rt.Config.Pacman))
 	}
-	if cmdArgs.Clean {
+	if cmdArgs.Clean != 0 {
 		return syncClean(rt)
 	}
 	if cmdArgs.List {
 		return syncList(rt, cmdArgs.Quiet)
 	}
-	if cmdArgs.Groups {
+	if cmdArgs.Groups != 0 {
 		return rt.CmdRunner.Show(passToPacman(rt, rt.Config.Pacman))
 	}
-	if cmdArgs.Info {
+	if cmdArgs.Info != 0 {
 		return syncInfo(rt.Config.Pacman, targets, rt)
 	}
-	if cmdArgs.SysUpgrade {
+	if cmdArgs.SysUpgrade != 0 {
 		return install(rt, rt.Config.Pacman, cmdArgs, false)
 	}
 	if len(rt.Config.Pacman.Targets) > 0 {
 		return install(rt, rt.Config.Pacman, cmdArgs, false)
 	}
-	if cmdArgs.Refresh {
+	if cmdArgs.Refresh != 0 {
 		return rt.CmdRunner.Show(passToPacman(rt, rt.Config.Pacman))
 	}
 	return nil
@@ -267,7 +265,7 @@ func displayNumberMenu(pkgS []string, rt *runtime.Runtime) error {
 		sudoLoopBackground(rt.CmdRunner, rt.Config)
 	}
 
-	return install(rt, arguments, true)
+	return install(rt, arguments, arguments.ModeConf.(*settings.SConf), true)
 }
 
 func syncList(rt *runtime.Runtime, quiet bool) error {

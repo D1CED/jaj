@@ -62,7 +62,7 @@ func syncClean(rt *runtime.Runtime) error {
 	}
 
 	var question string
-	if removeAll {
+	if removeAll != 0 {
 		question = text.T("Do you want to remove ALL AUR packages from cache?")
 	} else {
 		question = text.T("Do you want to remove all other AUR packages from cache?")
@@ -71,12 +71,12 @@ func syncClean(rt *runtime.Runtime) error {
 	text.Println(text.T("\nBuild directory:"), rt.Config.Conf.BuildDir)
 
 	if text.ContinueTask(question, true, rt.Config.Pacman.NoConfirm) {
-		if err := cleanAUR(&rt.Config.Conf, keepInstalled, keepCurrent, removeAll, rt.DB); err != nil {
+		if err := cleanAUR(&rt.Config.Conf, keepInstalled, keepCurrent, removeAll > 0, rt.DB); err != nil {
 			return err
 		}
 	}
 
-	if removeAll {
+	if removeAll != 0 {
 		return nil
 	}
 
