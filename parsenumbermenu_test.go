@@ -1,10 +1,12 @@
-package main
+package main_test
 
 import (
 	"testing"
 
 	"github.com/Jguer/yay/v10/pkg/intrange"
 	"github.com/Jguer/yay/v10/pkg/stringset"
+
+	main "github.com/Jguer/yay/v10"
 )
 
 func intRangesEqual(a, b intrange.IntRanges) bool {
@@ -115,7 +117,7 @@ func TestParseNumberMenu(t *testing.T) {
 
 	for n, in := range inputs {
 		res := expected[n]
-		include, exclude, otherInclude, otherExclude := ParseNumberMenu(in)
+		include, exclude, otherInclude, otherExclude := main.ParseNumberMenu(in)
 
 		if !intRangesEqual(include, res.Include) ||
 			!intRangesEqual(exclude, res.Exclude) ||
