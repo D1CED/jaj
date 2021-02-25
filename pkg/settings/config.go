@@ -74,12 +74,14 @@ type YayConfig struct {
 
 type PConf struct {
 	Complete      Trilean
+	Fish          bool
 	DefaultConfig bool
 	CurrentConfig bool
 	LocalStats    bool
 	News          bool
 	Quiet         bool
 
+	Upgrades       bool
 	NumberUpgrades bool
 }
 
@@ -139,6 +141,8 @@ type PersistentYayConfig struct {
 	CombinedUpgrade    bool   `json:"combinedupgrade"`
 	UseAsk             bool   `json:"useask"`
 	BatchInstall       bool   `json:"batchinstall"`
+
+	Tar string `json:"tar"`
 }
 
 var defaultYayConfig = PersistentYayConfig{

@@ -194,6 +194,12 @@ func handleConfig(conf *YayConfig, err *error) func(option parser.Enum, value []
 				conf.Pacman.NoConfirm = false
 			}
 			userNoConfirm = false
+		case upgrades:
+			if conf.Pacman != nil {
+				conf.Pacman.ModeConf.(*QConf).Upgrades = true
+			} else {
+				conf.ModeConf.(*PConf).Upgrades = true
+			}
 
 		// -- Options (PQFDS) --
 
@@ -443,8 +449,6 @@ func handleConfig(conf *YayConfig, err *error) func(option parser.Enum, value []
 			conf.Pacman.ModeConf.(*QConf).File = true
 		case unrequired:
 			conf.Pacman.ModeConf.(*QConf).Unrequired = Trilean(parser.GetCount(value))
-		case upgrades:
-			conf.Pacman.ModeConf.(*QConf).Upgrades = true
 
 		// -- Pacman Remove Options --
 
@@ -576,6 +580,9 @@ func handleConfig(conf *YayConfig, err *error) func(option parser.Enum, value []
 		case noMakePkgconf:
 			conf.MakepkgConf = ""
 
+		case tar:
+			conf.Tar = last(value)
+
 		case pacman:
 			conf.PacmanBin = last(value)
 
@@ -653,6 +660,8 @@ func handleConfig(conf *YayConfig, err *error) func(option parser.Enum, value []
 			conf.ModeConf.(*PConf).News = true
 		case numberUpgrades:
 			conf.ModeConf.(*PConf).NumberUpgrades = true
+		case fish:
+			conf.ModeConf.(*PConf).Fish = true
 
 		// -- Yay yay-mode Options --
 

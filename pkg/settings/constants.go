@@ -290,6 +290,7 @@ const (
 	noUseAsk
 	batchInstall
 	noBatchInstall
+	tar
 
 	// Yay Show options (P)
 	complete
@@ -297,6 +298,7 @@ const (
 	currentConfig
 	stats
 	news
+	fish
 	numberUpgrades // deprecated
 
 	// Yay yay-mode options (Y)
@@ -354,7 +356,7 @@ func mapping(option string, mainOp OpMode) parser.Enum {
 		}
 		return parser.InvalidFlag
 	case "u":
-		if mainOp == OpQuery {
+		if mainOp == OpQuery || mainOp == OpShow {
 			return upgrades
 		}
 		if mainOp == OpRemove {
@@ -396,6 +398,11 @@ func mapping(option string, mainOp OpMode) parser.Enum {
 			return news
 		}
 		return downloadOnly
+	case "f":
+		if mainOp == OpShow {
+			return fish
+		}
+		return force
 	case "clean":
 		if mainOp == OpYay {
 			return yayClean
@@ -484,7 +491,7 @@ func mapping(option string, mainOp OpMode) parser.Enum {
 		return needed
 	case "overwrite":
 		return overwrite
-	case "f", "force":
+	case "force":
 		return force
 	case "changelog":
 		return changelog
@@ -687,6 +694,10 @@ func mapping(option string, mainOp OpMode) parser.Enum {
 		return numberUpgrades
 	case "ask":
 		return ask
+	case "fish":
+		return fish
+	case "tar":
+		return tar
 	}
 }
 
@@ -740,16 +751,17 @@ var hasParam = []parser.Enum{
 	pacman,             // file
 	git,                // file
 	gpg,                // file
+	tar,                // file
 	sudo,               // file
 	sudoFlags,          // flags
 	requestSplitN,      // int
-	answerClean,        // answer
-	answerDiff,         // answer
-	answerEdit,         // answer
-	answerUpgrade,      // answer
+	answerClean,        // answer <All|None|Installed|NotInstalled|...>
+	answerDiff,         // answer ''
+	answerEdit,         // answer ''
+	answerUpgrade,      // answer <Repo|^Repo|None|...>
 	completionInterval, // int (days)
-	sortBy,             // field
-	searchBy,           // field
+	sortBy,             // <votes|popularity|id|baseid|name|base|submitted|modified>
+	searchBy,           // <name|name-desc|maintainer|depends|checkdepends|makedepends|optdepends>
 
 	ask,
 }
