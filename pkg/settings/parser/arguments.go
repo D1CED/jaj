@@ -245,11 +245,7 @@ func (a *Arguments) Count(op Enum) int {
 		return 0
 	}
 	ss := a.options[idx].Arguments
-	// '!' is 33 and the first ascii non-whitespace character
-	if len(ss) != 1 || len(ss[0]) != 1 || ss[0][0] > '!' {
-		panic("Count likely called on non-bool option")
-	}
-	return int(ss[0][0])
+	return GetCount(ss)
 }
 
 func (a *Arguments) Targets() []string {
@@ -262,4 +258,12 @@ func (a *Arguments) Iterate(fn func(Enum, []string) bool) {
 			return
 		}
 	}
+}
+
+func GetCount(ss []string) int {
+	// '!' is 33 and the first ascii non-whitespace character
+	if len(ss) != 1 || len(ss[0]) != 1 || ss[0][0] > '!' {
+		panic("Count likely called on non-bool option")
+	}
+	return int(ss[0][0])
 }
