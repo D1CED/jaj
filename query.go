@@ -352,7 +352,7 @@ func hangingPackages(removeOptional bool, dbExecutor db.Executor) (hanging []str
 }
 
 // Statistics returns statistics about packages installed in system
-func statistics(dbExecutor db.Executor) *struct {
+func statistics(dbExecutor db.Executor) struct {
 	Totaln    int
 	Expln     int
 	TotalSize int64
@@ -370,13 +370,11 @@ func statistics(dbExecutor db.Executor) *struct {
 		}
 	}
 
-	info := &struct {
+	return struct {
 		Totaln    int
 		Expln     int
 		TotalSize int64
 	}{
 		totalInstalls, explicitInstalls, totalSize,
 	}
-
-	return info
 }
