@@ -60,17 +60,41 @@ main
 
   install.go: alpm.QuestionType and bit mask (move to pkg/db)
 
+  install.go: go-srcinfo Parse file (maybe move to pgp)
+
   query.go: alpm.PkgReasonExplicit (move to pkg/db)
 
-  query.go: rpc.SearchBy (move to pkg/query)
+  query.go: rpc.SearchBy (move to pkg/query), what about ``By``?
+
+  cmd.go: alpm.Version
 
 settings
 
-  parser.go: rpc.AURURL
+  parser.go: rpc.AURURL [done] (moved to main)
 
-Investigate merging putting Arguments inside Runtime
+Split parsing off of settings [done]
+
+
+Investigate merging putting Arguments inside Runtime [see below]
+  settings will export three data structures
+
+  1. yay configuration relevant options
+  2. pacman configuration relevant options and an easy way to manipulate them
+  3. misc options that are only of immediate relevancy [embeds yay config]
+
 More emphasis on pkg/settings/exec. Needs to play well with pkg/text
-Split parsing off of settings.
+
+Make Runtime hold all high level dependencies [done]
+
+Static data structures for pacman options [done]
+
+Removed globals form settings package [done] (moved into db.Executor interface)
+
+Move Runtime into package main
+
+Move settings/exe a level up (no cohesion with settings)
+
+go-srcinfo type alias in pgp?
 
 ::
 
