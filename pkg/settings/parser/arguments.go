@@ -139,7 +139,7 @@ func Parse(fn func(string) (Enum, bool), args []string, r io.Reader) (*Arguments
 		}
 
 		if err != nil {
-			return nil, err
+			return nil, fmt.Errorf("at index %d: %w", k, err)
 		}
 	}
 
