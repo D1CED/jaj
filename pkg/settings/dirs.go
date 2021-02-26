@@ -1,10 +1,9 @@
 package settings
 
 import (
+	"fmt"
 	"os"
 	"path/filepath"
-
-	"github.com/pkg/errors"
 
 	"github.com/Jguer/yay/v10/pkg/text"
 )
@@ -48,7 +47,7 @@ func initDir(dir string) error {
 	_, err := os.Stat(dir)
 	if os.IsNotExist(err) {
 		if err = os.MkdirAll(dir, 0o755); err != nil {
-			return errors.New(text.Tf("failed to create config directory '%s': %s", dir, err))
+			return fmt.Errorf(text.Tf("failed to create config directory '%s': %s", dir, err))
 		}
 	}
 	return err

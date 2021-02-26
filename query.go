@@ -21,7 +21,7 @@ var ErrMissing = errors.New("missing")
 type enum = int
 
 // Query is a collection of Results
-type aurQuery []rpc.Pkg
+type aurQuery []query.Pkg
 
 // Query holds the results of a repository search.
 type repoQuery []db.IPackage
@@ -84,7 +84,7 @@ func getSearchBy(value string) rpc.By {
 
 // NarrowSearch searches AUR and narrows based on subarguments
 func narrowSearch(pkgS []string, sortS bool, searchBy string, sortBy string) (aurQuery, error) {
-	var r []rpc.Pkg
+	var r []query.Pkg
 	var err error
 	var usedIndex int
 
@@ -185,7 +185,7 @@ func syncSearch(pkgS []string, rt *runtime.Runtime) (err error) {
 
 // SyncInfo serves as a pacman -Si for repo packages and AUR packages.
 func syncInfo(cmdArgs *settings.PacmanConf, pkgS []string, rt *runtime.Runtime) error {
-	var info []*rpc.Pkg
+	var info []*query.Pkg
 	var err error
 	missing := false
 	pkgS = query.RemoveInvalidTargets(pkgS, rt.Config.Mode)

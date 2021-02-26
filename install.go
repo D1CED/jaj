@@ -859,7 +859,7 @@ func pkgbuildsToSkip(bases []dep.Base, targets stringset.StringSet, reDownload, 
 		pkgbuild, err := gosrc.ParseFile(dir)
 
 		if err == nil {
-			if alpm.VerCmp(pkgbuild.Version(), base.Version()) >= 0 {
+			if db.VerCmp(pkgbuild.Version(), base.Version()) >= 0 {
 				toSkip.Set(base.Pkgbase())
 			}
 		}
