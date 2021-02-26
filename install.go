@@ -6,7 +6,6 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
-	"strconv"
 	"strings"
 	"sync"
 
@@ -398,19 +397,18 @@ func install(rt *runtime.Runtime, pacmanConf *settings.PacmanConf, sconf *settin
 }
 
 func removeMake(do *dep.Order, rt *runtime.Runtime) error {
-	removeArguments := settings.NewFlagParser()
-	err := removeArguments.AddArg("R", "u")
-	if err != nil {
-		return err
+	removeArguments := &settings.PacmanConf{
+		ModeConf: &settings.RConf{
+			Unneeded: true,
+		},
 	}
-
 	for _, pkg := range do.GetMake() {
-		removeArguments.AddTarget(pkg)
+		removeArguments.Targets = append(removeArguments.Targets, pkg)
 	}
 
 	oldValue := rt.DB.NoConfirm()
 	rt.DB.SetNoConfirm(true)
-	err = rt.CmdRunner.Show(passToPacman(rt, removeArguments))
+	err := rt.CmdRunner.Show(passToPacman(rt, removeArguments))
 	rt.DB.SetNoConfirm(oldValue)
 
 	return err
@@ -964,14 +962,24 @@ func buildInstallPkgbuilds(
 	conflicts stringset.MapStringSet,
 ) error {
 
+	var trans settings.Transaction
+	var upgr settings.Upgrade
+	switch t := cmdArgs.ModeConf.(type) {
+	case *settings.UConf:
+		trans = t.Transaction
+		upgr = t.Upgrade
+	case *settings.SConf:
+		trans = t.Transaction
+		upgr = t.Upgrade
+	default:
+		return fmt.Errorf("invalid pacman main mode of operation")
+	}
+
 	arguments := cmdArgs.DeepCopy()
 	arguments.Targets = nil
-	arguments.ModeConf = &settings.UConf{ // TODO
-		Clean:        false,
-		Quiet:        false,
-		Refresh:      false,
-		SysUpgrade:   false,
-		DownloadOnly: false,
+	arguments.ModeConf = &settings.UConf{
+		Transaction: trans,
+		Upgrade:     upgr,
 	}
 
 	arguments.NoConfirm = false
@@ -1122,20 +1130,16 @@ func buildInstallPkgbuilds(
 				args = append(args, "--ignorearch")
 			}
 
-			if errMake := rt.CmdRunner.Show(
-				rt.CmdBuilder.BuildMakepkgCmd(
-					dir, args...)); errMake != nil {
+			if errMake := rt.CmdRunner.Show(rt.CmdBuilder.BuildMakepkgCmd(dir, args...)); errMake != nil {
 				return errors.New(text.Tf("error making: %s", base.String()))
 			}
 		}
 
 		// conflicts have been checked so answer y for them
-		if asks, ok := cmdArgs.GetArgument(settings.Ask); rt.Config.UseAsk && ok {
+		if rt.Config.UseAsk && rt.Config.Pacman.Ask != 0 {
 
-			ask, _ := strconv.Atoi(asks)
-			uask := alpm.QuestionType(ask) | alpm.QuestionTypeConflictPkg
+			rt.Config.Pacman.Ask = int(alpm.QuestionType(rt.Config.Pacman.Ask) | alpm.QuestionTypeConflictPkg)
 
-			cmdArgs.Options[settings.Ask] = []string{fmt.Sprint(uask)}
 		} else {
 			for _, split := range base {
 				if _, ok := conflicts[split.Name]; ok {

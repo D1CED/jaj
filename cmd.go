@@ -56,8 +56,8 @@ func handleHelp(rt *runtime.Runtime) error {
 }
 
 func handleQuery(rt *runtime.Runtime, cmdArgs *settings.QConf) error {
-	if cmdArgs.Upgrades {
-		return printUpdateList(rt.Config.Pacman, rt, cmdArgs.SysUpgrade > 1)
+	if cmdArgs.Upgrades != 0 {
+		return printUpdateList(rt.Config.Pacman, rt, cmdArgs.Upgrades > 1)
 	}
 	return rt.CmdRunner.Show(passToPacman(rt, rt.Config.Pacman))
 }
@@ -73,7 +73,7 @@ func handlePrint(cmdArgs *settings.PConf, rt *runtime.Runtime) (err error) {
 	case cmdArgs.CurrentConfig:
 		text.Printf("%v", rt.Config.AsJSONString())
 	case cmdArgs.NumberUpgrades:
-		err = printNumberOfUpdates(rt, cmdArgs.SysUpgrade > 1)
+		err = printNumberOfUpdates(rt, false)
 	case cmdArgs.News:
 		double := cmdArgs.News
 		quiet := cmdArgs.Quiet

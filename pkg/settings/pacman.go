@@ -74,6 +74,8 @@ type PacmanConf struct {
 	NoConfirm              bool
 	DisableDownloadTimeout bool
 	SysRoot                string
+
+	Ask int
 }
 
 type DConf struct {
@@ -97,7 +99,7 @@ type QConf struct {
 	Quiet      bool
 	Search     string
 	Unrequired Trilean
-	Upgrades   bool
+	Upgrades   Trilean // see main.handleQuery
 }
 type RConf struct {
 	Transaction
@@ -321,8 +323,8 @@ func (Q *QConf) formatAsArgs(s []string) []string {
 	if Q.Unrequired != 0 {
 		s = append(s, "-"+Q.Unrequired.repeat('t'))
 	}
-	if Q.Upgrades {
-		s = append(s, "-u")
+	if Q.Upgrades != 0 {
+		s = append(s, "-u") // no double u for pacman, see above
 	}
 	return s
 }

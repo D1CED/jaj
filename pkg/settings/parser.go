@@ -94,14 +94,13 @@ func handleConfig(conf *YayConfig, err *error) func(option parser.Enum, value []
 
 	last := func(s []string) string { return s[len(s)-1] }
 
-	toPackageVersion := func(s []string) []struct {
+	type pkgVerSl []struct {
 		Package string
 		Version string
-	} {
-		var pvs = make([]struct {
-			Package string
-			Version string
-		}, 0, len(s))
+	}
+
+	toPackageVersion := func(s []string) pkgVerSl {
+		var pvs = make(pkgVerSl, 0, len(s))
 		for _, v := range s {
 			pv := strings.SplitN(v, "=", 2)
 			if len(pv) != 2 {
@@ -196,7 +195,7 @@ func handleConfig(conf *YayConfig, err *error) func(option parser.Enum, value []
 			userNoConfirm = false
 		case upgrades:
 			if conf.Pacman != nil {
-				conf.Pacman.ModeConf.(*QConf).Upgrades = true
+				conf.Pacman.ModeConf.(*QConf).Upgrades = Trilean(parser.GetCount(value))
 			} else {
 				conf.ModeConf.(*PConf).Upgrades = true
 			}
@@ -254,6 +253,9 @@ func handleConfig(conf *YayConfig, err *error) func(option parser.Enum, value []
 			conf.Pacman.DisableDownloadTimeout = true
 		case sysRoot:
 			conf.Pacman.SysRoot = last(value)
+
+		case ask:
+			conf.Pacman.Ask, _ = strconv.Atoi(last(value))
 
 		// -- Pacman Transaction Options (SRU) --
 
@@ -687,8 +689,6 @@ func handleConfig(conf *YayConfig, err *error) func(option parser.Enum, value []
 
 		case save:
 			conf.SaveConfig = true
-
-		case ask: // empty
 		}
 		return true
 	}
