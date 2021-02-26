@@ -7,8 +7,8 @@ import (
 	"strings"
 	"time"
 
+	"github.com/Jguer/yay/v10/pkg/exe"
 	"github.com/Jguer/yay/v10/pkg/settings"
-	"github.com/Jguer/yay/v10/pkg/settings/exe"
 	"github.com/Jguer/yay/v10/pkg/settings/runtime"
 	"github.com/Jguer/yay/v10/pkg/text"
 )

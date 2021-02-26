@@ -7,8 +7,8 @@ import (
 	pacmanconf "github.com/Morganamilo/go-pacmanconf"
 
 	"github.com/Jguer/yay/v10/pkg/db"
+	"github.com/Jguer/yay/v10/pkg/exe"
 	"github.com/Jguer/yay/v10/pkg/settings"
-	"github.com/Jguer/yay/v10/pkg/settings/exe"
 	"github.com/Jguer/yay/v10/pkg/vcs"
 )
 

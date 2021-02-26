@@ -14,7 +14,7 @@ import (
 	"github.com/stretchr/testify/assert"
 
 	"github.com/Jguer/yay/v10/pkg/db/mock"
-	"github.com/Jguer/yay/v10/pkg/settings/exe"
+	"github.com/Jguer/yay/v10/pkg/exe"
 	"github.com/Jguer/yay/v10/pkg/text"
 	"github.com/Jguer/yay/v10/pkg/vcs"
 )

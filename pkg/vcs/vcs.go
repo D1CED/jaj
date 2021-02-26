@@ -9,7 +9,7 @@ import (
 
 	gosrc "github.com/Morganamilo/go-srcinfo"
 
-	"github.com/Jguer/yay/v10/pkg/settings/exe"
+	"github.com/Jguer/yay/v10/pkg/exe"
 	"github.com/Jguer/yay/v10/pkg/text"
 )
 
