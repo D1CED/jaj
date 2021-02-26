@@ -22,10 +22,8 @@ import (
 	"github.com/Jguer/yay/v10/pkg/text"
 )
 
-const (
-	// The default port used by the PGP key server.
-	gpgServerPort = 11371
-)
+// The default port used by the PGP key server.
+const gpgServerPort = 11371
 
 func init() {
 	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
@@ -154,6 +152,11 @@ func makeSrcinfo(pkgbase string, pgpkeys ...string) *gosrc.Srcinfo {
 }
 
 func TestCheckPgpKeys(t *testing.T) {
+
+	if testing.Short() {
+		t.SkipNow()
+	}
+
 	keyringDir, err := ioutil.TempDir("/tmp", "yay-test-keyring")
 	if err != nil {
 		t.Fatalf("Unable to init test keyring: %v\n", err)
