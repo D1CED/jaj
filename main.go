@@ -1,4 +1,4 @@
-package main // import "github.com/Jguer/yay"
+package main // import "github.com/Jguer/yay/v10"
 
 import (
 	"fmt"
