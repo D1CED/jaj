@@ -60,7 +60,9 @@ var hideMenus = false
 var userNoConfirm = false // use PacmanConf.NoConfirm
 
 type YayConfig struct {
-	MainOperation  OpMode
+	MainOperation OpMode
+	ModeConf      interface{ mark() } // *(P|Y|G)Conf
+
 	SaveConfig     bool
 	Mode           TargetMode
 	SearchMode     SearchMode
@@ -68,8 +70,8 @@ type YayConfig struct {
 	ConfigPath     string
 
 	PersistentYayConfig
-	ModeConf interface{ mark() } // *(P|Y|G)Conf
-	Pacman   *PacmanConf
+	Targets []string
+	Pacman  *PacmanConf
 }
 
 type PConf struct {
@@ -196,12 +198,12 @@ func Defaults() *PersistentYayConfig {
 }
 
 func newConfig() (*PersistentYayConfig, error) {
-	new := defaultYayConfig
+	new := Defaults()
 
-	cacheHome := GetCacheHome()
+	cacheHome := getCacheHome()
 	new.BuildDir = cacheHome
 
-	configPath := GetConfigPath()
+	configPath := getConfigPath()
 	new.load(configPath)
 
 	if aurdest := os.Getenv("AURDEST"); aurdest != "" {
@@ -212,7 +214,7 @@ func newConfig() (*PersistentYayConfig, error) {
 
 	err := initDir(new.BuildDir)
 
-	return &new, err
+	return new, err
 }
 
 // SaveConfig writes yay config to file.

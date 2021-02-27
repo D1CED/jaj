@@ -58,7 +58,7 @@ const (
 
 type PacmanConf struct {
 	ModeConf interface{ formatAsArgs(s []string) []string } // *XConf struct
-	Targets  []string
+	Targets  *[]string
 
 	DBPath                 string
 	Root                   string
@@ -172,8 +172,9 @@ func (p *PacmanConf) String() string {
 func (p *PacmanConf) DeepCopy() *PacmanConf {
 	var q = new(PacmanConf)
 	*q = *p
-	q.Targets = make([]string, len(p.Targets))
-	copy(q.Targets, p.Targets)
+	q.Targets = new([]string)
+	*q.Targets = make([]string, len(*p.Targets))
+	copy(*q.Targets, *p.Targets)
 
 	switch t := p.ModeConf.(type) {
 	case *DConf:

@@ -1,6 +1,7 @@
 package settings
 
 import (
+	"fmt"
 	"path/filepath"
 	"strconv"
 	"strings"
@@ -20,7 +21,7 @@ func mappingFunc() func(string) (parser.Enum, bool) {
 		case database, files, query, remove, sync, depTest, upgrade, yay, show, getPkgbuild:
 
 			if mainOpSet {
-				return parser.InvalidFlag, false
+				return parser.InvalidOption, false
 			} else {
 				mainOpSet = true
 			}
@@ -70,9 +71,11 @@ func ParseCommandLine(args []string) (*YayConfig, error) {
 	}
 	yay := &YayConfig{
 		PersistentYayConfig: *conf,
-		CompletionPath:      filepath.Join(GetCacheHome(), completionFileName),
-		ConfigPath:          GetConfigPath(),
+		CompletionPath:      filepath.Join(getCacheHome(), completionFileName),
+		ConfigPath:          getConfigPath(),
+		Pacman:              new(PacmanConf),
 	}
+	yay.Pacman.Targets = &yay.Targets
 
 	a, err := parser.Parse(mappingFunc(), args, text.In())
 	if err != nil {
@@ -83,9 +86,10 @@ func ParseCommandLine(args []string) (*YayConfig, error) {
 
 	if yay.MainOperation == 0 {
 		yay.MainOperation = OpYay
+		yay.ModeConf = &YConf{}
 	}
 
-	yay.Pacman.Targets = a.Targets() // TODO(jmh): move targets to yay
+	yay.Targets = a.Targets()
 
 	return yay, err
 }
@@ -114,9 +118,30 @@ func handleConfig(conf *YayConfig, err *error) func(option parser.Enum, value []
 		return pvs
 	}
 
-	return func(option parser.Enum, value []string) bool {
+	opModePacman := func() bool {
+		switch conf.MainOperation {
+		case OpDatabase, OpQuery, OpRemove, OpSync, OpDepTest, OpUpgrade, OpFiles:
+			return true
+		default:
+			return false
+		}
+	}
+
+	return func(option parser.Enum, value []string) (res bool) {
 		// TODO(jmh): stronger validation
 		// TODO(jmh): propper error reporting
+
+		defer func() {
+			r := recover()
+			if re, ok := r.(error); ok && strings.HasPrefix(re.Error(), "interface conversion:") {
+				res = false
+				*err = fmt.Errorf("wrong argument order")
+				return
+			}
+			if r != nil {
+				panic(r)
+			}
+		}()
 
 		switch option {
 
@@ -126,41 +151,34 @@ func handleConfig(conf *YayConfig, err *error) func(option parser.Enum, value []
 		// -- Main Operations --
 
 		case database:
-			conf.Pacman = new(PacmanConf)
 			conf.Pacman.ModeConf = new(DConf)
 			conf.MainOperation = OpDatabase
 		case query:
-			conf.Pacman = new(PacmanConf)
 			conf.Pacman.ModeConf = new(QConf)
 			conf.MainOperation = OpQuery
 		case remove:
-			conf.Pacman = new(PacmanConf)
 			conf.Pacman.ModeConf = new(RConf)
 			conf.MainOperation = OpRemove
 		case sync:
-			conf.Pacman = new(PacmanConf)
 			conf.Pacman.ModeConf = new(SConf)
 			conf.MainOperation = OpSync
 		case depTest:
-			conf.Pacman = new(PacmanConf)
 			conf.Pacman.ModeConf = new(TConf)
 			conf.MainOperation = OpDepTest
 		case upgrade:
-			conf.Pacman = new(PacmanConf)
 			conf.Pacman.ModeConf = new(UConf)
 			conf.MainOperation = OpUpgrade
 		case files:
-			conf.Pacman = new(PacmanConf)
 			conf.Pacman.ModeConf = new(FConf)
 			conf.MainOperation = OpFiles
 
 		case version:
-			if conf.Pacman != nil {
+			if opModePacman() {
 				conf.Pacman.ModeConf = new(VConf)
 			}
 			conf.MainOperation = OpVersion
 		case help:
-			if conf.Pacman != nil {
+			if opModePacman() {
 				conf.Pacman.ModeConf = new(HConf)
 			}
 			conf.MainOperation = OpHelp
@@ -178,23 +196,23 @@ func handleConfig(conf *YayConfig, err *error) func(option parser.Enum, value []
 		// -- Yay and Pacman Options --
 
 		case config:
-			if conf.Pacman != nil {
+			if opModePacman() {
 				conf.Pacman.Config = last(value)
 			}
 			conf.PacmanConf = last(value)
 
 		case noConfirm:
-			if conf.Pacman != nil {
+			if opModePacman() {
 				conf.Pacman.NoConfirm = true
 			}
 			userNoConfirm = true
 		case confirm:
-			if conf.Pacman != nil {
+			if opModePacman() {
 				conf.Pacman.NoConfirm = false
 			}
 			userNoConfirm = false
 		case upgrades:
-			if conf.Pacman != nil {
+			if opModePacman() {
 				conf.Pacman.ModeConf.(*QConf).Upgrades = Trilean(parser.GetCount(value))
 			} else {
 				conf.ModeConf.(*PConf).Upgrades = true

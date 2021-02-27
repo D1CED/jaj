@@ -37,7 +37,7 @@ func asdeps(cmdArgs1 *settings.PacmanConf, rt *runtime.Runtime, pkgs []string) e
 
 	cmdArgs.ModeConf = &settings.DConf{AsDeps: ""}
 
-	cmdArgs.Targets = append(cmdArgs.Targets, pkgs...)
+	*cmdArgs.Targets = append(*cmdArgs.Targets, pkgs...)
 	_, stderr, err := rt.CmdRunner.Capture(passToPacman(rt, cmdArgs), 0)
 	if err != nil {
 		return fmt.Errorf("%s %s", stderr, err)
@@ -55,7 +55,7 @@ func asexp(cmdArgs *settings.PacmanConf, rt *runtime.Runtime, pkgs []string) err
 	cmdArgs.ModeConf = &settings.DConf{
 		AsExplicit: "", // TODO
 	}
-	cmdArgs.Targets = append(cmdArgs.Targets, pkgs...)
+	*cmdArgs.Targets = append(*cmdArgs.Targets, pkgs...)
 	_, stderr, err := rt.CmdRunner.Capture(passToPacman(rt, cmdArgs), 0)
 	if err != nil {
 		return fmt.Errorf("%s %s", stderr, err)
@@ -87,7 +87,7 @@ func install(rt *runtime.Runtime, pacmanConf *settings.PacmanConf, sconf *settin
 					return text.ErrT("error refreshing databases")
 				}
 			}
-		} else if sconf.Refresh != 0 || sconf.SysUpgrade != 0 || len(rt.Config.Pacman.Targets) > 0 {
+		} else if sconf.Refresh != 0 || sconf.SysUpgrade != 0 || len(rt.Config.Targets) > 0 {
 			err = earlyPacmanCall(rt, rt.Config.Pacman, sconf)
 			if err != nil {
 				return err
@@ -140,14 +140,14 @@ func install(rt *runtime.Runtime, pacmanConf *settings.PacmanConf, sconf *settin
 
 		for _, up := range repoUp {
 			if !ignore.Get(up.Name) {
-				requestTargets = append(requestTargets, up.Name)
-				pacmanConf.Targets = append(pacmanConf.Targets, up.Name)
+				*requestTargets = append(*requestTargets, up.Name)
+				*pacmanConf.Targets = append(*pacmanConf.Targets, up.Name)
 			}
 		}
 
 		for up := range aurUp {
-			requestTargets = append(requestTargets, "aur/"+up)
-			pacmanConf.Targets = append(pacmanConf.Targets, "aur/"+up)
+			*requestTargets = append(*requestTargets, "aur/"+up)
+			*pacmanConf.Targets = append(*pacmanConf.Targets, "aur/"+up)
 		}
 
 		if len(ignore) > 0 {
@@ -155,10 +155,10 @@ func install(rt *runtime.Runtime, pacmanConf *settings.PacmanConf, sconf *settin
 		}
 	}
 
-	targets := stringset.FromSlice(pacmanConf.Targets)
+	targets := stringset.FromSlice(*pacmanConf.Targets)
 
 	dp, err := dep.GetPool(
-		requestTargets, warnings, rt.DB, rt.Config.Mode, ignoreProviders,
+		*requestTargets, warnings, rt.DB, rt.Config.Mode, ignoreProviders,
 		pacmanConf.NoConfirm, rt.Config.Provides, rt.Config.ReBuild,
 		rt.Config.RequestSplitN,
 	)
@@ -207,14 +207,14 @@ func install(rt *runtime.Runtime, pacmanConf *settings.PacmanConf, sconf *settin
 	}
 
 	for _, pkg := range do.Repo {
-		arguments.Targets = append(arguments.Targets, pkg.DB().Name()+"/"+pkg.Name())
+		*arguments.Targets = append(*arguments.Targets, pkg.DB().Name()+"/"+pkg.Name())
 	}
 
 	for _, pkg := range dp.Groups {
-		arguments.Targets = append(arguments.Targets, pkg)
+		*arguments.Targets = append(*arguments.Targets, pkg)
 	}
 
-	if len(do.Aur) == 0 && len(arguments.Targets) == 0 && (sconf.SysUpgrade == 0 || rt.Config.Mode == settings.ModeAUR) {
+	if len(do.Aur) == 0 && len(*arguments.Targets) == 0 && (sconf.SysUpgrade == 0 || rt.Config.Mode == settings.ModeAUR) {
 		text.Println(text.T(" there is nothing to do"))
 		return nil
 	}
@@ -343,7 +343,7 @@ func install(rt *runtime.Runtime, pacmanConf *settings.PacmanConf, sconf *settin
 		argumentsSConf.SysUpgrade = 0
 	}
 
-	if len(arguments.Targets) > 0 || argumentsSConf.SysUpgrade != 0 {
+	if len(*arguments.Targets) > 0 || argumentsSConf.SysUpgrade != 0 {
 		if errShow := rt.CmdRunner.Show(passToPacman(rt, arguments)); errShow != nil {
 			return errors.New(text.T("error installing repo packages"))
 		}
@@ -403,7 +403,7 @@ func removeMake(do *dep.Order, rt *runtime.Runtime) error {
 		},
 	}
 	for _, pkg := range do.GetMake() {
-		removeArguments.Targets = append(removeArguments.Targets, pkg)
+		*removeArguments.Targets = append(*removeArguments.Targets, pkg)
 	}
 
 	oldValue := rt.DB.NoConfirm()
@@ -444,16 +444,16 @@ func earlyPacmanCall(rt *runtime.Runtime, pacmanConf *settings.PacmanConf, sconf
 		arguments.Targets = targets
 	} else {
 		// separate aur and repo targets
-		for _, target := range targets {
+		for _, target := range *targets {
 			if inRepos(rt.DB, target) {
-				arguments.Targets = append(arguments.Targets, target)
+				*arguments.Targets = append(*arguments.Targets, target)
 			} else {
-				pacmanConf.Targets = append(pacmanConf.Targets, target)
+				*pacmanConf.Targets = append(*pacmanConf.Targets, target)
 			}
 		}
 	}
 
-	if sconf.Refresh != 0 || sconf.SysUpgrade != 0 || len(arguments.Targets) > 0 {
+	if sconf.Refresh != 0 || sconf.SysUpgrade != 0 || len(*arguments.Targets) > 0 {
 		if err := rt.CmdRunner.Show(passToPacman(rt, arguments)); err != nil {
 			return errors.New(text.T("error installing repo packages"))
 		}
@@ -473,7 +473,7 @@ func earlyRefresh(cmdArgs *settings.PacmanConf, rt *runtime.Runtime) error {
 		Info:       0,
 		List:       false,
 	}
-	arguments.Targets = []string{}
+	arguments.Targets = &[]string{}
 
 	return rt.CmdRunner.Show(passToPacman(rt, arguments))
 }
@@ -1002,7 +1002,7 @@ func buildInstallPkgbuilds(
 	localNamesCache := stringset.FromSlice(localNames)
 
 	doInstall := func() error {
-		if len(arguments.Targets) == 0 {
+		if len(*arguments.Targets) == 0 {
 			return nil
 		}
 
@@ -1023,7 +1023,7 @@ func buildInstallPkgbuilds(
 
 		rt.DB.SetNoConfirm(oldConfirm)
 
-		arguments.Targets = []string{}
+		arguments.Targets = &[]string{}
 		deps = make([]string, 0)
 		exp = make([]string, 0)
 		rt.DB.SetNoConfirm(true)
@@ -1170,7 +1170,7 @@ func buildInstallPkgbuilds(
 						name, pkgdest))
 			}
 
-			arguments.Targets = append(arguments.Targets, pkgdest)
+			*arguments.Targets = append(*arguments.Targets, pkgdest)
 			if pacmanUpgrade.AsDeps {
 				deps = append(deps, name)
 			} else if pacmanUpgrade.AsExplicit {

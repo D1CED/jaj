@@ -93,19 +93,19 @@ func handleYay(cmdArgs *settings.YConf, rt *runtime.Runtime) error {
 	if cmdArgs.Clean != 0 {
 		return cleanDependencies(rt, rt.Config.Pacman, cmdArgs.Clean > 1)
 	}
-	if len(rt.Config.Pacman.Targets) > 0 {
+	if len(rt.Config.Targets) > 0 {
 		return handleYogurt(rt.Config.Pacman, rt)
 	}
 	return nil
 }
 
 func handleGetpkgbuild(cmdArgs *settings.GConf, rt *runtime.Runtime) error {
-	return getPkgbuilds(rt.Config.Pacman.Targets, rt, cmdArgs.Force)
+	return getPkgbuilds(rt.Config.Targets, rt, cmdArgs.Force)
 }
 
 func handleYogurt(cmdArgs *settings.PacmanConf, rt *runtime.Runtime) error {
 	rt.Config.SearchMode = settings.NumberMenu
-	return displayNumberMenu(cmdArgs.Targets, rt)
+	return displayNumberMenu(*cmdArgs.Targets, rt)
 }
 
 func handleSync(cmdArgs *settings.SConf, rt *runtime.Runtime) error {
@@ -117,7 +117,7 @@ func handleSync(cmdArgs *settings.SConf, rt *runtime.Runtime) error {
 		} else {
 			rt.Config.SearchMode = settings.Detailed
 		}
-		return syncSearch(targets, rt)
+		return syncSearch(*targets, rt)
 	}
 	if cmdArgs.Print {
 		return rt.CmdRunner.Show(passToPacman(rt, rt.Config.Pacman))
@@ -132,12 +132,12 @@ func handleSync(cmdArgs *settings.SConf, rt *runtime.Runtime) error {
 		return rt.CmdRunner.Show(passToPacman(rt, rt.Config.Pacman))
 	}
 	if cmdArgs.Info != 0 {
-		return syncInfo(rt.Config.Pacman, targets, rt)
+		return syncInfo(rt.Config.Pacman, *targets, rt)
 	}
 	if cmdArgs.SysUpgrade != 0 {
 		return install(rt, rt.Config.Pacman, cmdArgs, false)
 	}
-	if len(rt.Config.Pacman.Targets) > 0 {
+	if len(rt.Config.Targets) > 0 {
 		return install(rt, rt.Config.Pacman, cmdArgs, false)
 	}
 	if cmdArgs.Refresh != 0 {
@@ -149,7 +149,7 @@ func handleSync(cmdArgs *settings.SConf, rt *runtime.Runtime) error {
 func handleRemove(cmdArgs *settings.RConf, rt *runtime.Runtime) error {
 	err := rt.CmdRunner.Show(passToPacman(rt, rt.Config.Pacman))
 	if err == nil {
-		rt.VCSStore.RemovePackage(rt.Config.Pacman.Targets)
+		rt.VCSStore.RemovePackage(rt.Config.Targets)
 	}
 	return err
 }
@@ -235,7 +235,7 @@ func displayNumberMenu(pkgS []string, rt *runtime.Runtime) error {
 		}
 
 		if (isInclude && include.Get(target)) || (!isInclude && !exclude.Get(target)) {
-			arguments.Targets = append(arguments.Targets, pkg.DB().Name()+"/"+pkg.Name())
+			*arguments.Targets = append(*arguments.Targets, pkg.DB().Name()+"/"+pkg.Name())
 		}
 	}
 
@@ -252,11 +252,11 @@ func displayNumberMenu(pkgS []string, rt *runtime.Runtime) error {
 		}
 
 		if (isInclude && include.Get(target)) || (!isInclude && !exclude.Get(target)) {
-			arguments.Targets = append(arguments.Targets, "aur/"+aq[i].Name)
+			*arguments.Targets = append(*arguments.Targets, "aur/"+aq[i].Name)
 		}
 	}
 
-	if len(arguments.Targets) == 0 {
+	if len(*arguments.Targets) == 0 {
 		text.Println(text.T(" there is nothing to do"))
 		return nil
 	}
@@ -271,15 +271,15 @@ func displayNumberMenu(pkgS []string, rt *runtime.Runtime) error {
 func syncList(rt *runtime.Runtime, quiet bool) error {
 	aur := false
 
-	for i := len(rt.Config.Pacman.Targets) - 1; i >= 0; i-- {
-		if rt.Config.Pacman.Targets[i] == "aur" && (rt.Config.Mode == settings.ModeAny || rt.Config.Mode == settings.ModeAUR) {
+	for i := len(rt.Config.Targets) - 1; i >= 0; i-- {
+		if rt.Config.Targets[i] == "aur" && (rt.Config.Mode == settings.ModeAny || rt.Config.Mode == settings.ModeAUR) {
 
-			rt.Config.Pacman.Targets = append(rt.Config.Pacman.Targets[:i], rt.Config.Pacman.Targets[i+1:]...)
+			rt.Config.Targets = append(rt.Config.Targets[:i], rt.Config.Targets[i+1:]...)
 			aur = true
 		}
 	}
 
-	if (rt.Config.Mode == settings.ModeAny || rt.Config.Mode == settings.ModeAUR) && (len(rt.Config.Pacman.Targets) == 0 || aur) {
+	if (rt.Config.Mode == settings.ModeAny || rt.Config.Mode == settings.ModeAUR) && (len(rt.Config.Targets) == 0 || aur) {
 		resp, err := http.Get(rt.Config.AURURL + "/packages.gz")
 		if err != nil {
 			return err
@@ -305,7 +305,7 @@ func syncList(rt *runtime.Runtime, quiet bool) error {
 		}
 	}
 
-	if (rt.Config.Mode == settings.ModeAny || rt.Config.Mode == settings.ModeRepo) && (len(rt.Config.Pacman.Targets) != 0 || !aur) {
+	if (rt.Config.Mode == settings.ModeAny || rt.Config.Mode == settings.ModeRepo) && (len(rt.Config.Targets) != 0 || !aur) {
 		return rt.CmdRunner.Show(passToPacman(rt, rt.Config.Pacman))
 	}
 

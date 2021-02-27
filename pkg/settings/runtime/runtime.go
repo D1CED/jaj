@@ -35,7 +35,7 @@ func New(conf *settings.YayConfig, pac *pacmanconf.Config, db db.Executor) (*Run
 		MakepkgBin:      conf.MakepkgBin,
 	}
 
-	vcsStore := vcs.NewInfoStore(filepath.Join(settings.GetCacheHome(), vcsFileName), cmdRunner, cmdBuilder)
+	vcsStore := vcs.NewInfoStore(filepath.Join(conf.BuildDir, vcsFileName), cmdRunner, cmdBuilder)
 	err := vcsStore.Load()
 
 	r := &Runtime{

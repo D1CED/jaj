@@ -74,6 +74,7 @@ settings
 
 Split parsing off of settings [done]
 
+Move settings/exe a level up (no cohesion with settings) [done]
 
 Investigate merging putting Arguments inside Runtime [see below]
   settings will export three data structures
@@ -92,9 +93,9 @@ Removed globals form settings package [done] (moved into db.Executor interface)
 
 Move Runtime into package main
 
-Move settings/exe a level up (no cohesion with settings)
+go-srcinfo type alias in pgp/vcs?
 
-go-srcinfo type alias in pgp?
+research argument handling of '-' (non-blocking read and reattach to console)
 
 ::
 

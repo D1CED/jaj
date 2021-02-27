@@ -1,43 +1,12 @@
-/*
-Package parser accumulates command line arguments
-
-It supports short and long options.
-You define an enum and mapping first.
-You gather all arguments with the Iterate method.
-
-Example
-
-	const (
-    	a Enum = iota // -a or --all bool
-        b             // -b          val
-        c             // -c          bool
-        abc           // --abc       bool
-        def           // --def       val
-	)
-
-	switch flag {
-	case "a", "all": return a, false
-	case "b":        return b, true
-	case "c":        return c, false
-	case "abc":      return abc, false
-	case "def":      return def, true
-	}
-
-    my-program -a target5 --abc -abc -bvalue1 target4 -b value2 --def value1 target2 --def=value2 target1 target3
-
-	Result:
-
-	a    true (2)
-	b    [c value1 value2]
-	c    false
-	abc  true (1)
-	def  [value1 value2]
-
-	targets [target5 target4 target2 target1 target3]
-
-
-Think about explicit error types.
-*/
+// Package parser accumulates command line arguments
+//
+// It supports short and long options.
+// You define an enumeration and a mapping of string options to those first.
+// The Arguments struct will accumulate options.
+//
+// You get access to these individually by the Arguments method
+// or you can interate them in the order they where specified with
+// the `Iterate` method.
 package parser
 
 import (
@@ -47,9 +16,21 @@ import (
 	"strings"
 )
 
+type ErrUnknownOption string
+
+func (err ErrUnknownOption) Error() string {
+	return fmt.Sprintf("unknown option: %q", string(err))
+}
+
+type ErrMissingArgument string
+
+func (err ErrMissingArgument) Error() string {
+	return fmt.Sprintf("missing argument for option: %q", string(err))
+}
+
 type Enum int
 
-const InvalidFlag Enum = -1
+const InvalidOption Enum = -1
 
 type opArgs struct {
 	Option    Enum
@@ -155,8 +136,8 @@ func parseShortOption(a *Arguments, arg, param string, exists bool) (bool, error
 	for k, char := range arg {
 		alias, wantArg := a.alias(string(char))
 
-		if alias == InvalidFlag {
-			return false, fmt.Errorf("unknown argument %c", char)
+		if alias == InvalidOption {
+			return false, ErrUnknownOption(char)
 		}
 
 		if wantArg {
@@ -164,7 +145,7 @@ func parseShortOption(a *Arguments, arg, param string, exists bool) (bool, error
 			if k == len(arg)-1 {
 				put(a, alias, param, true)
 				if !exists {
-					return false, fmt.Errorf("missing value for %c", char)
+					return false, ErrMissingArgument(char)
 				}
 				return true, nil
 			} else {
@@ -192,11 +173,11 @@ func parseLongOption(a *Arguments, arg, param string, exists bool) (bool, error)
 
 	alias, wantArg := a.alias(arg)
 
-	if alias == InvalidFlag {
-		return false, fmt.Errorf("unknown argument %q", arg)
+	if alias == InvalidOption {
+		return false, ErrUnknownOption(arg)
 	}
 	if wantArg && !exists {
-		return false, fmt.Errorf("missing value for %q", arg)
+		return false, ErrMissingArgument(arg)
 	}
 	if wantArg {
 		put(a, alias, param, true)

@@ -199,7 +199,7 @@ func printNumberOfUpdates(rt *runtime.Runtime, enableDowngrade bool) error {
 }
 
 func printUpdateList(cmdArgs *settings.PacmanConf, rt *runtime.Runtime, enableDowngrade bool) error {
-	targets := stringset.FromSlice(cmdArgs.Targets)
+	targets := stringset.FromSlice(*cmdArgs.Targets)
 	warnings := query.NewWarnings()
 
 	var (

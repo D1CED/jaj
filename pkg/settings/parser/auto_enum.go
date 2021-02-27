@@ -52,7 +52,7 @@ func Enumerate(enumDescription string, withHelp bool) (func(string) Enum, func(s
 	fn := func(s string) (Enum, bool) {
 		ea, ok := m[s]
 		if !ok {
-			return InvalidFlag, false
+			return InvalidOption, false
 		}
 		return ea.enum, ea.takesArg
 	}
@@ -70,7 +70,7 @@ func Enumerate(enumDescription string, withHelp bool) (func(string) Enum, func(s
 
 	return func(s string) Enum {
 		e, _ := fn(s)
-		if e == InvalidFlag {
+		if e == InvalidOption {
 			panic("unknown arg")
 		}
 		return e

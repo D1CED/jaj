@@ -32,7 +32,7 @@ func cleanRemove(rt *runtime.Runtime, cmdArgs *settings.PacmanConf, pkgNames []s
 
 	arguments := cmdArgs.DeepCopy()
 	arguments.ModeConf = &settings.RConf{}
-	arguments.Targets = append(arguments.Targets, pkgNames...)
+	*arguments.Targets = append(*arguments.Targets, pkgNames...)
 
 	return rt.CmdRunner.Show(passToPacman(rt, arguments))
 }

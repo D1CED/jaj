@@ -210,7 +210,7 @@ func syncInfo(cmdArgs *settings.PacmanConf, pkgS []string, rt *runtime.Runtime) 
 	if len(repoS) != 0 {
 		arguments := cmdArgs.DeepCopy()
 		arguments.Targets = nil
-		arguments.Targets = append(arguments.Targets, repoS...)
+		*arguments.Targets = append(*arguments.Targets, repoS...)
 		err = rt.CmdRunner.Show(passToPacman(rt, arguments))
 
 		if err != nil {

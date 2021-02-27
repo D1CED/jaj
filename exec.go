@@ -73,7 +73,7 @@ func passToPacman(rt *runtime.Runtime, args *settings.PacmanConf) *exec.Cmd {
 	}
 
 	argArr = append(argArr, "--config", rt.Config.PacmanConf, "--")
-	argArr = append(argArr, args.Targets...)
+	argArr = append(argArr, *args.Targets...)
 
 	if settings.NeedRoot(args, rt.Config.Mode) {
 		waitLock(rt.Config.Pacman.DBPath)

@@ -322,7 +322,7 @@ const (
 func mapping(option string, mainOp OpMode) parser.Enum {
 	switch option {
 	default:
-		return parser.InvalidFlag
+		return parser.InvalidOption
 
 	// ambiguous flags
 	case "d":
@@ -354,7 +354,7 @@ func mapping(option string, mainOp OpMode) parser.Enum {
 		if mainOp == OpYay {
 			return clean
 		}
-		return parser.InvalidFlag
+		return parser.InvalidOption
 	case "u":
 		if mainOp == OpQuery || mainOp == OpShow {
 			return upgrades
@@ -365,7 +365,7 @@ func mapping(option string, mainOp OpMode) parser.Enum {
 		if mainOp == OpSync {
 			return sysUpgrade
 		}
-		return parser.InvalidFlag
+		return parser.InvalidOption
 	case "n":
 		if mainOp == OpShow {
 			return numberUpgrades
@@ -376,7 +376,7 @@ func mapping(option string, mainOp OpMode) parser.Enum {
 		if mainOp == OpRemove {
 			return noSave
 		}
-		return parser.InvalidFlag
+		return parser.InvalidOption
 	case "s":
 		if mainOp == OpQuery {
 			return search
@@ -387,7 +387,7 @@ func mapping(option string, mainOp OpMode) parser.Enum {
 		if mainOp == OpShow {
 			return stats
 		}
-		return parser.InvalidFlag
+		return parser.InvalidOption
 	case "g":
 		if mainOp == OpShow {
 			return currentConfig
