@@ -1,7 +1,9 @@
 package settings
 
 import (
+	"errors"
 	"fmt"
+	"io"
 	"path/filepath"
 	"strconv"
 	"strings"
@@ -69,6 +71,7 @@ func ParseCommandLine(args []string) (*YayConfig, error) {
 	if err != nil {
 		return nil, err
 	}
+
 	yay := &YayConfig{
 		PersistentYayConfig: *conf,
 		CompletionPath:      filepath.Join(getCacheHome(), completionFileName),
@@ -77,9 +80,27 @@ func ParseCommandLine(args []string) (*YayConfig, error) {
 	}
 	yay.Pacman.Targets = &yay.Targets
 
-	a, err := parser.Parse(mappingFunc(), args, text.In())
+	err = parseCommandLine(args, yay, text.In())
 	if err != nil {
 		return nil, err
+	}
+	return yay, err
+}
+
+func parseCommandLine(args []string, yay *YayConfig, r io.Reader) error {
+
+	a, err := parser.Parse(mappingFunc(), args, r)
+	var uoErr parser.ErrUnknownOption
+	if ok := errors.As(err, &uoErr); ok {
+		switch uoErr {
+		case "D", "Q", "R", "S", "T", "U", "F", "Y", "P", "G":
+			fallthrough
+		case "database", "query", "remove", "sync", "deptest", "upgrade", "files", "yay", "show", "getpkgbuild":
+			return fmt.Errorf("main op may not be specified multiple times")
+		}
+	}
+	if err != nil {
+		return err
 	}
 
 	a.Iterate(handleConfig(yay, &err))
@@ -91,7 +112,7 @@ func ParseCommandLine(args []string) (*YayConfig, error) {
 
 	yay.Targets = a.Targets()
 
-	return yay, err
+	return err
 }
 
 func handleConfig(conf *YayConfig, err *error) func(option parser.Enum, value []string) bool {

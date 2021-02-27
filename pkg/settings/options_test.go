@@ -1,24 +1,21 @@
 package settings
 
 import (
-	"fmt"
+	"strconv"
 	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-
-	"github.com/Jguer/yay/v10/pkg/settings/parser"
 )
 
 func TestParse(t *testing.T) {
 
 	tt := []struct {
-		args      string
-		want      *YayConfig
-		err       bool
-		errPhase2 bool
-	}{{
+		args string
+		want *YayConfig
+		err  bool
+	}{0: {
 		args: "-Syu",
 		want: &YayConfig{
 			MainOperation: 'S',
@@ -27,7 +24,7 @@ func TestParse(t *testing.T) {
 				Refresh:    Once,
 			}},
 		},
-	}, {
+	}, 1: {
 		args: "-Syyuu",
 		want: &YayConfig{
 			MainOperation: 'S',
@@ -36,7 +33,7 @@ func TestParse(t *testing.T) {
 				Refresh:    Twice,
 			}},
 		},
-	}, {
+	}, 2: {
 		args: "-Suuyy",
 		want: &YayConfig{
 			MainOperation: 'S',
@@ -45,7 +42,7 @@ func TestParse(t *testing.T) {
 				Refresh:    Twice,
 			}},
 		},
-	}, {
+	}, 3: {
 		args: "-S -uuyy",
 		want: &YayConfig{
 			MainOperation: 'S',
@@ -54,7 +51,7 @@ func TestParse(t *testing.T) {
 				Refresh:    Twice,
 			}},
 		},
-	}, {
+	}, 4: {
 		args: "-Suyyu",
 		want: &YayConfig{
 			MainOperation: 'S',
@@ -63,7 +60,7 @@ func TestParse(t *testing.T) {
 				Refresh:    Twice,
 			}},
 		},
-	}, {
+	}, 5: {
 		args: "--sync -u --refresh -y --sysupgrade",
 		want: &YayConfig{
 			MainOperation: 'S',
@@ -72,7 +69,7 @@ func TestParse(t *testing.T) {
 				Refresh:    Twice,
 			}},
 		},
-	}, {
+	}, 6: {
 		args: "-S some-pkg",
 		want: &YayConfig{
 			MainOperation: 'S',
@@ -82,30 +79,30 @@ func TestParse(t *testing.T) {
 				Targets:  &[]string{"some-pkg"},
 			},
 		},
-	}, {
+	}, 7: {
 		args: "some-pkg other-pkg",
 		want: &YayConfig{
 			MainOperation: 'Y',
 			ModeConf:      &YConf{},
 			Targets:       []string{"some-pkg", "other-pkg"},
 		},
-	}, {
+	}, 8: {
 		args: "-SY",
 		err:  true,
-	}, {
+	}, 9: {
 		args: "--noansweredit --answeredit=None",
 		want: &YayConfig{
 			MainOperation:       'Y',
 			ModeConf:            &YConf{},
 			PersistentYayConfig: PersistentYayConfig{AnswerEdit: "None"},
 		},
-	}, {
+	}, 10: {
 		args: "--answeredit=None --noansweredit",
 		want: &YayConfig{
 			MainOperation: 'Y',
 			ModeConf:      &YConf{},
 		},
-	}, {
+	}, 11: {
 		args: "--answeredit=All some-pkg -P --fish --aur -r/test/ --color always",
 		want: &YayConfig{
 			MainOperation:       'P',
@@ -115,10 +112,10 @@ func TestParse(t *testing.T) {
 			Mode:                ModeAUR,
 			Pacman:              &PacmanConf{Root: "/test/", Color: ColorAlways, Targets: &[]string{"some-pkg"}},
 		},
-	}, {
-		args:      "--color always --aur --fish -Pr/test/ some-pkg --answeredit=All",
-		errPhase2: true,
-	}, {
+	}, 12: {
+		args: "--color always --aur --fish -Pr/test/ some-pkg --answeredit=All",
+		err:  true,
+	}, 13: {
 		args: "--color always -r/test/ --aur --show --fish some-pkg --answeredit=All",
 		want: &YayConfig{
 			MainOperation:       'P',
@@ -128,20 +125,24 @@ func TestParse(t *testing.T) {
 			Mode:                ModeAUR,
 			Pacman:              &PacmanConf{Root: "/test/", Color: ColorAlways, Targets: &[]string{"some-pkg"}},
 		},
+	}, 14: {
+		args: "--color always --aur --fish -Pr/test/ some-pkg --answeredit=All --unknown-option=5",
+		err:  true,
 	}}
 
 	compare := func(t *testing.T, expect *YayConfig, got *YayConfig, targets []string) {
-		if len(targets) != 0 {
-			got.Targets = targets
-			got.Pacman.Targets = &got.Targets
+		if len(targets) == 0 {
+			got.Targets = nil
 		}
 
 		if expect.Pacman == nil {
 			expect.Pacman = new(PacmanConf)
-			expect.Pacman.Targets = &expect.Targets
+			if expect.Targets != nil {
+				expect.Pacman.Targets = &expect.Targets
+			}
 		}
-		if expect.Pacman.Targets == nil {
-			expect.Pacman.Targets = new([]string)
+		if len(*got.Pacman.Targets) == 0 {
+			got.Pacman.Targets = nil
 		}
 
 		wantP := expect.Pacman
@@ -153,30 +154,19 @@ func TestParse(t *testing.T) {
 	}
 
 	for i, test := range tt {
-		t.Run(fmt.Sprint(i), func(t *testing.T) {
+		t.Run(strconv.Itoa(i), func(t *testing.T) {
 			yay := &YayConfig{Pacman: new(PacmanConf)}
 			yay.Pacman.Targets = &yay.Targets
 
-			a, err := parser.Parse(mappingFunc(), strings.Split(test.args, " "), nil)
+			err := parseCommandLine(strings.Split(test.args, " "), yay, nil)
 			if test.err {
+				t.Log(err)
 				assert.Error(t, err)
 				return
 			}
 			require.NoError(t, err)
 
-			a.Iterate(handleConfig(yay, &err))
-			if test.errPhase2 {
-				assert.Error(t, err)
-				return
-			}
-			require.NoError(t, err)
-
-			if yay.MainOperation == 0 {
-				yay.MainOperation = OpYay
-				yay.ModeConf = &YConf{}
-			}
-
-			compare(t, test.want, yay, a.Targets())
+			compare(t, test.want, yay, yay.Targets)
 		})
 	}
 }
