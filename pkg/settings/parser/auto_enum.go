@@ -2,23 +2,33 @@ package parser
 
 import (
 	"errors"
+	"io"
 	"os"
+	"text/tabwriter"
 )
 
-// Format:
+// Enumerate creates an enumeration mapping to command line options form a string.
+// It can also generate a help text for you.
 //
-// a(all):
-// b
-// c(clear)
-// d
-// e:
-// [emit]
+// Format
 //
-// longid :: alnum ( alnum | '-' )*
-// single ::  ws ( alnum ['(' longid ')'] | '[' longid ']' ) [ ':' ]
-// full   :: single+ ws
+// The format is inspired by getopt.
+//
+//     alnum  = (* any alphanumeric character *) ;
+//     ws     = (* any whitespace character *) ;
+//     wss    = { ws } ;
+//     longid = alnum , { alnum | "-" } ;
+//     single = wss , ( alnum , [ "(" , longid , ")" ] ) | ( "[" , longid , "]" ) , [ ":" ] ;
+//     full   = single , { single } , wss ;
+func Enumerate(enumDescription string) (func(string) Enum, func(string) (Enum, bool)) {
+	return enumerate(enumDescription, false, "")
+}
 
-func Enumerate(enumDescription string, withHelp bool) (func(string) Enum, func(string) (Enum, bool)) {
+func EnumerateWithHelp(enumDescription, helpText string) (func(string) Enum, func(string) (Enum, bool)) {
+	return enumerate(enumDescription, true, helpText)
+}
+
+func enumerate(enumDescription string, withHelp bool, helpText string) (func(string) Enum, func(string) (Enum, bool)) {
 	ops, err := parse(enumDescription)
 	if err != nil {
 		panic(err)
@@ -62,7 +72,7 @@ func Enumerate(enumDescription string, withHelp bool) (func(string) Enum, func(s
 		hfn = func(s string) (Enum, bool) {
 			r, b := fn(s)
 			if r == m["help"].enum {
-				printDoc(ops)
+				printDoc(ops, helpText)
 			}
 			return r, b
 		}
@@ -230,29 +240,50 @@ func parse(s string) ([]option, error) {
 	}
 }
 
-func printDoc(opts []option) {
-	os.Stdout.WriteString(os.Args[0])
-	os.Stdout.WriteString(" [options] <arguments>\n\n")
-	os.Stdout.WriteString("OPTIONS\n")
-	os.Stdout.WriteString(doc(opts))
+func printDoc(opts []option, helpText string) {
+
+	E := func(_ int, err error) {
+		if err != nil {
+			panic(err)
+		}
+	}
+
+	if helpText != "" {
+		E(os.Stdout.WriteString(helpText))
+		if helpText[len(helpText)-1] != '\n' {
+			E(os.Stdout.WriteString("\n\n"))
+		} else if helpText[len(helpText)-2] != '\n' {
+			E(os.Stdout.WriteString("\n"))
+		}
+	}
+
+	E(os.Stdout.WriteString(os.Args[0]))
+	E(os.Stdout.WriteString(" [options] <arguments>\n\n"))
+	E(os.Stdout.WriteString("OPTIONS\n"))
+	err := doc(opts, os.Stdout)
+	if err != nil {
+		panic(err)
+	}
 	os.Exit(0)
 }
 
-func doc(opts []option) string {
-	var d = make([]byte, 0, len(opts)*20)
+func doc(opts []option, w io.Writer) error {
+	tw := tabwriter.NewWriter(w, 6, 8, 1, ' ', 0)
+
 	for _, o := range opts {
+		tw.Write([]byte("  "))
 		if o.ShortName != 0 && o.LongName != "" {
-			d = append(d, "  -"+string(o.ShortName)+"\t--"+o.LongName...)
+			tw.Write([]byte("-" + string(o.ShortName) + "\t--" + o.LongName))
 		} else if o.ShortName != 0 {
-			d = append(d, "  -"+string(o.ShortName)+"\t"...)
+			tw.Write([]byte("-" + string(o.ShortName) + "\t"))
 		} else {
-			d = append(d, "    \t--"+o.LongName...)
+			tw.Write([]byte("\t--" + o.LongName))
 		}
 		if o.TakesArg {
-			d = append(d, " \t<arg>\n"...)
+			tw.Write([]byte("\t<arg>\n"))
 		} else {
-			d = append(d, '\n')
+			tw.Write([]byte("\t\n"))
 		}
 	}
-	return string(d)
+	return tw.Flush()
 }

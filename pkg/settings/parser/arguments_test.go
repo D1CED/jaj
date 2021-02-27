@@ -189,7 +189,7 @@ func TestParse(t *testing.T) {
 func TestEnumerate(t *testing.T) {
 
 	t.Run("short", func(t *testing.T) {
-		my, alias := parser.Enumerate("ab:c", false)
+		my, alias := parser.Enumerate("ab:c")
 
 		p, err := parser.Parse(alias, strings.Split("-a -bc -b x target1", " "), nil)
 		assert.NoError(t, err)
@@ -201,7 +201,7 @@ func TestEnumerate(t *testing.T) {
 	})
 
 	t.Run("short+long", func(t *testing.T) {
-		my, alias := parser.Enumerate("a(foo)b(bar):c(baz)", false)
+		my, alias := parser.Enumerate("a(foo)b(bar):c(baz)")
 
 		p, err := parser.Parse(alias, strings.Split("--foo --bar=c -b x target1", " "), nil)
 		assert.NoError(t, err)
@@ -219,7 +219,7 @@ func TestEnumerate(t *testing.T) {
 	})
 
 	t.Run("long", func(t *testing.T) {
-		my, alias := parser.Enumerate("[foo][bar]:[baz]", false)
+		my, alias := parser.Enumerate("[foo][bar]:[baz]")
 
 		p, err := parser.Parse(alias, strings.Split("--foo --bar=c --bar x target1", " "), nil)
 		if !assert.NoError(t, err) {
@@ -241,7 +241,7 @@ func TestEnumerate(t *testing.T) {
 			[bar]:
 			[baz-zing]
 		`
-		my, alias := parser.Enumerate(desc, false)
+		my, alias := parser.Enumerate(desc)
 
 		p, err := parser.Parse(alias, strings.Split("-ahello --baz-zing --bar=test --def target2 -gcb", " "), nil)
 		assert.NoError(t, err)
@@ -265,11 +265,11 @@ func TestEnumerate(t *testing.T) {
 			assert.NotNil(t, r)
 		}()
 
-		parser.Enumerate("[f]g(f):[baz]", false)
+		parser.Enumerate("[f]g(f):[baz]")
 	})
 
 	t.Run("doc", func(t *testing.T) {
-		t.Skip("currently go test does not handle exit(0) as error")
+		//t.Skip("currently go test does not handle exit(0) as error")
 		const desc = `
 			a:bc
 			d(def):
@@ -278,7 +278,7 @@ func TestEnumerate(t *testing.T) {
 			[bar]:
 			[baz-zing]
 		`
-		_, alias := parser.Enumerate(desc, true)
+		_, alias := parser.EnumerateWithHelp(desc, "This is my program!!")
 		parser.Parse(alias, []string{"-h"}, nil)
 		t.Fail()
 	})
