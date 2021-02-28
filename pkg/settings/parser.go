@@ -80,14 +80,14 @@ func ParseCommandLine(args []string) (*YayConfig, error) {
 	}
 	yay.Pacman.Targets = &yay.Targets
 
-	err = parseCommandLine(args, yay, text.In())
+	err = parseCommandLine(args, yay, text.InRef())
 	if err != nil {
 		return nil, err
 	}
 	return yay, err
 }
 
-func parseCommandLine(args []string, yay *YayConfig, r io.Reader) error {
+func parseCommandLine(args []string, yay *YayConfig, r *io.Reader) error {
 
 	a, err := parser.Parse(mappingFunc(), args, r)
 	var uoErr parser.ErrUnknownOption

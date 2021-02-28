@@ -20,15 +20,15 @@ import (
 //     longid = alnum , { alnum | "-" } ;
 //     single = wss , ( alnum , [ "(" , longid , ")" ] ) | ( "[" , longid , "]" ) , [ ":" ] ;
 //     full   = single , { single } , wss ;
-func Enumerate(enumDescription string) (func(string) Enum, func(string) (Enum, bool)) {
+func Enumerate(enumDescription string) (func(string) Enum, OptionMapping) {
 	return enumerate(enumDescription, false, "")
 }
 
-func EnumerateWithHelp(enumDescription, helpText string) (func(string) Enum, func(string) (Enum, bool)) {
+func EnumerateWithHelp(enumDescription, helpText string) (func(string) Enum, OptionMapping) {
 	return enumerate(enumDescription, true, helpText)
 }
 
-func enumerate(enumDescription string, withHelp bool, helpText string) (func(string) Enum, func(string) (Enum, bool)) {
+func enumerate(enumDescription string, withHelp bool, helpText string) (func(string) Enum, OptionMapping) {
 	ops, err := parse(enumDescription)
 	if err != nil {
 		panic(err)

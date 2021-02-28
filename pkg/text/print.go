@@ -11,6 +11,7 @@ import (
 
 	"github.com/leonelquinteros/gotext"
 	"golang.org/x/sys/unix"
+	"golang.org/x/term"
 )
 
 const (
@@ -34,6 +35,14 @@ func AllPorts() (i io.Reader, o, e io.Writer) {
 
 func In() io.Reader {
 	return in
+}
+
+func InRef() *io.Reader {
+	return &in
+}
+
+func InIsTerminal() bool {
+	return term.IsTerminal(int(os.Stdout.Fd()))
 }
 
 // CaptureOutput takes two io.Writer and runs a function so that the output gets written to those.

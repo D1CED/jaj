@@ -6,7 +6,6 @@ import (
 
 	pacmanconf "github.com/Morganamilo/go-pacmanconf"
 	rpc "github.com/mikkeloscar/aur"
-	"golang.org/x/term"
 
 	"github.com/Jguer/yay/v10/pkg/db/ialpm"
 	"github.com/Jguer/yay/v10/pkg/settings"
@@ -51,7 +50,7 @@ func initAlpm(cmdArgs *settings.PacmanConf, pacmanConfigPath string) (*pacmancon
 		pacmanConf.GPGDir = cmdArgs.GPGDir
 	}
 
-	outIsTerm := term.IsTerminal(int(os.Stdout.Fd()))
+	outIsTerm := text.InIsTerminal()
 	useColor := pacmanConf.Color && outIsTerm
 	switch cmdArgs.Color {
 	case settings.ColorAlways:

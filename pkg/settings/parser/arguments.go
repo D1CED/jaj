@@ -13,7 +13,10 @@ import (
 	"bufio"
 	"fmt"
 	"io"
+	"os"
 	"strings"
+
+	"golang.org/x/term"
 )
 
 type ErrUnknownOption string
@@ -28,9 +31,13 @@ func (err ErrMissingArgument) Error() string {
 	return fmt.Sprintf("missing argument for option: %q", string(err))
 }
 
+type fileDescriptor interface{ Fd() uintptr }
+
 type Enum int
 
 const InvalidOption Enum = -1
+
+type OptionMapping func(string) (Enum, bool)
 
 type opArgs struct {
 	Option    Enum
@@ -40,7 +47,7 @@ type opArgs struct {
 type Arguments struct {
 	options []opArgs
 	targets []string
-	alias   func(string) (Enum, bool)
+	alias   OptionMapping
 }
 
 func getIdx(op Enum, ops []opArgs) (int, bool) {
@@ -69,7 +76,7 @@ func put(a *Arguments, e Enum, param string, nonBoolOp bool) {
 	}
 }
 
-func Parse(fn func(string) (Enum, bool), args []string, r io.Reader) (*Arguments, error) {
+func Parse(fn OptionMapping, args []string, r *io.Reader) (*Arguments, error) {
 
 	var (
 		usedNext = false
@@ -124,11 +131,22 @@ func Parse(fn func(string) (Enum, bool), args []string, r io.Reader) (*Arguments
 		}
 	}
 
-	if dash {
-		err = parseIn(a, r)
+	if r == nil {
+		return a, nil
 	}
 
-	return a, err
+	if file, ok := (*r).(fileDescriptor); dash && !(ok && term.IsTerminal(int(file.Fd()))) {
+		err = parseIn(a, *r)
+		if err != nil {
+			return nil, err
+		}
+		new, err := os.Open("/dev/tty")
+		if err == nil {
+			*r = new
+		}
+	}
+
+	return a, nil
 }
 
 func parseShortOption(a *Arguments, arg, param string, exists bool) (bool, error) {
@@ -214,10 +232,7 @@ func (a *Arguments) Get(op Enum) []string {
 
 func (a *Arguments) Last(op Enum) (string, bool) {
 	res := a.Get(op)
-	if len(res) == 0 {
-		return "", false
-	}
-	return res[len(res)-1], true
+	return GetLast(res)
 }
 
 func (a *Arguments) Count(op Enum) int {
@@ -247,4 +262,11 @@ func GetCount(ss []string) int {
 		panic("Count likely called on non-bool option")
 	}
 	return int(ss[0][0])
+}
+
+func GetLast(ss []string) (string, bool) {
+	if len(ss) == 0 {
+		return "", false
+	}
+	return ss[len(ss)-1], true
 }

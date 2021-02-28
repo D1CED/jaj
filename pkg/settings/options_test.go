@@ -1,15 +1,21 @@
 package settings
 
 import (
+	"bytes"
+	"io"
+	"os"
 	"strconv"
 	"strings"
+
+	"golang.org/x/term"
+
 	"testing"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
-func TestParse(t *testing.T) {
+func Test_parseCommandLine(t *testing.T) {
 
 	tt := []struct {
 		args string
@@ -169,4 +175,34 @@ func TestParse(t *testing.T) {
 			compare(t, test.want, yay, yay.Targets)
 		})
 	}
+}
+
+func TestDashInput(t *testing.T) {
+
+	t.Run("file_attached", func(t *testing.T) {
+		var r io.Reader = bytes.NewBufferString("hello\nworld\n")
+		yay := &YayConfig{Pacman: new(PacmanConf)}
+		yay.Pacman.Targets = &yay.Targets
+
+		err := parseCommandLine([]string{"-"}, yay, &r)
+		require.NoError(t, err)
+
+		assert.Equal(t, []string{"hello", "world"}, yay.Targets)
+
+		if term.IsTerminal(int(os.Stdin.Fd())) {
+			_, ok := r.(*os.File)
+			assert.True(t, ok)
+		}
+	})
+
+	t.Run("term_attached", func(t *testing.T) {
+		yay := &YayConfig{Pacman: new(PacmanConf)}
+		yay.Pacman.Targets = &yay.Targets
+
+		r := io.Reader(os.Stdin)
+		err := parseCommandLine([]string{"-"}, yay, &r)
+		require.NoError(t, err)
+
+		assert.Equal(t, []string{}, yay.Targets)
+	})
 }
