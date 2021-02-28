@@ -42,7 +42,10 @@ func InRef() *io.Reader {
 }
 
 func InIsTerminal() bool {
-	return term.IsTerminal(int(os.Stdout.Fd()))
+	if f, ok := in.(*os.File); ok {
+		return term.IsTerminal(int(f.Fd()))
+	}
+	return false
 }
 
 // CaptureOutput takes two io.Writer and runs a function so that the output gets written to those.
