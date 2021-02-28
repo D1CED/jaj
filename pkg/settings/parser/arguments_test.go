@@ -7,6 +7,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 
 	"github.com/Jguer/yay/v10/pkg/settings/parser"
 )
@@ -192,7 +193,7 @@ func TestEnumerate(t *testing.T) {
 		my, alias := parser.Enumerate("ab:c")
 
 		p, err := parser.Parse(alias, strings.Split("-a -bc -b x target1", " "), nil)
-		assert.NoError(t, err)
+		require.NoError(t, err)
 
 		assert.True(t, p.Exists(my("a")))
 		assert.False(t, p.Exists(my("c")))
@@ -204,27 +205,21 @@ func TestEnumerate(t *testing.T) {
 		my, alias := parser.Enumerate("a(foo)b(bar):c(baz)")
 
 		p, err := parser.Parse(alias, strings.Split("--foo --bar=c -b x target1", " "), nil)
-		assert.NoError(t, err)
+		require.NoError(t, err)
 
 		assert.True(t, p.Exists(my("foo")))
 		assert.False(t, p.Exists(my("c")))
 		assert.Equal(t, []string{"c", "x"}, p.Get(my("b")))
 		assert.Equal(t, []string{"target1"}, p.Targets())
 
-		func() {
-			defer func() { r := recover(); assert.NotNil(t, r) }()
-
-			my("x")
-		}()
+		assert.Panics(t, func() { my("x") })
 	})
 
 	t.Run("long", func(t *testing.T) {
 		my, alias := parser.Enumerate("[foo][bar]:[baz]")
 
 		p, err := parser.Parse(alias, strings.Split("--foo --bar=c --bar x target1", " "), nil)
-		if !assert.NoError(t, err) {
-			return
-		}
+		require.NoError(t, err)
 
 		assert.True(t, p.Exists(my("foo")))
 		assert.False(t, p.Exists(my("baz")))
@@ -244,7 +239,7 @@ func TestEnumerate(t *testing.T) {
 		my, alias := parser.Enumerate(desc)
 
 		p, err := parser.Parse(alias, strings.Split("-ahello --baz-zing --bar=test --def target2 -gcb", " "), nil)
-		assert.NoError(t, err)
+		require.NoError(t, err)
 
 		assert.True(t, p.Exists(my("baz-zing")))
 		assert.True(t, p.Exists(my("def")))
@@ -259,17 +254,13 @@ func TestEnumerate(t *testing.T) {
 	})
 
 	t.Run("duplicate", func(t *testing.T) {
-		defer func() {
-			r := recover()
-			t.Log(r)
-			assert.NotNil(t, r)
-		}()
-
-		parser.Enumerate("[f]g(f):[baz]")
+		assert.Panics(t, func() {
+			parser.Enumerate("[f]g(f):[baz]")
+		})
 	})
 
 	t.Run("doc", func(t *testing.T) {
-		//t.Skip("currently go test does not handle exit(0) as error")
+		t.Skip()
 		const desc = `
 			a:bc
 			d(def):
