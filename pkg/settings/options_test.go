@@ -6,10 +6,9 @@ import (
 	"os"
 	"strconv"
 	"strings"
+	"testing"
 
 	"golang.org/x/term"
-
-	"testing"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
