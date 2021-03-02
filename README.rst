@@ -44,29 +44,9 @@ Step 1
 
   pkg/upgrade -> alpm (add VerComp method to db) [done]
 
-  pkg/errors -> errors
-
 * Reduce standard library dependencies
 
   \* -> os and fmt (make pkg/text the destination for all user relevant output) [done]
-
-  news and completion -> net/http (create a http client in main and inject it)
-
-
-leaky abstractions
-^^^^^^^^^^^^^^^^^^
-
-main
-
-  install.go: alpm.QuestionType and bit mask (move to pkg/db)
-
-  install.go: go-srcinfo Parse file (maybe move to pgp)
-
-  query.go: alpm.PkgReasonExplicit (move to pkg/db)
-
-  query.go: rpc.SearchBy (move to pkg/query), what about ``By``?
-
-  cmd.go: alpm.Version
 
 settings
 
@@ -83,21 +63,56 @@ Investigate merging putting Arguments inside Runtime [see below]
   2. pacman configuration relevant options and an easy way to manipulate them
   3. misc options that are only of immediate relevancy [embeds yay config]
 
-More emphasis on pkg/settings/exec. Needs to play well with pkg/text
-
 Make Runtime hold all high level dependencies [done]
 
 Static data structures for pacman options [done]
 
 Removed globals form settings package [done] (moved into db.Executor interface)
 
-Move Runtime into package main
+research argument handling of '-' (non-blocking read and reattach to console) [done]
+
+Move Runtime into package main [done]
+
+Future
+------
+
+news and completion -> net/http (create a http client in main and inject it)
+
+More emphasis on pkg/exec. Needs to play well with pkg/text
 
 go-srcinfo type alias in pgp/vcs?
 
-research argument handling of '-' (non-blocking read and reattach to console)
+remove dependency on pkg/errors
 
-::
+nicer option declaration in pkg/settings.
+currently lots of places need to be touched: crate filed in struct, create enum, declare string mapping, declare if takes argument, add in parser
+
+add default editor path (vim/nano)
+
+reduce db.Executor interface
+
+move translatable constant to the to of files
+
+split parts off of main
+- split off most input and output handling
+
+Coupling in main
+^^^^^^^^^^^^^^^^
+
+install.go: alpm.QuestionType and bit mask (move to pkg/db)
+
+install.go: go-srcinfo Parse file (maybe move to pgp)
+
+query.go: alpm.PkgReasonExplicit (move to pkg/db)
+
+query.go: rpc.SearchBy (move to pkg/query), what about ``By``?
+
+cmd.go: alpm.Version
+
+Layers
+------
+
+Original::
 
     db: -
     intrange: -
@@ -146,4 +161,5 @@ Now::
     pgp: text dep
 
     main: *
-    
+
+.. image:: outfile_pg.svg
