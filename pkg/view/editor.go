@@ -1,4 +1,4 @@
-package main
+package view
 
 import (
 	"bufio"
@@ -9,12 +9,8 @@ import (
 	"github.com/Jguer/yay/v10/pkg/text"
 )
 
-const yayVersion = "devel"
-
-var localePath = "/usr/share/locale"
-
 // Editor returns the preferred system editor.
-func editor(edt, editFlags string, noConfirm bool) (editor string, args []string) {
+func Editor(edt, editFlags string, noConfirm bool) (editor string, args []string) {
 	switch {
 	case edt != "":
 		editor, err := exec.LookPath(edt)
@@ -51,7 +47,7 @@ func editor(edt, editFlags string, noConfirm bool) (editor string, args []string
 
 		for {
 			text.Infoln(text.T("Edit PKGBUILD with?"))
-			editorInput, err := getInput("", noConfirm)
+			editorInput, err := GetInput("", noConfirm)
 			if err != nil {
 				text.EPrintln(err)
 				continue
@@ -72,7 +68,7 @@ func editor(edt, editFlags string, noConfirm bool) (editor string, args []string
 	}
 }
 
-func getInput(defaultValue string, noConfirm bool) (string, error) {
+func GetInput(defaultValue string, noConfirm bool) (string, error) {
 	text.Info()
 	if defaultValue != "" || noConfirm {
 		text.Println(defaultValue)

@@ -9,9 +9,11 @@ import (
 
 	"github.com/Jguer/yay/v10/pkg/db/ialpm"
 	"github.com/Jguer/yay/v10/pkg/settings"
-	"github.com/Jguer/yay/v10/pkg/settings/runtime"
 	"github.com/Jguer/yay/v10/pkg/text"
+	"github.com/Jguer/yay/v10/pkg/yay"
 )
+
+var localePath = "/usr/share/locale"
 
 func initAlpm(cmdArgs *settings.PacmanConf, pacmanConfigPath string) (*pacmanconf.Config, bool, error) {
 
@@ -99,7 +101,7 @@ func appMain() (int, error) {
 	}
 	defer dbExecutor.Cleanup()
 
-	runt, err := runtime.New(config, pacmanConf, dbExecutor)
+	runt, err := yay.New(config, pacmanConf, dbExecutor)
 	if err != nil {
 		return 1, err
 	}

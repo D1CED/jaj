@@ -9,6 +9,8 @@ import (
 type IPackage = alpm.IPackage
 type Depend = alpm.Depend
 
+const PkgReasonExplicit = alpm.PkgReasonExplicit
+
 func VerCmp(a string, b string) int {
 	return alpm.VerCmp(a, b)
 }
