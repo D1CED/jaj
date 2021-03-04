@@ -75,6 +75,11 @@ Move Runtime into package main [done]
 
 Add method to settings.YayConf isPacmanOp [done]
 
+split parts off of main [done]
+- split off most input and output handling
+- [done] main does now only initialization and dispatch
+- added yay and view package (should rename view, maybe put it in text?)
+
 Future
 ------
 
@@ -93,23 +98,27 @@ add default editor path (vim/nano)
 
 reduce db.Executor interface
 
-move translatable constant to the to of files
+move translatable constant to the top of files
 
-split parts off of main
-- split off most input and output handling
+add context support
 
-Coupling in main
-^^^^^^^^^^^^^^^^
+propagate cancellation
 
-install.go: alpm.QuestionType and bit mask (move to pkg/db)
+add logging
+- log commands executed
+
+Coupling in yay
+^^^^^^^^^^^^^^^
+
+install.go: alpm.QuestionType and bit mask (move to pkg/db) [done]
+
+query.go: alpm.PkgReasonExplicit (move to pkg/db) [done]
+
+cmd.go: alpm.Version [reject]
+
+query.go: rpc.SearchBy (move to pkg/query), what about ``By``? [reject]
 
 install.go: go-srcinfo Parse file (maybe move to pgp)
-
-query.go: alpm.PkgReasonExplicit (move to pkg/db)
-
-query.go: rpc.SearchBy (move to pkg/query), what about ``By``?
-
-cmd.go: alpm.Version
 
 Layers
 ------
