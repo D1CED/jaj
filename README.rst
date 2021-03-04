@@ -107,6 +107,9 @@ propagate cancellation
 add logging
 - log commands executed
 
+investigate required arguments of pacman options
+- search did not need an argument, was target
+
 Coupling in yay
 ^^^^^^^^^^^^^^^
 

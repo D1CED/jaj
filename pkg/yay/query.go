@@ -234,8 +234,6 @@ func syncSearch(pkgS []string, rt *Runtime) (err error) {
 	var aq aurQuery
 	var pq repoQuery
 
-	fmt.Println(rt.Config.Mode)
-
 	switch rt.Config.Mode {
 	case settings.ModeAUR:
 		aq, aurErr = narrowSearch(pkgS, true, rt.Config.SearchBy, rt.Config.SortBy)
