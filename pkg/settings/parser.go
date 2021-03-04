@@ -194,14 +194,8 @@ func handleConfig(conf *YayConfig, err *error) func(option parser.Enum, value []
 			conf.MainOperation = OpFiles
 
 		case version:
-			if opModePacman() {
-				conf.Pacman.ModeConf = new(VConf)
-			}
 			conf.MainOperation = OpVersion
 		case help:
-			if opModePacman() {
-				conf.Pacman.ModeConf = new(HConf)
-			}
 			conf.MainOperation = OpHelp
 
 		case yay:
@@ -223,15 +217,9 @@ func handleConfig(conf *YayConfig, err *error) func(option parser.Enum, value []
 			conf.PacmanConf = last(value)
 
 		case noConfirm:
-			if opModePacman() {
-				conf.Pacman.NoConfirm = true
-			}
-			userNoConfirm = true
+			conf.Pacman.NoConfirm = true
 		case confirm:
-			if opModePacman() {
-				conf.Pacman.NoConfirm = false
-			}
-			userNoConfirm = false
+			conf.Pacman.NoConfirm = false
 		case upgrades:
 			if opModePacman() {
 				conf.Pacman.ModeConf.(*QConf).Upgrades = Trilean(parser.GetCount(value))

@@ -53,12 +53,6 @@ const (
 )
 const completionFileName = "completion.cache"
 
-// HideMenus indicates if pacman's provider menus must be hidden
-var hideMenus = false
-
-// NoConfirm indicates if user input should be skipped
-var userNoConfirm = false // use PacmanConf.NoConfirm
-
 type YayConfig struct {
 	MainOperation OpMode
 	ModeConf      interface{ mark() } // *(P|Y|G)Conf
@@ -72,6 +66,22 @@ type YayConfig struct {
 	PersistentYayConfig
 	Targets []string
 	Pacman  *PacmanConf
+}
+
+func (y *YayConfig) IsPacmanOp() bool {
+	switch y.MainOperation {
+	case OpDatabase, OpFiles, OpQuery, OpRemove, OpSync, OpDepTest, OpUpgrade:
+		return true
+	case OpYay, OpShow, OpGetPkgbuild:
+		return false
+	case OpHelp, OpVersion:
+		if y.Pacman.ModeConf != nil {
+			return true
+		}
+		return false
+	default:
+		panic("unknown op")
+	}
 }
 
 type PConf struct {

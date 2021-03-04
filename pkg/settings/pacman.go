@@ -135,8 +135,6 @@ type FConf struct {
 	MachineReadable bool
 }
 type TConf struct{}
-type VConf struct{}
-type HConf struct{}
 
 // -------------------------------------------------------
 
@@ -157,10 +155,6 @@ func mainOp(p *PacmanConf) rune {
 		op = rune(OpDepTest)
 	case *UConf:
 		op = rune(OpUpgrade)
-	case *VConf:
-		op = rune(OpVersion)
-	case *HConf:
-		op = rune(OpHelp)
 	}
 	return op
 }
@@ -190,26 +184,30 @@ func (p *PacmanConf) DeepCopy() *PacmanConf {
 	case *UConf:
 		q.ModeConf = &(*t)
 	case *TConf: // are empty anyways
-	case *VConf:
-	case *HConf:
 	}
 
 	return q
 }
 
-func (p *PacmanConf) FormatAsArgs() []string {
-	s := p.FormatGlobalArgs()
+func (p *PacmanConf) FormatAsArgs(help, version bool) []string {
+	if version && !help {
+		return []string{"-V"}
+	}
+	s := make([]string, 0, 32)
+	s = formatGlobalArgs(p, s)
 
 	type fmtArgs interface{ formatAsArgs(s []string) []string }
 
 	if m, ok := p.ModeConf.(fmtArgs); ok {
 		s = m.formatAsArgs(s)
 	}
+	if help {
+		s = append(s, "-h")
+	}
 	return s
 }
 
-func (p *PacmanConf) FormatGlobalArgs() []string {
-	s := make([]string, 0, 15)
+func formatGlobalArgs(p *PacmanConf, s []string) []string {
 
 	if p.DBPath != "" {
 		s = append(s, "--dbpath="+p.DBPath)
@@ -499,57 +497,3 @@ func (F *FConf) formatAsArgs(s []string) []string {
 	return s
 }
 func (*TConf) formatAsArgs(s []string) []string { return s }
-func (*HConf) formatAsArgs(s []string) []string { return s }
-func (*VConf) formatAsArgs(s []string) []string { return s }
-
-func NeedRoot(p *PacmanConf, tMode TargetMode) bool {
-	switch mode := p.ModeConf.(type) {
-	default:
-		return false
-	case *DConf:
-		if mode.Check != 0 {
-			return false
-		}
-		return true
-	case *FConf:
-		if mode.Refresh != 0 {
-			return true
-		}
-		return false
-	case *QConf:
-		if mode.Check != 0 {
-			return true
-		}
-		return false
-	case *RConf:
-		if mode.Print {
-			return false
-		}
-		return true
-	case *SConf:
-		if mode.Refresh != 0 {
-			return true
-		}
-		if mode.Print {
-			return false
-		}
-		if mode.Search != "" {
-			return false
-		}
-		if mode.List {
-			return false
-		}
-		if mode.Groups != 0 {
-			return false
-		}
-		if mode.Info != 0 {
-			return false
-		}
-		if mode.Clean != 0 && tMode == ModeAUR {
-			return false
-		}
-		return true
-	case *UConf:
-		return true
-	}
-}

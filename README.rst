@@ -73,6 +73,8 @@ research argument handling of '-' (non-blocking read and reattach to console) [d
 
 Move Runtime into package main [done]
 
+Add method to settings.YayConf isPacmanOp [done]
+
 Future
 ------
 

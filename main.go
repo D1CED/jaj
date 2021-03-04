@@ -13,7 +13,7 @@ import (
 	"github.com/Jguer/yay/v10/pkg/yay"
 )
 
-var localePath = "/usr/share/locale"
+const localePath = "/usr/share/locale"
 
 func initAlpm(cmdArgs *settings.PacmanConf, pacmanConfigPath string) (*pacmanconf.Config, bool, error) {
 

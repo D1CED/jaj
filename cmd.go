@@ -14,18 +14,13 @@ func usage() { text.Print(settings.Usage) }
 
 func handleCmd(rt *yay.Runtime) error {
 
-	if rt.Config.SudoLoop && settings.NeedRoot(rt.Config.Pacman, rt.Config.Mode) {
-		yay.SudoLoopBackground(rt.CmdRunner, rt.Config)
-	}
-
 	switch rt.Config.MainOperation {
 	case settings.OpDatabase, settings.OpFiles, settings.OpDepTest, settings.OpUpgrade:
 		return rt.CmdRunner.Show(yay.PassToPacman(rt, rt.Config.Pacman))
 	case settings.OpHelp:
 		return handleHelp(rt)
 	case settings.OpVersion:
-		handleVersion()
-		return nil
+		return handleVersion()
 	case settings.OpQuery:
 		return yay.HandleQuery(rt, rt.Config.Pacman.ModeConf.(*settings.QConf))
 	case settings.OpRemove:
@@ -44,13 +39,14 @@ func handleCmd(rt *yay.Runtime) error {
 }
 
 func handleHelp(rt *yay.Runtime) error {
-	if rt.Config.Pacman == nil {
-		usage()
-		return nil
+	if rt.Config.IsPacmanOp() {
+		return rt.CmdRunner.Show(yay.PassToPacman(rt, rt.Config.Pacman))
 	}
-	return rt.CmdRunner.Show(yay.PassToPacman(rt, rt.Config.Pacman))
+	usage()
+	return nil
 }
 
-func handleVersion() {
+func handleVersion() error {
 	text.Printf("yay v%s - libalpm v%s\n", yayVersion, alpm.Version())
+	return nil
 }

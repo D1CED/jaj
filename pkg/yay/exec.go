@@ -12,7 +12,7 @@ import (
 	"github.com/Jguer/yay/v10/pkg/text"
 )
 
-func SudoLoopBackground(cmdRunner exe.Runner, conf *settings.YayConfig) {
+func sudoLoopBackground(cmdRunner exe.Runner, conf *settings.YayConfig) {
 	updateSudo(cmdRunner, conf)
 	go sudoLoop(cmdRunner, conf)
 }
@@ -56,25 +56,88 @@ func waitLock(dbPath string) {
 	}
 }
 
+func needRoot(p *settings.PacmanConf, tMode settings.TargetMode, help, version bool) bool {
+	if help || version {
+		return false
+	}
+
+	switch mode := p.ModeConf.(type) {
+	default:
+		return false
+	case *settings.SConf:
+		if mode.Refresh != 0 {
+			return true
+		}
+		if mode.Print {
+			return false
+		}
+		if mode.Search != "" {
+			return false
+		}
+		if mode.List {
+			return false
+		}
+		if mode.Groups != 0 {
+			return false
+		}
+		if mode.Info != 0 {
+			return false
+		}
+		if mode.Clean != 0 && tMode == settings.ModeAUR {
+			return false
+		}
+		return true
+
+	case *settings.RConf:
+		if mode.Print {
+			return false
+		}
+		return true
+	case *settings.QConf:
+		if mode.Check != 0 {
+			return true
+		}
+		return false
+
+	case *settings.DConf:
+		if mode.Check != 0 {
+			return false
+		}
+		return true
+	case *settings.FConf:
+		if mode.Refresh != 0 {
+			return true
+		}
+		return false
+	case *settings.UConf:
+		return true
+	}
+}
+
 func PassToPacman(rt *Runtime, args *settings.PacmanConf) *exec.Cmd {
 	argArr := make([]string, 0, 32)
 
-	if settings.NeedRoot(args, rt.Config.Mode) {
+	help := rt.Config.MainOperation == settings.OpHelp
+	version := rt.Config.MainOperation == settings.OpVersion
+	needRoot := needRoot(args, rt.Config.Mode, help, version)
+
+	if needRoot {
 		argArr = append(argArr, rt.Config.SudoBin)
 		argArr = append(argArr, strings.Fields(rt.Config.SudoFlags)...)
 	}
 
 	argArr = append(argArr, rt.Config.PacmanBin)
-	argArr = append(argArr, args.FormatGlobalArgs()...)
-	argArr = append(argArr, args.FormatAsArgs()...)
-	if rt.Config.Pacman.NoConfirm {
-		argArr = append(argArr, "--noconfirm")
+	argArr = append(argArr, args.FormatAsArgs(
+		rt.Config.MainOperation == settings.OpHelp,
+		rt.Config.MainOperation == settings.OpVersion)...,
+	)
+
+	if len(*args.Targets) != 0 {
+		argArr = append(argArr, "--")
+		argArr = append(argArr, *args.Targets...)
 	}
 
-	argArr = append(argArr, "--config", rt.Config.PacmanConf, "--")
-	argArr = append(argArr, *args.Targets...)
-
-	if settings.NeedRoot(args, rt.Config.Mode) {
+	if needRoot {
 		waitLock(rt.Config.Pacman.DBPath)
 	}
 	return exec.Command(argArr[0], argArr[1:]...)

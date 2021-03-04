@@ -114,7 +114,7 @@ func install(rt *Runtime, pacmanConf *settings.PacmanConf, sconf *settings.SConf
 
 	// create the arguments to pass for the repo install
 	arguments := pacmanConf.DeepCopy()
-	argumentsSConf := arguments.ModeConf.(*settings.SConf)
+	argumentsSConf := arguments.ModeConf.(*settings.SConf) // TODO
 
 	argumentsSConf.AsDeps = false
 	argumentsSConf.AsExplicit = false
