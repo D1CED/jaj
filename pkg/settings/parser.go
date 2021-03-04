@@ -84,7 +84,7 @@ func ParseCommandLine(args []string) (*YayConfig, error) {
 	if err != nil {
 		return nil, err
 	}
-	return yay, err
+	return yay, nil
 }
 
 func parseCommandLine(args []string, yay *YayConfig, r *io.Reader) error {
@@ -105,17 +105,15 @@ func parseCommandLine(args []string, yay *YayConfig, r *io.Reader) error {
 
 	a.Iterate(handleConfig(yay, &err))
 
-	if yay.MainOperation == 0 {
-		yay.MainOperation = OpYay
-		yay.ModeConf = &YConf{}
-	}
-
 	yay.Targets = a.Targets()
 
 	return err
 }
 
 func handleConfig(conf *YayConfig, err *error) func(option parser.Enum, value []string) bool {
+
+	conf.MainOperation = OpYay
+	conf.ModeConf = &YConf{}
 
 	last := func(s []string) string { return s[len(s)-1] }
 
@@ -174,24 +172,31 @@ func handleConfig(conf *YayConfig, err *error) func(option parser.Enum, value []
 		case database:
 			conf.Pacman.ModeConf = new(DConf)
 			conf.MainOperation = OpDatabase
+			conf.ModeConf = nil
 		case query:
 			conf.Pacman.ModeConf = new(QConf)
 			conf.MainOperation = OpQuery
+			conf.ModeConf = nil
 		case remove:
 			conf.Pacman.ModeConf = new(RConf)
 			conf.MainOperation = OpRemove
+			conf.ModeConf = nil
 		case sync:
 			conf.Pacman.ModeConf = new(SConf)
 			conf.MainOperation = OpSync
+			conf.ModeConf = nil
 		case depTest:
 			conf.Pacman.ModeConf = new(TConf)
 			conf.MainOperation = OpDepTest
+			conf.ModeConf = nil
 		case upgrade:
 			conf.Pacman.ModeConf = new(UConf)
 			conf.MainOperation = OpUpgrade
+			conf.ModeConf = nil
 		case files:
 			conf.Pacman.ModeConf = new(FConf)
 			conf.MainOperation = OpFiles
+			conf.ModeConf = nil
 
 		case version:
 			conf.MainOperation = OpVersion
@@ -199,8 +204,7 @@ func handleConfig(conf *YayConfig, err *error) func(option parser.Enum, value []
 			conf.MainOperation = OpHelp
 
 		case yay:
-			conf.ModeConf = new(YConf)
-			conf.MainOperation = OpYay
+			// is default
 		case show:
 			conf.ModeConf = new(PConf)
 			conf.MainOperation = OpShow
@@ -435,9 +439,9 @@ func handleConfig(conf *YayConfig, err *error) func(option parser.Enum, value []
 		case search:
 			switch t := conf.Pacman.ModeConf.(type) {
 			case *QConf:
-				t.Search = last(value)
+				t.Search = true
 			case *SConf:
-				t.Search = last(value)
+				t.Search = true
 			}
 
 		// -- Pacman Options (SF) --

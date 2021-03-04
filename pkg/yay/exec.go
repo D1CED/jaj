@@ -71,7 +71,7 @@ func needRoot(p *settings.PacmanConf, tMode settings.TargetMode, help, version b
 		if mode.Print {
 			return false
 		}
-		if mode.Search != "" {
+		if mode.Search {
 			return false
 		}
 		if mode.List {

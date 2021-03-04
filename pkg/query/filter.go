@@ -34,7 +34,7 @@ func GetRemotePackages(dbExecutor db.Executor) (
 }
 
 func RemoveInvalidTargets(targets []string, mode settings.TargetMode) []string {
-	filteredTargets := make([]string, 0)
+	filteredTargets := make([]string, 0, len(targets))
 
 	for _, target := range targets {
 		dbName, _ := text.SplitDBFromName(target)

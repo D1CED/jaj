@@ -97,7 +97,7 @@ type QConf struct {
 	Owns       string
 	File       bool
 	Quiet      bool
-	Search     string
+	Search     bool
 	Unrequired Trilean
 	Upgrades   Trilean // see main.handleQuery
 }
@@ -118,7 +118,7 @@ type SConf struct {
 	Info         Trilean
 	List         bool
 	Quiet        bool
-	Search       string
+	Search       bool
 	SysUpgrade   Trilean
 	DownloadOnly bool
 	Refresh      Trilean
@@ -316,8 +316,8 @@ func (Q *QConf) formatAsArgs(s []string) []string {
 	if Q.Quiet {
 		s = append(s, "-q")
 	}
-	if Q.Search != "" {
-		s = append(s, "--search="+Q.Search)
+	if Q.Search {
+		s = append(s, "-s")
 	}
 	if Q.Unrequired != 0 {
 		s = append(s, "-"+Q.Unrequired.repeat('t'))
@@ -421,8 +421,8 @@ func (S *SConf) formatAsArgs(s []string) []string {
 	if S.Quiet {
 		s = append(s, "-q")
 	}
-	if S.Search != "" {
-		s = append(s, "--search="+S.Search)
+	if S.Search {
+		s = append(s, "-s")
 	}
 	if S.SysUpgrade != 0 {
 		s = append(s, "-"+S.SysUpgrade.repeat('u'))

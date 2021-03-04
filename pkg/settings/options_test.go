@@ -133,6 +133,15 @@ func Test_parseCommandLine(t *testing.T) {
 	}, 14: {
 		args: "--color always --aur --fish -Pr/test/ some-pkg --answeredit=All --unknown-option=5",
 		err:  true,
+	}, 15: {
+		args: "-Ss --repo --topdown racket ide",
+		want: &YayConfig{
+			MainOperation:       'S',
+			Targets:             []string{"racket", "ide"},
+			PersistentYayConfig: PersistentYayConfig{SortMode: TopDown},
+			Mode:                ModeRepo,
+			Pacman:              &PacmanConf{Targets: &[]string{"racket", "ide"}, ModeConf: &SConf{Search: true}},
+		},
 	}}
 
 	compare := func(t *testing.T, expect *YayConfig, got *YayConfig, targets []string) {

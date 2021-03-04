@@ -234,10 +234,15 @@ func syncSearch(pkgS []string, rt *Runtime) (err error) {
 	var aq aurQuery
 	var pq repoQuery
 
-	if rt.Config.Mode == settings.ModeAUR || rt.Config.Mode == settings.ModeAny {
+	fmt.Println(rt.Config.Mode)
+
+	switch rt.Config.Mode {
+	case settings.ModeAUR:
 		aq, aurErr = narrowSearch(pkgS, true, rt.Config.SearchBy, rt.Config.SortBy)
-	}
-	if rt.Config.Mode == settings.ModeRepo || rt.Config.Mode == settings.ModeAny {
+	case settings.ModeRepo:
+		pq = queryRepo(pkgS, rt.DB, rt.Config.SortMode)
+	case settings.ModeAny:
+		aq, aurErr = narrowSearch(pkgS, true, rt.Config.SearchBy, rt.Config.SortBy)
 		pq = queryRepo(pkgS, rt.DB, rt.Config.SortMode)
 	}
 

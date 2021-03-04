@@ -437,8 +437,8 @@ func earlyPacmanCall(rt *Runtime, pacmanConf *settings.PacmanConf, sconf *settin
 	arguments.ModeConf = &settings.SConf{}
 
 	targets := pacmanConf.Targets
-	pacmanConf.Targets = nil
-	arguments.Targets = nil
+	pacmanConf.Targets = new([]string)
+	arguments.Targets = new([]string)
 
 	if rt.Config.Mode == settings.ModeRepo {
 		arguments.Targets = targets
@@ -468,10 +468,6 @@ func earlyRefresh(cmdArgs *settings.PacmanConf, rt *Runtime) error {
 
 	arguments := cmdArgs.DeepCopy()
 	arguments.ModeConf = &settings.SConf{ // TODO
-		SysUpgrade: 0,
-		Search:     "",
-		Info:       0,
-		List:       false,
 	}
 	arguments.Targets = &[]string{}
 

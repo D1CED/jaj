@@ -378,7 +378,7 @@ func mapping(option string, mainOp OpMode) parser.Enum {
 		}
 		return parser.InvalidOption
 	case "s":
-		if mainOp == OpQuery {
+		if mainOp == OpQuery || mainOp == OpSync {
 			return search
 		}
 		if mainOp == OpRemove {
@@ -732,7 +732,6 @@ var hasParam = []parser.Enum{
 	ignoreGroup,     // group
 	overwrite,       // glob
 	owns,            // file
-	search,          // regexp
 
 	asDeps, // package | '' ; yes if -D no if -S/-U
 	asExplicit,

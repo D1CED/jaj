@@ -63,7 +63,7 @@ func handleYogurt(cmdArgs *settings.PacmanConf, rt *Runtime) error {
 func HandleSync(cmdArgs *settings.SConf, rt *Runtime) error {
 	if rt.Config.SudoLoop &&
 		(cmdArgs.Refresh != 0 || !(cmdArgs.Print ||
-			cmdArgs.Search != "" ||
+			cmdArgs.Search ||
 			cmdArgs.List ||
 			cmdArgs.Groups != 0 ||
 			cmdArgs.Info != 0 ||
@@ -72,15 +72,15 @@ func HandleSync(cmdArgs *settings.SConf, rt *Runtime) error {
 		sudoLoopBackground(rt.CmdRunner, rt.Config)
 	}
 
-	targets := rt.Config.Pacman.Targets
+	targets := rt.Config.Targets
 
-	if cmdArgs.Search != "" {
+	if cmdArgs.Search {
 		if cmdArgs.Quiet {
 			rt.Config.SearchMode = settings.Minimal
 		} else {
 			rt.Config.SearchMode = settings.Detailed
 		}
-		return syncSearch(*targets, rt)
+		return syncSearch(targets, rt)
 	}
 	if cmdArgs.Print {
 		return rt.CmdRunner.Show(PassToPacman(rt, rt.Config.Pacman))
@@ -95,7 +95,7 @@ func HandleSync(cmdArgs *settings.SConf, rt *Runtime) error {
 		return rt.CmdRunner.Show(PassToPacman(rt, rt.Config.Pacman))
 	}
 	if cmdArgs.Info != 0 {
-		return syncInfo(rt.Config.Pacman, *targets, rt)
+		return syncInfo(rt.Config.Pacman, targets, rt)
 	}
 	if cmdArgs.SysUpgrade != 0 {
 		return install(rt, rt.Config.Pacman, cmdArgs, false)
