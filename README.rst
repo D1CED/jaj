@@ -117,6 +117,10 @@ Split this content up into
 - CHANGES
 - ARCHITECTURE
 
+multierror
+- add sync to Err
+- add Is and As
+
 Coupling in yay
 ^^^^^^^^^^^^^^^
 
@@ -133,25 +137,28 @@ install.go: go-srcinfo Parse file (maybe move to pgp)
 Tests
 -----
 
-* main                [22%]
-* pkg/yay             []
-* pkg/view            []
+* pkg/db              [interface]
+
 * pkg/vcs             [91%]
-* pkg/upgrade         [46%]
-* pkg/text            []
 * pkg/stringset       [90%]
-* pkg/settings        [11%]
 * pkg/settings/parser [84%]
-* pkg/query           []
 * pkg/pgp             [90%]
 * pkg/news            [94%]
-* pkg/multierror      []
+* pkg/multierror      [100%]
+
+* main                [22%]
+* pkg/view            [39%]
+* pkg/upgrade         [46%]
+* pkg/text            [10%]
+* pkg/settings        [11%]
 * pkg/intrange        [42%]
+* pkg/completion      [37%]
+
+* pkg/yay             []
+* pkg/query           []
 * pkg/exe             []
 * pkg/dep             []
-* pkg/db              [interface]
 * pkg/db/ialpm        []
-* pkg/completion      [37%]
 
 Layers
 ------
