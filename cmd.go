@@ -10,8 +10,6 @@ import (
 
 const yayVersion = "devel"
 
-func usage() { text.Print(settings.Usage) }
-
 func handleCmd(rt *yay.Runtime) error {
 
 	switch rt.Config.MainOperation {
@@ -42,7 +40,7 @@ func handleHelp(rt *yay.Runtime) error {
 	if rt.Config.IsPacmanOp() {
 		return rt.CmdRunner.Show(yay.PassToPacman(rt, rt.Config.Pacman))
 	}
-	usage()
+	text.Print(settings.Usage)
 	return nil
 }
 

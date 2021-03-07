@@ -110,6 +110,13 @@ add logging
 investigate required arguments of pacman options
 - search did not need an argument, was target
 
+remove stringset.MapStringSet
+
+Split this content up into
+- README
+- CHANGES
+- ARCHITECTURE
+
 Coupling in yay
 ^^^^^^^^^^^^^^^
 
@@ -122,6 +129,29 @@ cmd.go: alpm.Version [reject]
 query.go: rpc.SearchBy (move to pkg/query), what about ``By``? [reject]
 
 install.go: go-srcinfo Parse file (maybe move to pgp)
+
+Tests
+-----
+
+* main                [22%]
+* pkg/yay             []
+* pkg/view            []
+* pkg/vcs             [91%]
+* pkg/upgrade         [46%]
+* pkg/text            []
+* pkg/stringset       [90%]
+* pkg/settings        [11%]
+* pkg/settings/parser [84%]
+* pkg/query           []
+* pkg/pgp             [90%]
+* pkg/news            [94%]
+* pkg/multierror      []
+* pkg/intrange        [42%]
+* pkg/exe             []
+* pkg/dep             []
+* pkg/db              [interface]
+* pkg/db/ialpm        []
+* pkg/completion      [37%]
 
 Layers
 ------
