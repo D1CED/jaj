@@ -9,9 +9,9 @@ import (
 	"github.com/Jguer/yay/v10/pkg/text"
 )
 
-type MapStringSet = map[string]stringset.StringSet
+type mapStringSet = map[string]stringset.StringSet
 
-func (dp *Pool) checkInnerConflict(name, conflict string, conflicts MapStringSet) {
+func (dp *Pool) checkInnerConflict(name, conflict string, conflicts mapStringSet) {
 	for _, pkg := range dp.Aur {
 		if pkg.Name == name {
 			continue
@@ -33,7 +33,7 @@ func (dp *Pool) checkInnerConflict(name, conflict string, conflicts MapStringSet
 	}
 }
 
-func (dp *Pool) checkForwardConflict(name, conflict string, conflicts MapStringSet) {
+func (dp *Pool) checkForwardConflict(name, conflict string, conflicts mapStringSet) {
 	for _, pkg := range dp.alpmExecutor.LocalPackages() {
 		if pkg.Name() == name || dp.hasPackage(pkg.Name()) {
 			continue
@@ -49,7 +49,7 @@ func (dp *Pool) checkForwardConflict(name, conflict string, conflicts MapStringS
 	}
 }
 
-func (dp *Pool) checkReverseConflict(name, conflict string, conflicts MapStringSet) {
+func (dp *Pool) checkReverseConflict(name, conflict string, conflicts mapStringSet) {
 	for _, pkg := range dp.Aur {
 		if pkg.Name == name {
 			continue
@@ -79,7 +79,7 @@ func (dp *Pool) checkReverseConflict(name, conflict string, conflicts MapStringS
 	}
 }
 
-func (dp *Pool) checkInnerConflicts(conflicts MapStringSet) {
+func (dp *Pool) checkInnerConflicts(conflicts mapStringSet) {
 	for _, pkg := range dp.Aur {
 		for _, conflict := range pkg.Conflicts {
 			dp.checkInnerConflict(pkg.Name, conflict, conflicts)
@@ -93,7 +93,7 @@ func (dp *Pool) checkInnerConflicts(conflicts MapStringSet) {
 	}
 }
 
-func (dp *Pool) checkForwardConflicts(conflicts MapStringSet) {
+func (dp *Pool) checkForwardConflicts(conflicts mapStringSet) {
 	for _, pkg := range dp.Aur {
 		for _, conflict := range pkg.Conflicts {
 			dp.checkForwardConflict(pkg.Name, conflict, conflicts)
@@ -107,7 +107,7 @@ func (dp *Pool) checkForwardConflicts(conflicts MapStringSet) {
 	}
 }
 
-func (dp *Pool) checkReverseConflicts(conflicts MapStringSet) {
+func (dp *Pool) checkReverseConflicts(conflicts mapStringSet) {
 	for _, pkg := range dp.alpmExecutor.LocalPackages() {
 		if dp.hasPackage(pkg.Name()) {
 			continue
@@ -118,10 +118,10 @@ func (dp *Pool) checkReverseConflicts(conflicts MapStringSet) {
 	}
 }
 
-func (dp *Pool) CheckConflicts(useAsk, noConfirm bool) (MapStringSet, error) {
+func (dp *Pool) CheckConflicts(useAsk, noConfirm bool) (map[string]stringset.StringSet, error) {
 	var wg sync.WaitGroup
-	innerConflicts := make(MapStringSet)
-	conflicts := make(MapStringSet)
+	innerConflicts := make(mapStringSet)
+	conflicts := make(mapStringSet)
 	wg.Add(2)
 
 	text.OperationInfoln(text.T("Checking for conflicts..."))
