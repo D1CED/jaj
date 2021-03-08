@@ -39,7 +39,7 @@ func (b Base) String() string {
 }
 
 func GetBases(pkgs []*rpc.Pkg) []Base {
-	basesMap := make(map[string]Base)
+	basesMap := make(map[string]Base, len(pkgs))
 	for _, pkg := range pkgs {
 		basesMap[pkg.PackageBase] = append(basesMap[pkg.PackageBase], pkg)
 	}

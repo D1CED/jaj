@@ -71,8 +71,8 @@ func install(rt *Runtime, pacmanConf *settings.PacmanConf, sconf *settings.SConf
 		incompatible stringset.StringSet
 		do           *dep.Order
 
-		aurUp  upgrade.UpSlice
-		repoUp upgrade.UpSlice
+		aurUp  []upgrade.Upgrade
+		repoUp []upgrade.Upgrade
 
 		srcinfos map[string]*gosrc.Srcinfo
 	)
@@ -1036,7 +1036,7 @@ func buildInstallPkgbuilds(
 		for _, pkg := range base {
 			for _, deps := range [3][]string{pkg.Depends, pkg.MakeDepends, pkg.CheckDepends} {
 				for _, dep := range deps {
-					if !dp.AlpmExecutor.LocalSatisfierExists(dep) {
+					if !rt.DB.LocalSatisfierExists(dep) {
 						satisfied = false
 						text.Warnln(text.Tf("%s not satisfied, flushing install queue", dep))
 						break all
@@ -1094,7 +1094,7 @@ func buildInstallPkgbuilds(
 		if pacmanUpgrade.Needed {
 			installed := true
 			for _, split := range base {
-				installed = dp.AlpmExecutor.IsCorrectVersionInstalled(split.Name, pkgVersion)
+				installed = rt.DB.IsCorrectVersionInstalled(split.Name, pkgVersion)
 			}
 
 			if installed {

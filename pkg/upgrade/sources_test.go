@@ -28,7 +28,7 @@ func Test_upAUR(t *testing.T) {
 	tests := []struct {
 		name string
 		args args
-		want UpSlice
+		want []Upgrade
 	}{
 		{
 			name: "No Updates",
@@ -44,7 +44,7 @@ func Test_upAUR(t *testing.T) {
 				},
 				timeUpdate: false,
 			},
-			want: UpSlice{},
+			want: []Upgrade{},
 		},
 		{
 			name: "Simple Update",
@@ -53,7 +53,7 @@ func Test_upAUR(t *testing.T) {
 				aurdata:    map[string]*rpc.Pkg{"hello": {Version: "2.1.0", Name: "hello"}},
 				timeUpdate: false,
 			},
-			want: UpSlice{Upgrade{Name: "hello", Repository: "aur", LocalVersion: "2.0.0", RemoteVersion: "2.1.0"}},
+			want: []Upgrade{{Name: "hello", Repository: "aur", LocalVersion: "2.0.0", RemoteVersion: "2.1.0"}},
 		},
 		{
 			name: "Time Update",
@@ -62,7 +62,7 @@ func Test_upAUR(t *testing.T) {
 				aurdata:    map[string]*rpc.Pkg{"hello": {Version: "2.0.0", Name: "hello", LastModified: int(time.Now().AddDate(0, 0, 2).Unix())}},
 				timeUpdate: true,
 			},
-			want: UpSlice{Upgrade{Name: "hello", Repository: "aur", LocalVersion: "2.0.0", RemoteVersion: "2.0.0"}},
+			want: []Upgrade{Upgrade{Name: "hello", Repository: "aur", LocalVersion: "2.0.0", RemoteVersion: "2.0.0"}},
 		},
 	}
 	for _, tt := range tests {
@@ -125,7 +125,7 @@ func Test_upDevel(t *testing.T) {
 	tests := []struct {
 		name     string
 		args     args
-		want     UpSlice
+		want     []Upgrade
 		finalLen int
 	}{
 		{
@@ -145,7 +145,7 @@ func Test_upDevel(t *testing.T) {
 					"ignored": {Version: "2.0.0", Name: "ignored"},
 				},
 			},
-			want: UpSlice{},
+			want: []Upgrade{},
 		},
 		{
 			name:     "Simple Update",
@@ -201,7 +201,7 @@ func Test_upDevel(t *testing.T) {
 					"hello4": {Version: "2.0.0", Name: "hello4"},
 				},
 			},
-			want: UpSlice{
+			want: []Upgrade{
 				Upgrade{
 					Name:          "hello",
 					Repository:    "devel",
@@ -236,7 +236,7 @@ func Test_upDevel(t *testing.T) {
 				remote:  []alpm.IPackage{&mock.Package{PName: "hello", PVersion: "2.0.0"}},
 				aurdata: map[string]*rpc.Pkg{"hello": {Version: "2.0.0", Name: "hello"}},
 			},
-			want: UpSlice{},
+			want: []Upgrade{},
 		},
 		{
 			name:     "No update returned - ignored",
@@ -258,7 +258,7 @@ func Test_upDevel(t *testing.T) {
 				remote:  []alpm.IPackage{&mock.Package{PName: "hello", PVersion: "2.0.0", PShouldIgnore: true}},
 				aurdata: map[string]*rpc.Pkg{"hello": {Version: "2.0.0", Name: "hello"}},
 			},
-			want: UpSlice{},
+			want: []Upgrade{},
 		},
 	}
 

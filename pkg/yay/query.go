@@ -367,8 +367,8 @@ func printNumberOfUpdates(rt *Runtime, enableDowngrade bool) error {
 	warnings := query.NewWarnings()
 
 	var (
-		aurUp  upgrade.UpSlice
-		repoUp upgrade.UpSlice
+		aurUp  []upgrade.Upgrade
+		repoUp []upgrade.Upgrade
 		err    error
 	)
 
@@ -392,8 +392,8 @@ func printUpdateList(cmdArgs *settings.PacmanConf, rt *Runtime, enableDowngrade 
 		err         error
 		localNames  []string
 		remoteNames []string
-		aurUp       upgrade.UpSlice
-		repoUp      upgrade.UpSlice
+		aurUp       []upgrade.Upgrade
+		repoUp      []upgrade.Upgrade
 	)
 	text.CaptureOutput(nil, nil, func() {
 		localNames, remoteNames, err = query.GetPackageNamesBySource(rt.DB)

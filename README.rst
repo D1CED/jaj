@@ -80,6 +80,8 @@ split parts off of main [done]
 - [done] main does now only initialization and dispatch
 - added yay and view package (should rename view, maybe put it in text?)
 
+replace upgrade.UpSlice with []upgrade.Upgrade [done]
+
 Future
 ------
 
@@ -124,6 +126,7 @@ multierror
 split multierror up in collector and actual multierror
 
 exe use context and string Builder instead of bytes Buffer
+split Runner and CmdBuilder
 
 Coupling in yay
 ^^^^^^^^^^^^^^^
@@ -158,10 +161,10 @@ Tests
 * pkg/intrange        [42%]
 * pkg/completion      [37%]
 * pkg/exe             [36%]
+* pkg/query           [25%]
+* pkg/db/ialpm        [20%]
 
-* pkg/query           []
 * pkg/dep             []
-* pkg/db/ialpm        []
 * pkg/yay             []
 
 Layers

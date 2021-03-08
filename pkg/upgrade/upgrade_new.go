@@ -45,7 +45,7 @@ func isDevelPackage(pkg db.IPackage) bool {
 }
 
 // upgradePkgs handles updating the cache and installing updates.
-func UpgradePkgs(conf *settings.YayConfig, aurUp, repoUp UpSlice) (ignore, aurNames stringset.StringSet, err error) {
+func UpgradePkgs(conf *settings.YayConfig, aurUp, repoUp []Upgrade) (ignore, aurNames stringset.StringSet, err error) {
 	ignore = make(stringset.StringSet)
 	aurNames = make(stringset.StringSet)
 
@@ -62,11 +62,11 @@ func UpgradePkgs(conf *settings.YayConfig, aurUp, repoUp UpSlice) (ignore, aurNa
 		return ignore, aurNames, nil
 	}
 
-	sort.Sort(repoUp)
-	sort.Sort(aurUp)
+	sort.Slice(repoUp, upgradeLess(repoUp))
+	sort.Slice(aurUp, upgradeLess(aurUp))
 	allUp := append(repoUp, aurUp...)
 	text.Printf("%s"+text.Bold(" %d ")+"%s\n", text.Bold(text.Cyan("::")), allUpLen, text.Bold(text.T("Packages to upgrade.")))
-	allUp.Print()
+	printUpSlice(allUp)
 
 	text.Infoln(text.T("Packages to exclude: (eg: \"1 2 3\", \"1-3\", \"^4\" or repo name)"))
 

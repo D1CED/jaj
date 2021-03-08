@@ -13,11 +13,11 @@ import (
 )
 
 // upList returns lists of packages to upgrade from each source.
-func upList(warnings *query.AURWarnings, rt *Runtime, enableDowngrade bool) (aurUp, repoUp upgrade.UpSlice, err error) {
+func upList(warnings *query.AURWarnings, rt *Runtime, enableDowngrade bool) (aurUp, repoUp []upgrade.Upgrade, err error) {
 	remote, remoteNames := query.GetRemotePackages(rt.DB)
 
 	var wg sync.WaitGroup
-	var develUp upgrade.UpSlice
+	var develUp []upgrade.Upgrade
 	var errs multierror.MultiError
 
 	aurdata := make(map[string]*query.Pkg)

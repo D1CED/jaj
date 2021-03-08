@@ -16,22 +16,18 @@ func StylizedNameWithRepository(u *Upgrade) string {
 	return text.Bold(text.ColorHash(u.Repository)) + "/" + text.Bold(u.Name)
 }
 
-// upSlice is a slice of Upgrades
-type UpSlice []Upgrade
+func upgradeLess(u []Upgrade) func(i, j int) bool {
+	return func(i, j int) bool {
+		if u[i].Repository == u[j].Repository {
+			iRunes := []rune(u[i].Name)
+			jRunes := []rune(u[j].Name)
+			return text.LessRunes(iRunes, jRunes)
+		}
 
-func (u UpSlice) Len() int      { return len(u) }
-func (u UpSlice) Swap(i, j int) { u[i], u[j] = u[j], u[i] }
-
-func (u UpSlice) Less(i, j int) bool {
-	if u[i].Repository == u[j].Repository {
-		iRunes := []rune(u[i].Name)
-		jRunes := []rune(u[j].Name)
+		iRunes := []rune(u[i].Repository)
+		jRunes := []rune(u[j].Repository)
 		return text.LessRunes(iRunes, jRunes)
 	}
-
-	iRunes := []rune(u[i].Repository)
-	jRunes := []rune(u[j].Repository)
-	return text.LessRunes(iRunes, jRunes)
 }
 
 func GetVersionDiff(oldVersion, newVersion string) (left, right string) {
@@ -81,7 +77,7 @@ func GetVersionDiff(oldVersion, newVersion string) (left, right string) {
 }
 
 // Print prints the details of the packages to upgrade.
-func (u UpSlice) Print() {
+func printUpSlice(u []Upgrade) {
 	longestName, longestVersion := 0, 0
 	for _, pack := range u {
 		packNameLen := len(StylizedNameWithRepository(&pack))

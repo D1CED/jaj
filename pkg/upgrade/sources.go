@@ -12,7 +12,7 @@ import (
 func UpDevel(
 	remote []db.IPackage,
 	aurdata map[string]*query.Pkg,
-	localCache *vcs.InfoStore) UpSlice {
+	localCache *vcs.InfoStore) []Upgrade {
 	toUpdate := make([]db.IPackage, 0, len(aurdata))
 	toRemove := make([]string, 0)
 
@@ -47,7 +47,7 @@ func UpDevel(
 
 	wg.Wait()
 
-	toUpgrade := make(UpSlice, 0, len(toUpdate))
+	toUpgrade := make([]Upgrade, 0, len(toUpdate))
 	for _, pkg := range toUpdate {
 		if pkg.ShouldIgnore() {
 			printIgnoringPackage(pkg, "latest-commit")
@@ -77,8 +77,8 @@ func printIgnoringPackage(pkg db.IPackage, newPkgVersion string) {
 
 // UpAUR gathers foreign packages and checks if they have new versions.
 // Output: Upgrade type package list.
-func UpAUR(remote []db.IPackage, aurdata map[string]*query.Pkg, timeUpdate bool) UpSlice {
-	toUpgrade := make(UpSlice, 0)
+func UpAUR(remote []db.IPackage, aurdata map[string]*query.Pkg, timeUpdate bool) []Upgrade {
+	toUpgrade := make([]Upgrade, 0)
 
 	for _, pkg := range remote {
 		aurPkg, ok := aurdata[pkg.Name()]
