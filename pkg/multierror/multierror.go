@@ -1,10 +1,13 @@
 package multierror
 
-import "sync"
+import (
+	"errors"
+	"sync"
+)
 
 // MultiError type handles error accumulation from goroutines
 type MultiError struct {
-	Errors []error
+	errors []error
 	mux    sync.Mutex
 }
 
@@ -12,9 +15,11 @@ type MultiError struct {
 func (err *MultiError) Error() string {
 	str := ""
 
-	for _, e := range err.Errors {
+	err.mux.Lock()
+	for _, e := range err.errors {
 		str += e.Error() + "\n"
 	}
+	err.mux.Unlock()
 
 	return str[:len(str)-1]
 }
@@ -26,16 +31,38 @@ func (err *MultiError) Add(e error) {
 	}
 
 	err.mux.Lock()
-	err.Errors = append(err.Errors, e)
+	err.errors = append(err.errors, e)
 	err.mux.Unlock()
 }
 
 // Return is used as a wrapper on return on whether to return the
 // MultiError Structure if errors exist or nil instead of delivering an empty structure
 func (err *MultiError) Return() error {
-	if len(err.Errors) > 0 {
+	if len(err.errors) > 0 {
 		return err
 	}
 
 	return nil
+}
+
+func (err *MultiError) Is(other error) bool {
+	err.mux.Lock()
+	defer err.mux.Unlock()
+	for _, e := range err.errors {
+		if errors.Is(e, other) {
+			return true
+		}
+	}
+	return false
+}
+
+func (err *MultiError) As(other interface{}) bool {
+	err.mux.Lock()
+	defer err.mux.Unlock()
+	for _, e := range err.errors {
+		if errors.As(e, other) {
+			return true
+		}
+	}
+	return false
 }
