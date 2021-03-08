@@ -15,18 +15,14 @@ type Order struct {
 	Runtime stringset.StringSet
 }
 
-func makeOrder() *Order {
-	return &Order{
+func GetOrder(dp *Pool) *Order {
+	do := &Order{
 		make([]Base, 0),
 		make([]db.IPackage, 0),
 		make(stringset.StringSet),
 	}
-}
 
-func GetOrder(dp *Pool) *Order {
-	do := makeOrder()
-
-	for _, target := range dp.Targets {
+	for _, target := range dp.targets {
 		dep := target.DepString()
 		aurPkg := dp.Aur[dep]
 		if aurPkg != nil && pkgSatisfies(aurPkg.Name, aurPkg.Version, dep) {
@@ -81,9 +77,9 @@ func (do *Order) orderPkgRepo(pkg db.IPackage, dp *Pool, runtime bool) {
 	if runtime {
 		do.Runtime.Set(pkg.Name())
 	}
-	delete(dp.Repo, pkg.Name())
+	delete(dp.repo, pkg.Name())
 
-	for _, dep := range dp.AlpmExecutor.PackageDepends(pkg) {
+	for _, dep := range dp.alpmExecutor.PackageDepends(pkg) {
 		repoPkg := dp.findSatisfierRepo(dep.String())
 		if repoPkg != nil {
 			do.orderPkgRepo(repoPkg, dp, runtime)
@@ -124,15 +120,17 @@ func (do *Order) GetMake() []string {
 
 // Print prints repository packages to be downloaded
 func (do *Order) Print() {
-	repo := ""
-	repoMake := ""
-	aur := ""
-	aurMake := ""
+	var (
+		repo     = ""
+		repoMake = ""
+		aur      = ""
+		aurMake  = ""
 
-	repoLen := 0
-	repoMakeLen := 0
-	aurLen := 0
-	aurMakeLen := 0
+		repoLen     = 0
+		repoMakeLen = 0
+		aurLen      = 0
+		aurMakeLen  = 0
+	)
 
 	for _, pkg := range do.Repo {
 		pkgStr := fmt.Sprintf("  %s-%s", pkg.Name(), pkg.Version())

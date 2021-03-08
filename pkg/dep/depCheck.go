@@ -20,24 +20,24 @@ func (dp *Pool) checkInnerConflict(name, conflict string, conflicts stringset.Ma
 		}
 	}
 
-	for _, pkg := range dp.Repo {
+	for _, pkg := range dp.repo {
 		if pkg.Name() == name {
 			continue
 		}
 
-		if satisfiesRepo(conflict, pkg, dp.AlpmExecutor) {
+		if satisfiesRepo(conflict, pkg, dp.alpmExecutor) {
 			conflicts.Add(name, pkg.Name())
 		}
 	}
 }
 
 func (dp *Pool) checkForwardConflict(name, conflict string, conflicts stringset.MapStringSet) {
-	for _, pkg := range dp.AlpmExecutor.LocalPackages() {
+	for _, pkg := range dp.alpmExecutor.LocalPackages() {
 		if pkg.Name() == name || dp.hasPackage(pkg.Name()) {
 			continue
 		}
 
-		if satisfiesRepo(conflict, pkg, dp.AlpmExecutor) {
+		if satisfiesRepo(conflict, pkg, dp.alpmExecutor) {
 			n := pkg.Name()
 			if n != conflict {
 				n += " (" + conflict + ")"
@@ -62,12 +62,12 @@ func (dp *Pool) checkReverseConflict(name, conflict string, conflicts stringset.
 		}
 	}
 
-	for _, pkg := range dp.Repo {
+	for _, pkg := range dp.repo {
 		if pkg.Name() == name {
 			continue
 		}
 
-		if satisfiesRepo(conflict, pkg, dp.AlpmExecutor) {
+		if satisfiesRepo(conflict, pkg, dp.alpmExecutor) {
 			if name != conflict {
 				name += " (" + conflict + ")"
 			}
@@ -84,8 +84,8 @@ func (dp *Pool) checkInnerConflicts(conflicts stringset.MapStringSet) {
 		}
 	}
 
-	for _, pkg := range dp.Repo {
-		for _, conflict := range dp.AlpmExecutor.PackageConflicts(pkg) {
+	for _, pkg := range dp.repo {
+		for _, conflict := range dp.alpmExecutor.PackageConflicts(pkg) {
 			dp.checkInnerConflict(pkg.Name(), conflict.String(), conflicts)
 		}
 	}
@@ -98,19 +98,19 @@ func (dp *Pool) checkForwardConflicts(conflicts stringset.MapStringSet) {
 		}
 	}
 
-	for _, pkg := range dp.Repo {
-		for _, conflict := range dp.AlpmExecutor.PackageConflicts(pkg) {
+	for _, pkg := range dp.repo {
+		for _, conflict := range dp.alpmExecutor.PackageConflicts(pkg) {
 			dp.checkForwardConflict(pkg.Name(), conflict.String(), conflicts)
 		}
 	}
 }
 
 func (dp *Pool) checkReverseConflicts(conflicts stringset.MapStringSet) {
-	for _, pkg := range dp.AlpmExecutor.LocalPackages() {
+	for _, pkg := range dp.alpmExecutor.LocalPackages() {
 		if dp.hasPackage(pkg.Name()) {
 			continue
 		}
-		for _, conflict := range dp.AlpmExecutor.PackageConflicts(pkg) {
+		for _, conflict := range dp.alpmExecutor.PackageConflicts(pkg) {
 			dp.checkReverseConflict(pkg.Name(), conflict.String(), conflicts)
 		}
 	}
@@ -213,7 +213,7 @@ func (dp *Pool) _checkMissing(dep string, stack []string, missing *missing) {
 		missing.Good.Set(dep)
 		for _, deps := range [3][]string{aurPkg.Depends, aurPkg.MakeDepends, aurPkg.CheckDepends} {
 			for _, aurDep := range deps {
-				if dp.AlpmExecutor.LocalSatisfierExists(aurDep) {
+				if dp.alpmExecutor.LocalSatisfierExists(aurDep) {
 					missing.Good.Set(aurDep)
 					continue
 				}
@@ -228,8 +228,8 @@ func (dp *Pool) _checkMissing(dep string, stack []string, missing *missing) {
 	repoPkg := dp.findSatisfierRepo(dep)
 	if repoPkg != nil {
 		missing.Good.Set(dep)
-		for _, dep := range dp.AlpmExecutor.PackageDepends(repoPkg) {
-			if dp.AlpmExecutor.LocalSatisfierExists(dep.String()) {
+		for _, dep := range dp.alpmExecutor.PackageDepends(repoPkg) {
+			if dp.alpmExecutor.LocalSatisfierExists(dep.String()) {
 				missing.Good.Set(dep.String())
 				continue
 			}
@@ -271,7 +271,7 @@ func (dp *Pool) CheckMissing() error {
 		make(map[string][][]string),
 	}
 
-	for _, target := range dp.Targets {
+	for _, target := range dp.targets {
 		dp._checkMissing(target.DepString(), make([]string, 0), missing)
 	}
 

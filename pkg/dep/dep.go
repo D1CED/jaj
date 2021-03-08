@@ -8,36 +8,18 @@ import (
 	"github.com/Jguer/yay/v10/pkg/text"
 )
 
-type providers struct {
-	lookfor string
-	Pkgs    []*rpc.Pkg
-}
+func less(q []*rpc.Pkg, lookfor string) func(i, j int) bool {
+	return func(i, j int) bool {
+		if lookfor == q[i].Name {
+			return true
+		}
 
-func makeProviders(name string) providers {
-	return providers{
-		name,
-		make([]*rpc.Pkg, 0),
+		if lookfor == q[j].Name {
+			return false
+		}
+
+		return text.LessRunes([]rune(q[i].Name), []rune(q[j].Name))
 	}
-}
-
-func (q providers) Len() int {
-	return len(q.Pkgs)
-}
-
-func (q providers) Less(i, j int) bool {
-	if q.lookfor == q.Pkgs[i].Name {
-		return true
-	}
-
-	if q.lookfor == q.Pkgs[j].Name {
-		return false
-	}
-
-	return text.LessRunes([]rune(q.Pkgs[i].Name), []rune(q.Pkgs[j].Name))
-}
-
-func (q providers) Swap(i, j int) {
-	q.Pkgs[i], q.Pkgs[j] = q.Pkgs[j], q.Pkgs[i]
 }
 
 func splitDep(dep string) (pkg, mod, ver string) {
