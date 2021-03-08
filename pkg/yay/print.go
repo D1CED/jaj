@@ -80,7 +80,7 @@ func displayNumberMenu(pkgS []string, rt *Runtime) error {
 	include, exclude, _, otherExclude := view.ParseNumberMenu(string(numberBuf))
 	arguments := rt.Config.Pacman.DeepCopy()
 
-	isInclude := len(exclude) == 0 && len(otherExclude) == 0
+	isInclude := len(exclude) == 0 && otherExclude.Len() == 0
 
 	for i, pkg := range pq {
 		var target int

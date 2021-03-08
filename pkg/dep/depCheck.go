@@ -9,14 +9,16 @@ import (
 	"github.com/Jguer/yay/v10/pkg/text"
 )
 
-func (dp *Pool) checkInnerConflict(name, conflict string, conflicts stringset.MapStringSet) {
+type MapStringSet = map[string]stringset.StringSet
+
+func (dp *Pool) checkInnerConflict(name, conflict string, conflicts MapStringSet) {
 	for _, pkg := range dp.Aur {
 		if pkg.Name == name {
 			continue
 		}
 
 		if satisfiesAur(conflict, pkg) {
-			conflicts.Add(name, pkg.Name)
+			stringset.Add(conflicts, name, pkg.Name)
 		}
 	}
 
@@ -26,12 +28,12 @@ func (dp *Pool) checkInnerConflict(name, conflict string, conflicts stringset.Ma
 		}
 
 		if satisfiesRepo(conflict, pkg, dp.alpmExecutor) {
-			conflicts.Add(name, pkg.Name())
+			stringset.Add(conflicts, name, pkg.Name())
 		}
 	}
 }
 
-func (dp *Pool) checkForwardConflict(name, conflict string, conflicts stringset.MapStringSet) {
+func (dp *Pool) checkForwardConflict(name, conflict string, conflicts MapStringSet) {
 	for _, pkg := range dp.alpmExecutor.LocalPackages() {
 		if pkg.Name() == name || dp.hasPackage(pkg.Name()) {
 			continue
@@ -42,12 +44,12 @@ func (dp *Pool) checkForwardConflict(name, conflict string, conflicts stringset.
 			if n != conflict {
 				n += " (" + conflict + ")"
 			}
-			conflicts.Add(name, n)
+			stringset.Add(conflicts, name, n)
 		}
 	}
 }
 
-func (dp *Pool) checkReverseConflict(name, conflict string, conflicts stringset.MapStringSet) {
+func (dp *Pool) checkReverseConflict(name, conflict string, conflicts MapStringSet) {
 	for _, pkg := range dp.Aur {
 		if pkg.Name == name {
 			continue
@@ -58,7 +60,7 @@ func (dp *Pool) checkReverseConflict(name, conflict string, conflicts stringset.
 				name += " (" + conflict + ")"
 			}
 
-			conflicts.Add(pkg.Name, name)
+			stringset.Add(conflicts, pkg.Name, name)
 		}
 	}
 
@@ -72,12 +74,12 @@ func (dp *Pool) checkReverseConflict(name, conflict string, conflicts stringset.
 				name += " (" + conflict + ")"
 			}
 
-			conflicts.Add(pkg.Name(), name)
+			stringset.Add(conflicts, pkg.Name(), name)
 		}
 	}
 }
 
-func (dp *Pool) checkInnerConflicts(conflicts stringset.MapStringSet) {
+func (dp *Pool) checkInnerConflicts(conflicts MapStringSet) {
 	for _, pkg := range dp.Aur {
 		for _, conflict := range pkg.Conflicts {
 			dp.checkInnerConflict(pkg.Name, conflict, conflicts)
@@ -91,7 +93,7 @@ func (dp *Pool) checkInnerConflicts(conflicts stringset.MapStringSet) {
 	}
 }
 
-func (dp *Pool) checkForwardConflicts(conflicts stringset.MapStringSet) {
+func (dp *Pool) checkForwardConflicts(conflicts MapStringSet) {
 	for _, pkg := range dp.Aur {
 		for _, conflict := range pkg.Conflicts {
 			dp.checkForwardConflict(pkg.Name, conflict, conflicts)
@@ -105,7 +107,7 @@ func (dp *Pool) checkForwardConflicts(conflicts stringset.MapStringSet) {
 	}
 }
 
-func (dp *Pool) checkReverseConflicts(conflicts stringset.MapStringSet) {
+func (dp *Pool) checkReverseConflicts(conflicts MapStringSet) {
 	for _, pkg := range dp.alpmExecutor.LocalPackages() {
 		if dp.hasPackage(pkg.Name()) {
 			continue
@@ -116,10 +118,10 @@ func (dp *Pool) checkReverseConflicts(conflicts stringset.MapStringSet) {
 	}
 }
 
-func (dp *Pool) CheckConflicts(useAsk, noConfirm bool) (stringset.MapStringSet, error) {
+func (dp *Pool) CheckConflicts(useAsk, noConfirm bool) (MapStringSet, error) {
 	var wg sync.WaitGroup
-	innerConflicts := make(stringset.MapStringSet)
-	conflicts := make(stringset.MapStringSet)
+	innerConflicts := make(MapStringSet)
+	conflicts := make(MapStringSet)
 	wg.Add(2)
 
 	text.OperationInfoln(text.T("Checking for conflicts..."))
@@ -142,7 +144,7 @@ func (dp *Pool) CheckConflicts(useAsk, noConfirm bool) (stringset.MapStringSet, 
 
 		for name, pkgs := range innerConflicts {
 			str := text.SprintError(name + ":")
-			for pkg := range pkgs {
+			for pkg := range pkgs.Iter() {
 				str += " " + text.Cyan(pkg) + ","
 			}
 			str = strings.TrimSuffix(str, ",")
@@ -156,7 +158,7 @@ func (dp *Pool) CheckConflicts(useAsk, noConfirm bool) (stringset.MapStringSet, 
 
 		for name, pkgs := range conflicts {
 			str := text.SprintError(text.Tf("Installing %s will remove:", text.Cyan(name)))
-			for pkg := range pkgs {
+			for pkg := range pkgs.Iter() {
 				str += " " + text.Cyan(pkg) + ","
 			}
 			str = strings.TrimSuffix(str, ",")
@@ -169,9 +171,9 @@ func (dp *Pool) CheckConflicts(useAsk, noConfirm bool) (stringset.MapStringSet, 
 	// These are used to decide what to pass --ask to (if set) or don't pass --noconfirm to
 	// As we have no idea what the order is yet we add every inner conflict to the slice
 	for name, pkgs := range innerConflicts {
-		conflicts[name] = make(stringset.StringSet)
-		for pkg := range pkgs {
-			conflicts[pkg] = make(stringset.StringSet)
+		conflicts[name] = stringset.Make()
+		for pkg := range pkgs.Iter() {
+			conflicts[pkg] = stringset.Make()
 		}
 	}
 
@@ -267,7 +269,7 @@ func stringSliceEqual(a, b []string) bool {
 
 func (dp *Pool) CheckMissing() error {
 	missing := &missing{
-		make(stringset.StringSet),
+		stringset.Make(),
 		make(map[string][][]string),
 	}
 

@@ -66,15 +66,15 @@ func TestParseNumberMenu(t *testing.T) {
 			makeIntRange(3, 3),
 			makeIntRange(4, 4),
 			makeIntRange(5, 5),
-		}, IntRanges{}, make(stringset.StringSet), make(stringset.StringSet)},
+		}, IntRanges{}, stringset.Make(), stringset.Make()},
 		{IntRanges{
 			makeIntRange(1, 10),
 			makeIntRange(5, 15),
-		}, IntRanges{}, make(stringset.StringSet), make(stringset.StringSet)},
+		}, IntRanges{}, stringset.Make(), stringset.Make()},
 		{IntRanges{
 			makeIntRange(5, 10),
 			makeIntRange(85, 90),
-		}, IntRanges{}, make(stringset.StringSet), make(stringset.StringSet)},
+		}, IntRanges{}, stringset.Make(), stringset.Make()},
 		{
 			IntRanges{
 				makeIntRange(1, 1),
@@ -87,18 +87,18 @@ func TestParseNumberMenu(t *testing.T) {
 				makeIntRange(38, 40),
 				makeIntRange(123, 123),
 			},
-			make(stringset.StringSet), make(stringset.StringSet),
+			stringset.Make(), stringset.Make(),
 		},
-		{IntRanges{}, IntRanges{}, stringset.Make("abort", "all", "none"), make(stringset.StringSet)},
+		{IntRanges{}, IntRanges{}, stringset.Make("abort", "all", "none"), stringset.Make()},
 		{IntRanges{}, IntRanges{}, stringset.Make("a-b"), stringset.Make("abort", "a-b")},
-		{IntRanges{}, IntRanges{}, stringset.Make("-9223372036854775809-9223372036854775809"), make(stringset.StringSet)},
+		{IntRanges{}, IntRanges{}, stringset.Make("-9223372036854775809-9223372036854775809"), stringset.Make()},
 		{IntRanges{
 			makeIntRange(1, 1),
 			makeIntRange(2, 2),
 			makeIntRange(3, 3),
 			makeIntRange(4, 4),
 			makeIntRange(5, 5),
-		}, IntRanges{}, make(stringset.StringSet), make(stringset.StringSet)},
+		}, IntRanges{}, stringset.Make(), stringset.Make()},
 		{IntRanges{
 			makeIntRange(1, 1),
 			makeIntRange(2, 2),
@@ -108,10 +108,10 @@ func TestParseNumberMenu(t *testing.T) {
 			makeIntRange(6, 6),
 			makeIntRange(7, 7),
 			makeIntRange(8, 8),
-		}, IntRanges{}, make(stringset.StringSet), make(stringset.StringSet)},
-		{IntRanges{}, IntRanges{}, make(stringset.StringSet), make(stringset.StringSet)},
-		{IntRanges{}, IntRanges{}, make(stringset.StringSet), make(stringset.StringSet)},
-		{IntRanges{}, IntRanges{}, stringset.Make("a", "b", "c", "d", "e"), make(stringset.StringSet)},
+		}, IntRanges{}, stringset.Make(), stringset.Make()},
+		{IntRanges{}, IntRanges{}, stringset.Make(), stringset.Make()},
+		{IntRanges{}, IntRanges{}, stringset.Make(), stringset.Make()},
+		{IntRanges{}, IntRanges{}, stringset.Make("a", "b", "c", "d", "e"), stringset.Make()},
 	}
 
 	for n, in := range inputs {

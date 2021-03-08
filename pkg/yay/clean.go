@@ -94,8 +94,8 @@ func cleanAUR(
 
 	text.Println(text.T("removing AUR packages from cache..."))
 
-	installedBases := make(stringset.StringSet)
-	inAURBases := make(stringset.StringSet)
+	installedBases := stringset.Make()
+	inAURBases := stringset.Make()
 
 	remotePackages, _ := query.GetRemotePackages(dbExecutor)
 

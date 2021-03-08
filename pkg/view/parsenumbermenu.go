@@ -24,8 +24,8 @@ func ParseNumberMenu(input string) (include, exclude intrange.IntRanges,
 
 	include = make(intrange.IntRanges, 0)
 	exclude = make(intrange.IntRanges, 0)
-	otherInclude = make(stringset.StringSet)
-	otherExclude = make(stringset.StringSet)
+	otherInclude = stringset.Make()
+	otherExclude = stringset.Make()
 
 	words := strings.FieldsFunc(input, func(c rune) bool {
 		return unicode.IsSpace(c) || c == ','

@@ -19,7 +19,7 @@ func GetOrder(dp *Pool) *Order {
 	do := &Order{
 		make([]Base, 0),
 		make([]db.IPackage, 0),
-		make(stringset.StringSet),
+		stringset.Make(),
 	}
 
 	for _, target := range dp.targets {
@@ -95,7 +95,7 @@ func (do *Order) HasMake() bool {
 		lenAur += len(base)
 	}
 
-	return len(do.Runtime) != lenAur+len(do.Repo)
+	return do.Runtime.Len() != lenAur+len(do.Repo)
 }
 
 func (do *Order) GetMake() []string {

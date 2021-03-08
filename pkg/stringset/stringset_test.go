@@ -15,7 +15,7 @@ func TestStringSet(t *testing.T) {
 	assert.True(t, set.Get("abc"))
 	assert.False(t, set.Get("xyz"))
 
-	set2 := sset.FromSlice([]string{"abc", "def"})
+	set2 := sset.Make([]string{"abc", "def"}...)
 
 	assert.True(t, set2.Get("abc"))
 	assert.False(t, set2.Get("xyz"))
@@ -39,12 +39,12 @@ func TestStringSet(t *testing.T) {
 
 func TestMapStringSet_Add(t *testing.T) {
 
-	m := sset.MapStringSet{
+	m := map[string]sset.StringSet{
 		"key1": sset.Make("abc"),
 	}
 
-	m.Add("key1", "def")
-	m.Add("key2", "ghi")
+	sset.Add(m, "key1", "def")
+	sset.Add(m, "key2", "ghi")
 
 	assert.True(t, m["key1"].Get("abc"))
 	assert.True(t, m["key1"].Get("def"))

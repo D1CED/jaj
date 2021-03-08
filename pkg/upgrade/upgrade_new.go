@@ -46,8 +46,8 @@ func isDevelPackage(pkg db.IPackage) bool {
 
 // upgradePkgs handles updating the cache and installing updates.
 func UpgradePkgs(conf *settings.YayConfig, aurUp, repoUp []Upgrade) (ignore, aurNames stringset.StringSet, err error) {
-	ignore = make(stringset.StringSet)
-	aurNames = make(stringset.StringSet)
+	ignore = stringset.Make()
+	aurNames = stringset.Make()
 
 	allUpLen := len(repoUp) + len(aurUp)
 	if allUpLen == 0 {
@@ -72,14 +72,14 @@ func UpgradePkgs(conf *settings.YayConfig, aurUp, repoUp []Upgrade) (ignore, aur
 
 	numbers, err := view.GetInput(conf.AnswerUpgrade, conf.Pacman.NoConfirm)
 	if err != nil {
-		return nil, nil, err
+		return stringset.Make(), stringset.Make(), err
 	}
 
 	// upgrade menu asks you which packages to NOT upgrade so in this case
 	// include and exclude are kind of swapped
 	include, exclude, otherInclude, otherExclude := view.ParseNumberMenu(numbers)
 
-	isInclude := len(exclude) == 0 && len(otherExclude) == 0
+	isInclude := len(exclude) == 0 && otherExclude.Len() == 0
 
 	for i, pkg := range repoUp {
 		if isInclude && otherInclude.Get(pkg.Repository) {

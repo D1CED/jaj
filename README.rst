@@ -82,6 +82,8 @@ split parts off of main [done]
 
 replace upgrade.UpSlice with []upgrade.Upgrade [done]
 
+remove stringset.MapStringSet [done]
+
 Future
 ------
 
@@ -111,8 +113,6 @@ add logging
 
 investigate required arguments of pacman options
 - search did not need an argument, was target
-
-remove stringset.MapStringSet
 
 Split this content up into
 - README

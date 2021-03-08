@@ -71,7 +71,7 @@ func upList(warnings *query.AURWarnings, rt *Runtime, enableDowngrade bool) (aur
 	upgrade.PrintLocalNewerThanAUR(remote, aurdata)
 
 	if develUp != nil {
-		names := make(stringset.StringSet)
+		names := stringset.Make()
 		for _, up := range develUp {
 			names.Set(up.Name)
 		}
@@ -103,7 +103,7 @@ func createDevelDB(rt *Runtime) error {
 	}
 
 	bases := dep.GetBases(info)
-	toSkip := pkgbuildsToSkip(bases, stringset.FromSlice(remoteNames), rt.Config.ReDownload, rt.Config.BuildDir)
+	toSkip := pkgbuildsToSkip(bases, stringset.Make(remoteNames...), rt.Config.ReDownload, rt.Config.BuildDir)
 	_, err = downloadPkgbuilds(buildRun{rt.CmdBuilder, rt.CmdRunner}, bases, toSkip, rt.Config.BuildDir, rt.Config.AURURL)
 	if err != nil {
 		return err

@@ -13,7 +13,7 @@ type AURWarnings struct {
 }
 
 func NewWarnings() *AURWarnings {
-	return &AURWarnings{Ignore: make(stringset.StringSet)}
+	return &AURWarnings{Ignore: stringset.Make()}
 }
 
 func (warnings *AURWarnings) Print() {

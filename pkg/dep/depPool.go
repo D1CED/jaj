@@ -68,7 +68,7 @@ func (dp *Pool) ResolveTargets(
 	// RPC requests are slow
 	// Combine as many AUR package requests as possible into a single RPC
 	// call
-	aurTargets := make(stringset.StringSet)
+	aurTargets := stringset.Make()
 
 	pkgs = query.RemoveInvalidTargets(pkgs, mode)
 
@@ -132,7 +132,7 @@ func (dp *Pool) ResolveTargets(
 		dp.targets = append(dp.targets, target)
 	}
 
-	if len(aurTargets) > 0 && (mode == settings.ModeAny || mode == settings.ModeAUR) {
+	if aurTargets.Len() > 0 && (mode == settings.ModeAny || mode == settings.ModeAUR) {
 		return dp.resolveAURPackages(aurTargets, true, ignoreProviders, noConfirm, provides, rebuild, splitN)
 	}
 
@@ -186,7 +186,7 @@ func (dp *Pool) findProvides(pkgs stringset.StringSet) error {
 		}
 	}
 
-	for pkg := range pkgs {
+	for pkg := range pkgs.Iter() {
 		if dp.alpmExecutor.LocalPackage(pkg) != nil {
 			continue
 		}
@@ -203,13 +203,13 @@ func (dp *Pool) cacheAURPackages(_pkgs stringset.StringSet, provides bool, split
 	pkgs := _pkgs.Copy()
 	toQuery := make([]string, 0)
 
-	for pkg := range pkgs {
+	for pkg := range pkgs.Iter() {
 		if _, ok := dp.aurCache[pkg]; ok {
 			pkgs.Remove(pkg)
 		}
 	}
 
-	if len(pkgs) == 0 {
+	if pkgs.Len() == 0 {
 		return nil
 	}
 
@@ -220,7 +220,7 @@ func (dp *Pool) cacheAURPackages(_pkgs stringset.StringSet, provides bool, split
 		}
 	}
 
-	for pkg := range pkgs {
+	for pkg := range pkgs.Iter() {
 		if _, ok := dp.aurCache[pkg]; !ok {
 			name, _, ver := splitDep(pkg)
 			if ver != "" {
@@ -247,19 +247,19 @@ func (dp *Pool) cacheAURPackages(_pkgs stringset.StringSet, provides bool, split
 func (dp *Pool) resolveAURPackages(pkgs stringset.StringSet,
 	explicit, ignoreProviders, noConfirm, provides bool,
 	rebuild string, splitN int) error {
-	newPackages := make(stringset.StringSet)
-	newAURPackages := make(stringset.StringSet)
+	newPackages := stringset.Make()
+	newAURPackages := stringset.Make()
 
 	err := dp.cacheAURPackages(pkgs, provides, splitN)
 	if err != nil {
 		return err
 	}
 
-	if len(pkgs) == 0 {
+	if pkgs.Len() == 0 {
 		return nil
 	}
 
-	for name := range pkgs {
+	for name := range pkgs.Iter() {
 		_, ok := dp.Aur[name]
 		if ok {
 			continue
@@ -282,7 +282,7 @@ func (dp *Pool) resolveAURPackages(pkgs stringset.StringSet,
 		}
 	}
 
-	for dep := range newPackages {
+	for dep := range newPackages.Iter() {
 		if dp.hasSatisfier(dep) {
 			continue
 		}
@@ -343,7 +343,7 @@ func GetPool(
 
 	dp := &Pool{
 		make([]Target, 0),
-		make(stringset.StringSet),
+		stringset.Make(),
 		make(map[string]db.IPackage),
 		make(map[string]*query.Pkg),
 		make(map[string]*query.Pkg),
@@ -380,7 +380,7 @@ func (dp *Pool) findSatisfierAur(dep string) *query.Pkg {
 // TODO: maybe intermix repo providers in the menu
 func (dp *Pool) findSatisfierAurCache(dep string, ignoreProviders, noConfirm, provides bool) *query.Pkg {
 	depName, _, _ := splitDep(dep)
-	seen := make(stringset.StringSet)
+	seen := stringset.Make()
 	providerSlice := make([]*query.Pkg, 0)
 
 	if dp.alpmExecutor.LocalPackage(depName) != nil {

@@ -15,6 +15,7 @@ import (
 	"github.com/Jguer/yay/v10/pkg/exe"
 	"github.com/Jguer/yay/v10/pkg/multierror"
 	"github.com/Jguer/yay/v10/pkg/query"
+	"github.com/Jguer/yay/v10/pkg/stringset"
 	"github.com/Jguer/yay/v10/pkg/text"
 )
 
@@ -206,7 +207,7 @@ func getPkgbuilds(pkgs []string, rt *Runtime, force bool) error {
 			}
 		}
 
-		if _, err = downloadPkgbuilds(buildRun{rt.CmdBuilder, rt.CmdRunner}, bases, nil, wd, rt.Config.AURURL); err != nil {
+		if _, err = downloadPkgbuilds(buildRun{rt.CmdBuilder, rt.CmdRunner}, bases, stringset.Make(), wd, rt.Config.AURURL); err != nil {
 			return err
 		}
 

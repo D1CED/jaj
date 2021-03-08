@@ -17,7 +17,7 @@ func HangingPackages(removeOptional bool, dbExecutor db.Executor) (hanging []str
 	// State = 2 - Keep package and have iterated over dependencies
 	safePackages := make(map[string]uint8)
 	// provides stores a mapping from the provides name back to the original package name
-	provides := make(stringset.MapStringSet)
+	provides := make(map[string]stringset.StringSet)
 
 	packages := dbExecutor.LocalPackages()
 	// Mark explicit dependencies and enumerate the provides list
@@ -29,7 +29,7 @@ func HangingPackages(removeOptional bool, dbExecutor db.Executor) (hanging []str
 		}
 
 		for _, dep := range dbExecutor.PackageProvides(pkg) {
-			provides.Add(dep.Name, pkg.Name())
+			stringset.Add(provides, dep.Name, pkg.Name())
 		}
 	}
 
@@ -55,7 +55,7 @@ func HangingPackages(removeOptional bool, dbExecutor db.Executor) (hanging []str
 				if !ok {
 					// Check if dep is a provides rather than actual package name
 					if pset, ok2 := provides[dep.Name]; ok2 {
-						for p := range pset {
+						for p := range pset.Iter() {
 							if safePackages[p] == 0 {
 								iterateAgain = true
 								safePackages[p] = 1

@@ -385,7 +385,7 @@ func printNumberOfUpdates(rt *Runtime, enableDowngrade bool) error {
 }
 
 func printUpdateList(cmdArgs *settings.PacmanConf, rt *Runtime, enableDowngrade bool) error {
-	targets := stringset.FromSlice(*cmdArgs.Targets)
+	targets := stringset.Make(*cmdArgs.Targets...)
 	warnings := query.NewWarnings()
 
 	var (
@@ -408,7 +408,7 @@ func printUpdateList(cmdArgs *settings.PacmanConf, rt *Runtime, enableDowngrade 
 		return err
 	}
 
-	noTargets := len(targets) == 0
+	noTargets := targets.Len() == 0
 
 	qconf := cmdArgs.ModeConf.(*settings.QConf)
 
@@ -420,7 +420,7 @@ func printUpdateList(cmdArgs *settings.PacmanConf, rt *Runtime, enableDowngrade 
 				} else {
 					text.Printf("%s %s -> %s\n", text.Bold(pkg.Name), text.Green(pkg.LocalVersion), text.Green(pkg.RemoteVersion))
 				}
-				delete(targets, pkg.Name)
+				targets.Remove(pkg.Name)
 			}
 		}
 	}
@@ -433,7 +433,7 @@ func printUpdateList(cmdArgs *settings.PacmanConf, rt *Runtime, enableDowngrade 
 				} else {
 					text.Printf("%s %s -> %s\n", text.Bold(pkg.Name), text.Green(pkg.LocalVersion), text.Green(pkg.RemoteVersion))
 				}
-				delete(targets, pkg.Name)
+				targets.Remove(pkg.Name)
 			}
 		}
 	}
@@ -441,7 +441,7 @@ func printUpdateList(cmdArgs *settings.PacmanConf, rt *Runtime, enableDowngrade 
 	missing := false
 
 outer:
-	for pkg := range targets {
+	for pkg := range targets.Iter() {
 		for _, name := range localNames {
 			if name == pkg {
 				continue outer

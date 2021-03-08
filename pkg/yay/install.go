@@ -107,8 +107,8 @@ func install(rt *Runtime, pacmanConf *settings.PacmanConf, sconf *settings.SConf
 		return err
 	}
 
-	remoteNamesCache := stringset.FromSlice(remoteNames)
-	localNamesCache := stringset.FromSlice(localNames)
+	remoteNamesCache := stringset.Make(remoteNames...)
+	localNamesCache := stringset.Make(localNames...)
 
 	requestTargets := pacmanConf.DeepCopy().Targets
 
@@ -145,17 +145,17 @@ func install(rt *Runtime, pacmanConf *settings.PacmanConf, sconf *settings.SConf
 			}
 		}
 
-		for up := range aurUp {
+		for up := range aurUp.Iter() {
 			*requestTargets = append(*requestTargets, "aur/"+up)
 			*pacmanConf.Targets = append(*pacmanConf.Targets, "aur/"+up)
 		}
 
-		if len(ignore) > 0 {
+		if ignore.Len() > 0 {
 			argumentsSConf.Ignore = append(argumentsSConf.Ignore, ignore.ToSlice()...)
 		}
 	}
 
-	targets := stringset.FromSlice(*pacmanConf.Targets)
+	targets := stringset.Make(*pacmanConf.Targets...)
 
 	dp, err := dep.GetPool(
 		*requestTargets, warnings, rt.DB, rt.AUR, rt.Config.Mode, ignoreProviders,
@@ -193,7 +193,7 @@ func install(rt *Runtime, pacmanConf *settings.PacmanConf, sconf *settings.SConf
 		return text.ErrT("refusing to install AUR packages as root, aborting")
 	}
 
-	var conflicts stringset.MapStringSet
+	var conflicts map[string]stringset.StringSet
 	if sconf.NoDeps == 1 {
 		conflicts, err = dp.CheckConflicts(rt.Config.UseAsk, pacmanConf.NoConfirm)
 		if err != nil {
@@ -475,11 +475,11 @@ func earlyRefresh(cmdArgs *settings.PacmanConf, rt *Runtime) error {
 }
 
 func getIncompatible(bases []dep.Base, srcinfos map[string]*gosrc.Srcinfo, dbExecutor db.Executor, noConfirm bool) (stringset.StringSet, error) {
-	incompatible := make(stringset.StringSet)
+	incompatible := stringset.Make()
 	basesMap := make(map[string]dep.Base)
 	alpmArch, err := dbExecutor.AlpmArch()
 	if err != nil {
-		return nil, err
+		return stringset.Make(), err
 	}
 
 nextpkg:
@@ -494,16 +494,16 @@ nextpkg:
 		basesMap[base.Pkgbase()] = base
 	}
 
-	if len(incompatible) > 0 {
+	if incompatible.Len() > 0 {
 		text.Warnln(text.T("The following packages are not compatible with your architecture:"))
-		for pkg := range incompatible {
+		for pkg := range incompatible.Iter() {
 			text.Print("  " + text.Cyan(basesMap[pkg].String()))
 		}
 
 		text.Println()
 
 		if !text.ContinueTask(text.T("Try to build them anyway?"), true, noConfirm) {
-			return nil, errors.New(text.T("aborting due to user"))
+			return stringset.Make(), errors.New(text.T("aborting due to user"))
 		}
 	}
 
@@ -604,7 +604,7 @@ func cleanNumberMenu(bases []dep.Base, installed stringset.StringSet, hasClean b
 	}
 
 	cInclude, cExclude, cOtherInclude, cOtherExclude := view.ParseNumberMenu(cleanInput)
-	cIsInclude := len(cExclude) == 0 && len(cOtherExclude) == 0
+	cIsInclude := len(cExclude) == 0 && cOtherExclude.Len() == 0
 
 	if cOtherInclude.Get("abort") || cOtherInclude.Get("ab") {
 		return nil, text.ErrT("aborting due to user")
@@ -687,7 +687,7 @@ func editDiffNumberMenu(bases []dep.Base, installed stringset.StringSet, diff bo
 	}
 
 	eInclude, eExclude, eOtherInclude, eOtherExclude := view.ParseNumberMenu(editInput)
-	eIsInclude := len(eExclude) == 0 && len(eOtherExclude) == 0
+	eIsInclude := len(eExclude) == 0 && eOtherExclude.Len() == 0
 
 	if eOtherInclude.Get("abort") || eOtherInclude.Get("ab") {
 		return nil, text.ErrT("aborting due to user")
@@ -839,7 +839,7 @@ func parseSrcinfoFiles(bases []dep.Base, errIsFatal bool, buildDir string) (map[
 }
 
 func pkgbuildsToSkip(bases []dep.Base, targets stringset.StringSet, reDownload, buildDir string) stringset.StringSet {
-	toSkip := make(stringset.StringSet)
+	toSkip := stringset.Make()
 
 	for _, base := range bases {
 		isTarget := false
@@ -876,7 +876,7 @@ func mergePkgbuilds(br buildRun, bases []dep.Base, buildDir string) error {
 }
 
 func downloadPkgbuilds(br buildRun, bases []dep.Base, toSkip stringset.StringSet, buildDir, aurURL string) (stringset.StringSet, error) {
-	cloned := make(stringset.StringSet)
+	cloned := stringset.Make()
 	downloaded := 0
 	var wg sync.WaitGroup
 	var mux sync.Mutex
@@ -955,7 +955,7 @@ func buildInstallPkgbuilds(
 	do *dep.Order,
 	srcinfos map[string]*gosrc.Srcinfo,
 	incompatible stringset.StringSet,
-	conflicts stringset.MapStringSet,
+	conflicts map[string]stringset.StringSet,
 ) error {
 
 	var trans settings.Transaction
@@ -994,8 +994,8 @@ func buildInstallPkgbuilds(
 
 	// cache as a stringset. maybe make it return a string set in the first
 	// place
-	remoteNamesCache := stringset.FromSlice(remoteNames)
-	localNamesCache := stringset.FromSlice(localNames)
+	remoteNamesCache := stringset.Make(remoteNames...)
+	localNamesCache := stringset.Make(localNames...)
 
 	doInstall := func() error {
 		if len(*arguments.Targets) == 0 {
