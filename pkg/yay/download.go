@@ -167,7 +167,7 @@ func getPkgbuilds(pkgs []string, rt *Runtime, force bool) error {
 		aur[n] = pkg
 	}
 
-	info, err := query.AURInfoPrint(aur, rt.Config.RequestSplitN)
+	info, err := query.AURInfoPrint(rt.AUR, aur, rt.Config.RequestSplitN)
 	if err != nil {
 		return err
 	}

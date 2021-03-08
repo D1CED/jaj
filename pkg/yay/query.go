@@ -168,7 +168,7 @@ func getSearchBy(value string) rpc.By {
 }
 
 // NarrowSearch searches AUR and narrows based on subarguments
-func narrowSearch(pkgS []string, sortS bool, searchBy string, sortBy string) (aurQuery, error) {
+func narrowSearch(aur *query.AUR, pkgS []string, sortS bool, searchBy string, sortBy string) (aurQuery, error) {
 	var r []query.Pkg
 	var err error
 	var usedIndex int
@@ -180,7 +180,7 @@ func narrowSearch(pkgS []string, sortS bool, searchBy string, sortBy string) (au
 	}
 
 	for i, word := range pkgS {
-		r, err = rpc.SearchBy(word, by)
+		r, err = aur.SearchBy(word, by)
 		if err == nil {
 			usedIndex = i
 			break
@@ -236,11 +236,11 @@ func syncSearch(pkgS []string, rt *Runtime) (err error) {
 
 	switch rt.Config.Mode {
 	case settings.ModeAUR:
-		aq, aurErr = narrowSearch(pkgS, true, rt.Config.SearchBy, rt.Config.SortBy)
+		aq, aurErr = narrowSearch(rt.AUR, pkgS, true, rt.Config.SearchBy, rt.Config.SortBy)
 	case settings.ModeRepo:
 		pq = queryRepo(pkgS, rt.DB, rt.Config.SortMode)
 	case settings.ModeAny:
-		aq, aurErr = narrowSearch(pkgS, true, rt.Config.SearchBy, rt.Config.SortBy)
+		aq, aurErr = narrowSearch(rt.AUR, pkgS, true, rt.Config.SearchBy, rt.Config.SortBy)
 		pq = queryRepo(pkgS, rt.DB, rt.Config.SortMode)
 	}
 
@@ -287,7 +287,7 @@ func syncInfo(cmdArgs *settings.PacmanConf, pkgS []string, rt *Runtime) error {
 			noDB = append(noDB, name)
 		}
 
-		info, err = query.AURInfoPrint(noDB, rt.Config.RequestSplitN)
+		info, err = query.AURInfoPrint(rt.AUR, noDB, rt.Config.RequestSplitN)
 		if err != nil {
 			missing = true
 			text.EPrintln(err)

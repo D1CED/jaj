@@ -20,9 +20,7 @@ func GetPackageNamesBySource(dbExecutor db.Executor) (local, remote []string, er
 }
 
 // GetRemotePackages returns packages with no correspondence in SyncDBS.
-func GetRemotePackages(dbExecutor db.Executor) (
-	remote []db.IPackage,
-	remoteNames []string) {
+func GetRemotePackages(dbExecutor db.Executor) (remote []db.IPackage, remoteNames []string) {
 	for _, localpkg := range dbExecutor.LocalPackages() {
 		pkgName := localpkg.Name()
 		if dbExecutor.SyncPackage(pkgName) == nil {

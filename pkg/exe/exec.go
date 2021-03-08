@@ -19,8 +19,7 @@ type Runner interface {
 	Show(cmd *exec.Cmd) error
 }
 
-type OSRunner struct {
-}
+type OSRunner struct{}
 
 func (r *OSRunner) Show(cmd *exec.Cmd) error {
 	cmd.Stdin, cmd.Stdout, cmd.Stderr = text.AllPorts()

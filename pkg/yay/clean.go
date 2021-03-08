@@ -70,7 +70,7 @@ func syncClean(rt *Runtime) error {
 	text.Println(text.T("\nBuild directory:"), rt.Config.BuildDir)
 
 	if text.ContinueTask(question, true, rt.Config.Pacman.NoConfirm) {
-		if err := cleanAUR(&rt.Config.PersistentYayConfig, keepInstalled, keepCurrent, removeAll > 0, rt.DB); err != nil {
+		if err := cleanAUR(&rt.Config.PersistentYayConfig, keepInstalled, keepCurrent, removeAll > 0, rt.DB, rt.AUR); err != nil {
 			return err
 		}
 	}
@@ -86,7 +86,12 @@ func syncClean(rt *Runtime) error {
 	return nil
 }
 
-func cleanAUR(conf *settings.PersistentYayConfig, keepInstalled, keepCurrent, removeAll bool, dbExecutor db.Executor) error {
+func cleanAUR(
+	conf *settings.PersistentYayConfig,
+	keepInstalled, keepCurrent, removeAll bool,
+	dbExecutor db.Executor,
+	aur *query.AUR) error {
+
 	text.Println(text.T("removing AUR packages from cache..."))
 
 	installedBases := make(stringset.StringSet)
@@ -113,7 +118,7 @@ func cleanAUR(conf *settings.PersistentYayConfig, keepInstalled, keepCurrent, re
 	// Querying the AUR is slow and needs internet so don't do it if we
 	// don't need to.
 	if keepCurrent {
-		info, errInfo := query.AURInfo(cachedPackages, &query.AURWarnings{}, conf.RequestSplitN)
+		info, errInfo := query.AURInfo(aur, cachedPackages, &query.AURWarnings{}, conf.RequestSplitN)
 		if errInfo != nil {
 			return errInfo
 		}

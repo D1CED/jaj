@@ -25,7 +25,7 @@ func displayNumberMenu(pkgS []string, rt *Runtime) error {
 	pkgS = query.RemoveInvalidTargets(pkgS, rt.Config.Mode)
 
 	if rt.Config.Mode == settings.ModeAUR || rt.Config.Mode == settings.ModeAny {
-		aq, aurErr = narrowSearch(pkgS, true, rt.Config.SearchBy, rt.Config.SortBy)
+		aq, aurErr = narrowSearch(rt.AUR, pkgS, true, rt.Config.SearchBy, rt.Config.SortBy)
 		lenaq = len(aq)
 	}
 	if rt.Config.Mode == settings.ModeRepo || rt.Config.Mode == settings.ModeAny {
@@ -225,7 +225,7 @@ func biggestPackages(dbExecutor db.Executor) {
 }
 
 // localStatistics prints installed packages statistics.
-func localStatistics(dbExecutor db.Executor, yayVersion string, requestSplitN int) error {
+func localStatistics(dbExecutor db.Executor, aur *query.AUR, yayVersion string, requestSplitN int) error {
 	info := query.Statistics(dbExecutor)
 
 	_, remoteNames, err := query.GetPackageNamesBySource(dbExecutor)
@@ -244,7 +244,7 @@ func localStatistics(dbExecutor db.Executor, yayVersion string, requestSplitN in
 	biggestPackages(dbExecutor)
 	text.Println(text.Bold(text.Cyan("===========================================")))
 
-	query.AURInfoPrint(remoteNames, requestSplitN)
+	query.AURInfoPrint(aur, remoteNames, requestSplitN)
 
 	return nil
 }

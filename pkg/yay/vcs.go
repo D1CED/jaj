@@ -42,7 +42,7 @@ func upList(warnings *query.AURWarnings, rt *Runtime, enableDowngrade bool) (aur
 		text.OperationInfoln(text.T("Searching AUR for updates..."))
 
 		var _aurdata []*query.Pkg
-		_aurdata, err = query.AURInfo(remoteNames, warnings, rt.Config.RequestSplitN)
+		_aurdata, err = query.AURInfo(rt.AUR, remoteNames, warnings, rt.Config.RequestSplitN)
 		errs.Add(err)
 		if err == nil {
 			for _, pkg := range _aurdata {
@@ -97,7 +97,7 @@ func createDevelDB(rt *Runtime) error {
 		return err
 	}
 
-	info, err := query.AURInfoPrint(remoteNames, rt.Config.RequestSplitN)
+	info, err := query.AURInfoPrint(rt.AUR, remoteNames, rt.Config.RequestSplitN)
 	if err != nil {
 		return err
 	}

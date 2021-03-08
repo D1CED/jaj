@@ -33,7 +33,7 @@ func HandlePrint(cmdArgs *settings.PConf, yayVersion string, rt *Runtime) (err e
 	case cmdArgs.Complete != 0:
 		err = completion.Show(rt.DB, rt.Config.AURURL, rt.Config.CompletionPath, rt.Config.CompletionInterval, cmdArgs.Complete > 1)
 	case cmdArgs.LocalStats:
-		err = localStatistics(rt.DB, yayVersion, rt.Config.RequestSplitN)
+		err = localStatistics(rt.DB, rt.AUR, yayVersion, rt.Config.RequestSplitN)
 	}
 	return err
 }

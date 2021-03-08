@@ -8,6 +8,7 @@ import (
 
 	"github.com/Jguer/yay/v10/pkg/db"
 	"github.com/Jguer/yay/v10/pkg/exe"
+	"github.com/Jguer/yay/v10/pkg/query"
 	"github.com/Jguer/yay/v10/pkg/settings"
 	"github.com/Jguer/yay/v10/pkg/vcs"
 )
@@ -20,6 +21,7 @@ type Runtime struct {
 	CmdBuilder *exe.CmdBuilder
 	CmdRunner  exe.Runner
 	DB         db.Executor
+	AUR        *query.AUR
 	Pacman     *pacmanconf.Config
 	Config     *settings.YayConfig
 }
@@ -45,6 +47,7 @@ func New(conf *settings.YayConfig, pac *pacmanconf.Config, db db.Executor) (*Run
 		DB:         db,
 		Pacman:     pac,
 		Config:     conf,
+		AUR:        &query.AUR{URL: conf.AURURL + "/rpc.php?"},
 	}
 
 	return r, err

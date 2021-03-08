@@ -158,7 +158,7 @@ func install(rt *Runtime, pacmanConf *settings.PacmanConf, sconf *settings.SConf
 	targets := stringset.FromSlice(*pacmanConf.Targets)
 
 	dp, err := dep.GetPool(
-		*requestTargets, warnings, rt.DB, rt.Config.Mode, ignoreProviders,
+		*requestTargets, warnings, rt.DB, rt.AUR, rt.Config.Mode, ignoreProviders,
 		pacmanConf.NoConfirm, rt.Config.Provides, rt.Config.ReBuild,
 		rt.Config.RequestSplitN,
 	)

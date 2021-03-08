@@ -5,7 +5,6 @@ import (
 	"os"
 
 	pacmanconf "github.com/Morganamilo/go-pacmanconf"
-	rpc "github.com/mikkeloscar/aur"
 
 	"github.com/Jguer/yay/v10/pkg/db/ialpm"
 	"github.com/Jguer/yay/v10/pkg/settings"
@@ -86,7 +85,6 @@ func appMain() (int, error) {
 	if err != nil {
 		return 1, err
 	}
-	rpc.AURURL = config.AURURL + "/rpc.php?"
 
 	pacmanConf, useColor, err := initAlpm(config.Pacman, config.PacmanConf)
 	if err != nil {

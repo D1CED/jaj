@@ -54,10 +54,11 @@ type Pool struct {
 	AurCache     map[string]*query.Pkg
 	Groups       []string
 	AlpmExecutor db.Executor
+	AUR          *query.AUR
 	Warnings     *query.AURWarnings
 }
 
-func makePool(dbExecutor db.Executor) *Pool {
+func makePool(dbExecutor db.Executor, aur *query.AUR) *Pool {
 	dp := &Pool{
 		make([]Target, 0),
 		make(stringset.StringSet),
@@ -66,6 +67,7 @@ func makePool(dbExecutor db.Executor) *Pool {
 		make(map[string]*query.Pkg),
 		make([]string, 0),
 		dbExecutor,
+		aur,
 		nil,
 	}
 
@@ -178,7 +180,7 @@ func (dp *Pool) findProvides(pkgs stringset.StringSet) error {
 		words := strings.Split(pkg, "-")
 
 		for i := range words {
-			results, err = query.Search(strings.Join(words[:i+1], "-"))
+			results, err = dp.AUR.Search(strings.Join(words[:i+1], "-"))
 			if err == nil {
 				break
 			}
@@ -242,7 +244,7 @@ func (dp *Pool) cacheAURPackages(_pkgs stringset.StringSet, provides bool, split
 		}
 	}
 
-	info, err := query.AURInfo(toQuery, dp.Warnings, splitN)
+	info, err := query.AURInfo(dp.AUR, toQuery, dp.Warnings, splitN)
 	if err != nil {
 		return err
 	}
@@ -345,10 +347,13 @@ func (dp *Pool) ResolveRepoDependency(pkg db.IPackage) {
 func GetPool(pkgs []string,
 	warnings *query.AURWarnings,
 	dbExecutor db.Executor,
+	aur *query.AUR,
 	mode settings.TargetMode,
 	ignoreProviders, noConfirm, provides bool,
-	rebuild string, splitN int) (*Pool, error) {
-	dp := makePool(dbExecutor)
+	rebuild string, splitN int,
+) (*Pool, error) {
+
+	dp := makePool(dbExecutor, aur)
 
 	dp.Warnings = warnings
 	err := dp.ResolveTargets(pkgs, mode, ignoreProviders, noConfirm, provides, rebuild, splitN)

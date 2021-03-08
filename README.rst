@@ -121,6 +121,10 @@ multierror
 - add sync to Err
 - add Is and As
 
+split multierror up in collector and actual multierror
+
+exe use context and string Builder instead of bytes Buffer
+
 Coupling in yay
 ^^^^^^^^^^^^^^^
 
@@ -153,12 +157,12 @@ Tests
 * pkg/settings        [11%]
 * pkg/intrange        [42%]
 * pkg/completion      [37%]
+* pkg/exe             [36%]
 
-* pkg/yay             []
 * pkg/query           []
-* pkg/exe             []
 * pkg/dep             []
 * pkg/db/ialpm        []
+* pkg/yay             []
 
 Layers
 ------
