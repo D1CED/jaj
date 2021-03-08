@@ -235,7 +235,7 @@ func (v *InfoStore) RemovePackage(pkgs []string) {
 }
 
 // LoadStore reads a json file and populates a InfoStore structure
-func (v InfoStore) Load() error {
+func (v InfoStore) Load() error { // TODO(jmh): must take ptr
 	vfile, err := os.Open(v.FilePath)
 	if !os.IsNotExist(err) && err != nil {
 		return fmt.Errorf("failed to open vcs file '%s': %s", v.FilePath, err)

@@ -15,7 +15,7 @@ type AURInfoProvider interface{ Info([]string) ([]Pkg, error) }
 // of packages exceeds the number set in config.RequestSplitN.
 // If the number does exceed config.RequestSplitN multiple rpc requests will be
 // performed concurrently.
-func AURInfo(a AURInfoProvider, names []string, warnings *AURWarnings, splitN int) ([]*Pkg, error) {
+func AURInfo(a AURInfoProvider, names []string, warnings *AURWarnings, splitN int) ([]*Pkg, error) { // what about splitN == 0 ??
 	info := make([]*Pkg, 0, len(names))
 	seen := make(map[string]int)
 	var mux sync.Mutex
@@ -24,12 +24,12 @@ func AURInfo(a AURInfoProvider, names []string, warnings *AURWarnings, splitN in
 
 	makeRequest := func(n, max int) {
 		defer wg.Done()
-		tempInfo, requestErr := a.Info(names[n:max])
+		tempInfo, requestErr := a.Info(names[n:max]) // TODO(jmh): be careful with data race of aur.AURURL
 		errs.Add(requestErr)
 		if requestErr != nil {
 			return
 		}
-		mux.Lock()
+		mux.Lock() // Mutex not necessary as writes are disjoint
 		for i := range tempInfo {
 			info = append(info, &tempInfo[i])
 		}

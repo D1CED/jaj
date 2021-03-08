@@ -9,30 +9,30 @@ type AUR struct {
 }
 
 func (a AUR) Info(pkgs []string) ([]Pkg, error) {
-	backup := aur.AURURL
+	//backup := aur.AURURL
 	aur.AURURL = a.URL
 	p, err := aur.Info(pkgs)
-	aur.AURURL = backup
+	//aur.AURURL = backup
 	return p, err
 }
 func (a AUR) Orphans() ([]Pkg, error) {
-	backup := aur.AURURL
+	//backup := aur.AURURL
 	aur.AURURL = a.URL
 	p, err := aur.Orphans()
-	aur.AURURL = backup
+	//aur.AURURL = backup
 	return p, err
 }
 func (a AUR) Search(query string) ([]Pkg, error) {
-	backup := aur.AURURL
+	//backup := aur.AURURL
 	aur.AURURL = a.URL
 	p, err := aur.Search(query)
-	aur.AURURL = backup
+	//aur.AURURL = backup
 	return p, err
 }
 func (a AUR) SearchBy(query string, by aur.By) ([]Pkg, error) {
-	backup := aur.AURURL
+	//backup := aur.AURURL
 	aur.AURURL = a.URL
 	p, err := aur.SearchBy(query, by)
-	aur.AURURL = backup
+	//aur.AURURL = backup
 	return p, err
 }
