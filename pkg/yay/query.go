@@ -299,7 +299,7 @@ func syncInfo(cmdArgs *settings.PacmanConf, pkgS []string, rt *Runtime) error {
 		arguments := cmdArgs.DeepCopy()
 		arguments.Targets = nil
 		*arguments.Targets = append(*arguments.Targets, repoS...)
-		err = rt.CmdRunner.Show(PassToPacman(rt, arguments))
+		err = rt.CmdRunner.Show(PassToPacman(rt.Config, arguments))
 
 		if err != nil {
 			return err

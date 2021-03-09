@@ -114,23 +114,20 @@ func needRoot(p *settings.PacmanConf, tMode settings.TargetMode, help, version b
 	}
 }
 
-func PassToPacman(rt *Runtime, args *settings.PacmanConf) *exec.Cmd {
+func PassToPacman(conf *settings.YayConfig, args *settings.PacmanConf) *exec.Cmd {
 	argArr := make([]string, 0, 32)
 
-	help := rt.Config.MainOperation == settings.OpHelp
-	version := rt.Config.MainOperation == settings.OpVersion
-	needRoot := needRoot(args, rt.Config.Mode, help, version)
+	help := conf.MainOperation == settings.OpHelp
+	version := conf.MainOperation == settings.OpVersion
+	needRoot := needRoot(args, conf.Mode, help, version)
 
 	if needRoot {
-		argArr = append(argArr, rt.Config.SudoBin)
-		argArr = append(argArr, strings.Fields(rt.Config.SudoFlags)...)
+		argArr = append(argArr, conf.SudoBin)
+		argArr = append(argArr, strings.Fields(conf.SudoFlags)...)
 	}
 
-	argArr = append(argArr, rt.Config.PacmanBin)
-	argArr = append(argArr, args.FormatAsArgs(
-		rt.Config.MainOperation == settings.OpHelp,
-		rt.Config.MainOperation == settings.OpVersion)...,
-	)
+	argArr = append(argArr, conf.PacmanBin)
+	argArr = append(argArr, args.FormatAsArgs(help, version)...)
 
 	if len(*args.Targets) != 0 {
 		argArr = append(argArr, "--")
@@ -138,7 +135,7 @@ func PassToPacman(rt *Runtime, args *settings.PacmanConf) *exec.Cmd {
 	}
 
 	if needRoot {
-		waitLock(rt.Config.Pacman.DBPath)
+		waitLock(conf.Pacman.DBPath)
 	}
 	return exec.Command(argArr[0], argArr[1:]...)
 }

@@ -14,7 +14,7 @@ func handleCmd(rt *yay.Runtime) error {
 
 	switch rt.Config.MainOperation {
 	case settings.OpDatabase, settings.OpFiles, settings.OpDepTest, settings.OpUpgrade:
-		return rt.CmdRunner.Show(yay.PassToPacman(rt, rt.Config.Pacman))
+		return rt.CmdRunner.Show(yay.PassToPacman(rt.Config, rt.Config.Pacman))
 	case settings.OpHelp:
 		return handleHelp(rt)
 	case settings.OpVersion:
@@ -38,7 +38,7 @@ func handleCmd(rt *yay.Runtime) error {
 
 func handleHelp(rt *yay.Runtime) error {
 	if rt.Config.IsPacmanOp() {
-		return rt.CmdRunner.Show(yay.PassToPacman(rt, rt.Config.Pacman))
+		return rt.CmdRunner.Show(yay.PassToPacman(rt.Config, rt.Config.Pacman))
 	}
 	text.Print(settings.Usage)
 	return nil

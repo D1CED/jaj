@@ -33,7 +33,7 @@ func cleanRemove(rt *Runtime, cmdArgs *settings.PacmanConf, pkgNames []string) e
 	arguments.ModeConf = &settings.RConf{}
 	*arguments.Targets = append(*arguments.Targets, pkgNames...)
 
-	return rt.CmdRunner.Show(PassToPacman(rt, arguments))
+	return rt.CmdRunner.Show(PassToPacman(rt.Config, arguments))
 }
 
 func syncClean(rt *Runtime) error {
@@ -51,7 +51,7 @@ func syncClean(rt *Runtime) error {
 	}
 
 	if rt.Config.Mode == settings.ModeRepo || rt.Config.Mode == settings.ModeAny {
-		if err := rt.CmdRunner.Show(PassToPacman(rt, rt.Config.Pacman)); err != nil {
+		if err := rt.CmdRunner.Show(PassToPacman(rt.Config, rt.Config.Pacman)); err != nil {
 			return err
 		}
 	}

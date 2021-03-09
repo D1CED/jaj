@@ -165,7 +165,7 @@ func syncList(rt *Runtime, quiet bool) error {
 	}
 
 	if (rt.Config.Mode == settings.ModeAny || rt.Config.Mode == settings.ModeRepo) && (len(rt.Config.Targets) != 0 || !aur) {
-		return rt.CmdRunner.Show(PassToPacman(rt, rt.Config.Pacman))
+		return rt.CmdRunner.Show(PassToPacman(rt.Config, rt.Config.Pacman))
 	}
 
 	return nil

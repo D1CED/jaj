@@ -15,7 +15,7 @@ func HandleQuery(rt *Runtime, cmdArgs *settings.QConf) error {
 	if cmdArgs.Upgrades != 0 {
 		return printUpdateList(rt.Config.Pacman, rt, cmdArgs.Upgrades > 1)
 	}
-	return rt.CmdRunner.Show(PassToPacman(rt, rt.Config.Pacman))
+	return rt.CmdRunner.Show(PassToPacman(rt.Config, rt.Config.Pacman))
 }
 
 func HandlePrint(cmdArgs *settings.PConf, yayVersion string, rt *Runtime) (err error) {
@@ -83,7 +83,7 @@ func HandleSync(cmdArgs *settings.SConf, rt *Runtime) error {
 		return syncSearch(targets, rt)
 	}
 	if cmdArgs.Print {
-		return rt.CmdRunner.Show(PassToPacman(rt, rt.Config.Pacman))
+		return rt.CmdRunner.Show(PassToPacman(rt.Config, rt.Config.Pacman))
 	}
 	if cmdArgs.Clean != 0 {
 		return syncClean(rt)
@@ -92,7 +92,7 @@ func HandleSync(cmdArgs *settings.SConf, rt *Runtime) error {
 		return syncList(rt, cmdArgs.Quiet)
 	}
 	if cmdArgs.Groups != 0 {
-		return rt.CmdRunner.Show(PassToPacman(rt, rt.Config.Pacman))
+		return rt.CmdRunner.Show(PassToPacman(rt.Config, rt.Config.Pacman))
 	}
 	if cmdArgs.Info != 0 {
 		return syncInfo(rt.Config.Pacman, targets, rt)
@@ -104,7 +104,7 @@ func HandleSync(cmdArgs *settings.SConf, rt *Runtime) error {
 		return install(rt, rt.Config.Pacman, cmdArgs, false)
 	}
 	if cmdArgs.Refresh != 0 {
-		return rt.CmdRunner.Show(PassToPacman(rt, rt.Config.Pacman))
+		return rt.CmdRunner.Show(PassToPacman(rt.Config, rt.Config.Pacman))
 	}
 	return nil
 }
@@ -114,7 +114,7 @@ func HandleRemove(cmdArgs *settings.RConf, rt *Runtime) error {
 		sudoLoopBackground(rt.CmdRunner, rt.Config)
 	}
 
-	err := rt.CmdRunner.Show(PassToPacman(rt, rt.Config.Pacman))
+	err := rt.CmdRunner.Show(PassToPacman(rt.Config, rt.Config.Pacman))
 	if err == nil {
 		rt.VCSStore.RemovePackage(rt.Config.Targets)
 	}

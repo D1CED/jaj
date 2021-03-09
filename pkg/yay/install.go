@@ -38,7 +38,7 @@ func asdeps(cmdArgs1 *settings.PacmanConf, rt *Runtime, pkgs []string) error {
 	cmdArgs.ModeConf = &settings.DConf{AsDeps: ""}
 
 	*cmdArgs.Targets = append(*cmdArgs.Targets, pkgs...)
-	_, stderr, err := rt.CmdRunner.Capture(PassToPacman(rt, cmdArgs), 0)
+	_, stderr, err := rt.CmdRunner.Capture(PassToPacman(rt.Config, cmdArgs), 0)
 	if err != nil {
 		return fmt.Errorf("%s %s", stderr, err)
 	}
@@ -56,7 +56,7 @@ func asexp(cmdArgs *settings.PacmanConf, rt *Runtime, pkgs []string) error {
 		AsExplicit: "", // TODO
 	}
 	*cmdArgs.Targets = append(*cmdArgs.Targets, pkgs...)
-	_, stderr, err := rt.CmdRunner.Capture(PassToPacman(rt, cmdArgs), 0)
+	_, stderr, err := rt.CmdRunner.Capture(PassToPacman(rt.Config, cmdArgs), 0)
 	if err != nil {
 		return fmt.Errorf("%s %s", stderr, err)
 	}
@@ -186,7 +186,7 @@ func install(rt *Runtime, pacmanConf *settings.PacmanConf, sconf *settings.SConf
 		if len(argumentsSConf.Ignore) > 0 {
 			argumentsSConf.Ignore = append(argumentsSConf.Ignore, argumentsSConf.Ignore...)
 		}
-		return rt.CmdRunner.Show(PassToPacman(rt, pacmanConf))
+		return rt.CmdRunner.Show(PassToPacman(rt.Config, pacmanConf))
 	}
 
 	if len(dp.Aur) > 0 && os.Geteuid() == 0 {
@@ -344,7 +344,7 @@ func install(rt *Runtime, pacmanConf *settings.PacmanConf, sconf *settings.SConf
 	}
 
 	if len(*arguments.Targets) > 0 || argumentsSConf.SysUpgrade != 0 {
-		if errShow := rt.CmdRunner.Show(PassToPacman(rt, arguments)); errShow != nil {
+		if errShow := rt.CmdRunner.Show(PassToPacman(rt.Config, arguments)); errShow != nil {
 			return errors.New(text.T("error installing repo packages"))
 		}
 
@@ -408,7 +408,7 @@ func removeMake(do *dep.Order, rt *Runtime) error {
 
 	oldValue := rt.DB.NoConfirm()
 	rt.DB.SetNoConfirm(true)
-	err := rt.CmdRunner.Show(PassToPacman(rt, removeArguments))
+	err := rt.CmdRunner.Show(PassToPacman(rt.Config, removeArguments))
 	rt.DB.SetNoConfirm(oldValue)
 
 	return err
@@ -454,7 +454,7 @@ func earlyPacmanCall(rt *Runtime, pacmanConf *settings.PacmanConf, sconf *settin
 	}
 
 	if sconf.Refresh != 0 || sconf.SysUpgrade != 0 || len(*arguments.Targets) > 0 {
-		if err := rt.CmdRunner.Show(PassToPacman(rt, arguments)); err != nil {
+		if err := rt.CmdRunner.Show(PassToPacman(rt.Config, arguments)); err != nil {
 			return errors.New(text.T("error installing repo packages"))
 		}
 	}
@@ -471,7 +471,7 @@ func earlyRefresh(cmdArgs *settings.PacmanConf, rt *Runtime) error {
 	}
 	arguments.Targets = &[]string{}
 
-	return rt.CmdRunner.Show(PassToPacman(rt, arguments))
+	return rt.CmdRunner.Show(PassToPacman(rt.Config, arguments))
 }
 
 func getIncompatible(bases []dep.Base, srcinfos map[string]*gosrc.Srcinfo, dbExecutor db.Executor, noConfirm bool) (stringset.StringSet, error) {
@@ -1002,7 +1002,7 @@ func buildInstallPkgbuilds(
 			return nil
 		}
 
-		if errShow := rt.CmdRunner.Show(PassToPacman(rt, arguments)); errShow != nil {
+		if errShow := rt.CmdRunner.Show(PassToPacman(rt.Config, arguments)); errShow != nil {
 			return errShow
 		}
 
