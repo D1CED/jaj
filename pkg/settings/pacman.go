@@ -269,7 +269,7 @@ func (D *DConf) formatAsArgs(s []string) []string {
 		s = append(s, "--asdeps="+D.AsDeps)
 	}
 	if D.AsExplicit != "" {
-		s = append(s, "--asexplicit="+D.AsDeps)
+		s = append(s, "--asexplicit="+D.AsExplicit)
 	}
 	if D.Check != 0 {
 		s = append(s, "-"+D.Check.repeat('k'))
@@ -431,7 +431,7 @@ func (S *SConf) formatAsArgs(s []string) []string {
 		s = append(s, "-w")
 	}
 	if S.Refresh != 0 {
-		s = append(s, "-"+S.SysUpgrade.repeat('y'))
+		s = append(s, "-"+S.Refresh.repeat('y'))
 	}
 	return s
 }
