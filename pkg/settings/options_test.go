@@ -214,3 +214,36 @@ func TestDashInput(t *testing.T) {
 		assert.Equal(t, []string{}, yay.Targets)
 	})
 }
+
+func TestPacmanConf_FormatAsArgs(t *testing.T) {
+
+	tests := []struct {
+		pconf   *PacmanConf
+		help    bool
+		version bool
+		want    []string
+	}{0: {
+		pconf: &PacmanConf{
+			ModeConf:  &SConf{Refresh: 1, SysUpgrade: 1},
+			Verbose:   true,
+			NoConfirm: true,
+		},
+		want: []string{"-v", "--noconfirm", "-S", "-y", "-u"},
+	}, 1: {
+		pconf: &PacmanConf{
+			ModeConf:  &SConf{Refresh: 1, SysUpgrade: 1},
+			Verbose:   true,
+			NoConfirm: true,
+		},
+		version: true,
+		want:    []string{"-V"},
+	}}
+
+	for k, tt := range tests {
+		t.Run(strconv.Itoa(k), func(t *testing.T) {
+			got := tt.pconf.FormatAsArgs(tt.help, tt.version)
+
+			assert.ElementsMatch(t, tt.want, got)
+		})
+	}
+}
