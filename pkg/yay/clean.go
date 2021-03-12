@@ -175,7 +175,7 @@ func cleanUntracked(rt *Runtime) error {
 
 		dir := filepath.Join(rt.Config.BuildDir, file.Name())
 		if isGitRepository(dir) {
-			if err := rt.CmdRunner.Show(rt.CmdBuilder.BuildGitCmd(dir, "clean", "-fx")); err != nil {
+			if err := rt.CmdRunner.Show(rt.GitBuilder.Build(dir, "clean", "-fx")); err != nil {
 				text.Warnln(text.T("Unable to clean:"), dir)
 				return err
 			}
@@ -200,12 +200,12 @@ func cleanAfter(rt *Runtime, bases []dep.Base) {
 
 		text.OperationInfoln(text.Tf("Cleaning (%d/%d): %s", i+1, len(bases), text.Cyan(dir)))
 
-		_, stderr, err := rt.CmdRunner.Capture(rt.CmdBuilder.BuildGitCmd(dir, "reset", "--hard", "HEAD"), 0)
+		_, stderr, err := rt.CmdRunner.Capture(rt.GitBuilder.Build(dir, "reset", "--hard", "HEAD"), 0)
 		if err != nil {
 			text.Errorln(text.Tf("error resetting %s: %s", base.String(), stderr))
 		}
 
-		if err := rt.CmdRunner.Show(rt.CmdBuilder.BuildGitCmd(dir, "clean", "-fx", "--exclude='*.pkg.*'")); err != nil {
+		if err := rt.CmdRunner.Show(rt.GitBuilder.Build(dir, "clean", "-fx", "--exclude='*.pkg.*'")); err != nil {
 			text.EPrintln(err)
 		}
 	}

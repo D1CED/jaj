@@ -5,15 +5,18 @@ import (
 	"os/exec"
 )
 
-type CmdBuilder struct {
-	GitBin          string
-	GitFlags        []string
+type GitBuilder struct {
+	GitBin   string
+	GitFlags []string
+}
+
+type MakepkgBuilder struct {
 	MakepkgFlags    []string
 	MakepkgConfPath string
 	MakepkgBin      string
 }
 
-func (c *CmdBuilder) BuildGitCmd(dir string, extraArgs ...string) *exec.Cmd {
+func (c *GitBuilder) Build(dir string, extraArgs ...string) *exec.Cmd {
 	args := make([]string, len(c.GitFlags), len(c.GitFlags)+len(extraArgs))
 	copy(args, c.GitFlags)
 
@@ -30,7 +33,7 @@ func (c *CmdBuilder) BuildGitCmd(dir string, extraArgs ...string) *exec.Cmd {
 	return cmd
 }
 
-func (c *CmdBuilder) BuildMakepkgCmd(dir string, extraArgs ...string) *exec.Cmd {
+func (c *MakepkgBuilder) Build(dir string, extraArgs ...string) *exec.Cmd {
 	args := make([]string, len(c.MakepkgFlags), len(c.MakepkgFlags)+len(extraArgs))
 	copy(args, c.MakepkgFlags)
 

@@ -17,37 +17,41 @@ import (
 const vcsFileName = "vcs.json"
 
 type Runtime struct {
-	VCSStore   *vcs.InfoStore
-	CmdBuilder *exe.CmdBuilder
-	CmdRunner  exe.Runner
-	DB         db.Executor
-	AUR        *query.AUR
-	Pacman     *pacmanconf.Config
-	Config     *settings.YayConfig
+	VCSStore       *vcs.InfoStore
+	GitBuilder     *exe.GitBuilder
+	MakepkgBuilder *exe.MakepkgBuilder
+	CmdRunner      exe.Runner
+	DB             db.Executor
+	AUR            *query.AUR
+	Pacman         *pacmanconf.Config
+	Config         *settings.YayConfig
 }
 
 func New(conf *settings.YayConfig, pac *pacmanconf.Config, db db.Executor) (*Runtime, error) {
 
 	cmdRunner := &exe.OSRunner{}
-	cmdBuilder := &exe.CmdBuilder{
-		GitBin:          conf.GitBin,
-		GitFlags:        strings.Fields(conf.GitFlags),
+	gitBuilder := &exe.GitBuilder{
+		GitBin:   conf.GitBin,
+		GitFlags: strings.Fields(conf.GitFlags),
+	}
+	mkpkgBuilder := &exe.MakepkgBuilder{
 		MakepkgFlags:    strings.Fields(conf.MFlags),
 		MakepkgConfPath: conf.MakepkgConf,
 		MakepkgBin:      conf.MakepkgBin,
 	}
 
-	vcsStore := vcs.NewInfoStore(filepath.Join(conf.BuildDir, vcsFileName), cmdRunner, cmdBuilder)
+	vcsStore := vcs.NewInfoStore(filepath.Join(conf.BuildDir, vcsFileName), cmdRunner, gitBuilder)
 	err := vcsStore.Load()
 
 	r := &Runtime{
-		VCSStore:   vcsStore,
-		CmdBuilder: cmdBuilder,
-		CmdRunner:  cmdRunner,
-		DB:         db,
-		Pacman:     pac,
-		Config:     conf,
-		AUR:        &query.AUR{URL: conf.AURURL + "/rpc.php?"},
+		VCSStore:       vcsStore,
+		GitBuilder:     gitBuilder,
+		MakepkgBuilder: mkpkgBuilder,
+		CmdRunner:      cmdRunner,
+		DB:             db,
+		Pacman:         pac,
+		Config:         conf,
+		AUR:            &query.AUR{URL: conf.AURURL + "/rpc.php?"},
 	}
 
 	return r, err

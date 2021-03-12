@@ -19,7 +19,7 @@ type InfoStore struct {
 	OriginsByPackage map[string]OriginInfoByURL
 	FilePath         string
 	Runner           exe.Runner
-	CmdBuilder       *exe.CmdBuilder
+	CmdBuilder       *exe.GitBuilder
 }
 
 // OriginInfoByURL stores the OriginInfo of each origin URL provided
@@ -40,7 +40,7 @@ type OriginInfo struct {
 	SHA       string   `json:"sha"`
 }
 
-func NewInfoStore(filePath string, runner exe.Runner, cmdBuilder *exe.CmdBuilder) *InfoStore {
+func NewInfoStore(filePath string, runner exe.Runner, cmdBuilder *exe.GitBuilder) *InfoStore {
 	infoStore := &InfoStore{
 		CmdBuilder:       cmdBuilder,
 		FilePath:         filePath,
@@ -56,7 +56,7 @@ func (v *InfoStore) getCommit(url, branch string, protocols []string) string {
 	if len(protocols) > 0 {
 		protocol := protocols[len(protocols)-1]
 
-		cmd := v.CmdBuilder.BuildGitCmd("", "ls-remote", protocol+"://"+url, branch)
+		cmd := v.CmdBuilder.Build("", "ls-remote", protocol+"://"+url, branch)
 		stdout, _, err := v.Runner.Capture(cmd, 5)
 		if err != nil {
 			text.Warnln(err)

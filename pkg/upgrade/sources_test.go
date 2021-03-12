@@ -113,7 +113,7 @@ func Test_upDevel(t *testing.T) {
 		},
 	}
 
-	cmdBuilder := &exe.CmdBuilder{
+	cmdBuilder := &exe.GitBuilder{
 		GitBin: "git",
 	}
 

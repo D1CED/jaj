@@ -104,7 +104,7 @@ func createDevelDB(rt *Runtime) error {
 
 	bases := dep.GetBases(info)
 	toSkip := pkgbuildsToSkip(bases, stringset.Make(remoteNames...), rt.Config.ReDownload, rt.Config.BuildDir)
-	_, err = downloadPkgbuilds(buildRun{rt.CmdBuilder, rt.CmdRunner}, bases, toSkip, rt.Config.BuildDir, rt.Config.AURURL)
+	_, err = downloadPkgbuilds(buildRun{rt.GitBuilder, rt.CmdRunner}, bases, toSkip, rt.Config.BuildDir, rt.Config.AURURL)
 	if err != nil {
 		return err
 	}

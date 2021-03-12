@@ -15,6 +15,7 @@ import (
 	"github.com/Jguer/yay/v10/pkg/completion"
 	"github.com/Jguer/yay/v10/pkg/db"
 	"github.com/Jguer/yay/v10/pkg/dep"
+	"github.com/Jguer/yay/v10/pkg/exe"
 	"github.com/Jguer/yay/v10/pkg/multierror"
 	"github.com/Jguer/yay/v10/pkg/pgp"
 	"github.com/Jguer/yay/v10/pkg/query"
@@ -257,7 +258,7 @@ func install(rt *Runtime, pacmanConf *settings.PacmanConf, sconf *settings.SConf
 	}
 
 	toSkip := pkgbuildsToSkip(do.Aur, targets, rt.Config.ReDownload, rt.Config.BuildDir)
-	cloned, err := downloadPkgbuilds(buildRun{rt.CmdBuilder, rt.CmdRunner}, do.Aur, toSkip, rt.Config.BuildDir, rt.Config.AURURL)
+	cloned, err := downloadPkgbuilds(buildRun{rt.GitBuilder, rt.CmdRunner}, do.Aur, toSkip, rt.Config.BuildDir, rt.Config.AURURL)
 	if err != nil {
 		return err
 	}
@@ -273,7 +274,7 @@ func install(rt *Runtime, pacmanConf *settings.PacmanConf, sconf *settings.SConf
 		}
 
 		if len(toDiff) > 0 {
-			err = showPkgbuildDiffs(buildRun{rt.CmdBuilder, rt.CmdRunner}, &rt.Config.PersistentYayConfig, toDiff, cloned)
+			err = showPkgbuildDiffs(buildRun{rt.GitBuilder, rt.CmdRunner}, &rt.Config.PersistentYayConfig, toDiff, cloned)
 			if err != nil {
 				return err
 			}
@@ -287,7 +288,7 @@ func install(rt *Runtime, pacmanConf *settings.PacmanConf, sconf *settings.SConf
 		if !text.ContinueTask(text.T("Proceed with install?"), true, false) {
 			return text.ErrT("aborting due to user")
 		}
-		err = updatePkgbuildSeenRef(buildRun{rt.CmdBuilder, rt.CmdRunner}, toDiff, rt.Config.BuildDir)
+		err = updatePkgbuildSeenRef(buildRun{rt.GitBuilder, rt.CmdRunner}, toDiff, rt.Config.BuildDir)
 		if err != nil {
 			text.Errorln(err.Error())
 		}
@@ -295,7 +296,7 @@ func install(rt *Runtime, pacmanConf *settings.PacmanConf, sconf *settings.SConf
 		rt.DB.SetNoConfirm(oldValue)
 	}
 
-	err = mergePkgbuilds(buildRun{rt.CmdBuilder, rt.CmdRunner}, do.Aur, rt.Config.BuildDir)
+	err = mergePkgbuilds(buildRun{rt.GitBuilder, rt.CmdRunner}, do.Aur, rt.Config.BuildDir)
 	if err != nil {
 		return err
 	}
@@ -376,7 +377,7 @@ func install(rt *Runtime, pacmanConf *settings.PacmanConf, sconf *settings.SConf
 		_ = completion.Update(rt.DB, rt.Config.AURURL, rt.Config.CompletionPath, rt.Config.CompletionInterval, false)
 	}()
 
-	err = downloadPkgbuildsSources(buildRun{rt.CmdBuilder, rt.CmdRunner}, do.Aur, incompatible, rt.Config.BuildDir)
+	err = downloadPkgbuildsSources(rt.CmdRunner, rt.MakepkgBuilder, do.Aur, incompatible, rt.Config.BuildDir)
 	if err != nil {
 		return err
 	}
@@ -510,9 +511,9 @@ nextpkg:
 	return incompatible, nil
 }
 
-func parsePackageList(dir string, br buildRun) (pkgdests map[string]string, pkgVersion string, err error) {
+func parsePackageList(dir string, run exe.Runner, mkpkgBuilder *exe.MakepkgBuilder) (pkgdests map[string]string, pkgVersion string, err error) {
 
-	stdout, stderr, err := br.Run.Capture(br.Build.BuildMakepkgCmd(dir, "--packagelist"), 0)
+	stdout, stderr, err := run.Capture(mkpkgBuilder.Build(dir, "--packagelist"), 0)
 	if err != nil {
 		return nil, "", fmt.Errorf("%s %s", stderr, err)
 	}
@@ -781,7 +782,7 @@ func showPkgbuildDiffs(br buildRun, conf *settings.PersistentYayConfig, bases []
 		} else {
 			args = append(args, "--color=never")
 		}
-		_ = br.Run.Show(br.Build.BuildGitCmd(dir, args...))
+		_ = br.Run.Show(br.Build.Build(dir, args...))
 	}
 
 	return errMulti.Return()
@@ -928,7 +929,7 @@ func downloadPkgbuilds(br buildRun, bases []dep.Base, toSkip stringset.StringSet
 	return cloned, errs.Return()
 }
 
-func downloadPkgbuildsSources(br buildRun, bases []dep.Base, incompatible stringset.StringSet, buildDir string) (err error) {
+func downloadPkgbuildsSources(run exe.Runner, mkpkgBuilder *exe.MakepkgBuilder, bases []dep.Base, incompatible stringset.StringSet, buildDir string) (err error) {
 	for _, base := range bases {
 		pkg := base.Pkgbase()
 		dir := filepath.Join(buildDir, pkg)
@@ -938,7 +939,7 @@ func downloadPkgbuildsSources(br buildRun, bases []dep.Base, incompatible string
 			args = append(args, "--ignorearch")
 		}
 
-		err = br.Run.Show(br.Build.BuildMakepkgCmd(dir, args...))
+		err = run.Show(mkpkgBuilder.Build(dir, args...))
 		if err != nil {
 			return errors.New(text.Tf("error downloading sources: %s", text.Cyan(base.String())))
 		}
@@ -1061,11 +1062,11 @@ func buildInstallPkgbuilds(
 		}
 
 		// pkgver bump
-		if err = rt.CmdRunner.Show(rt.CmdBuilder.BuildMakepkgCmd(dir, args...)); err != nil {
+		if err = rt.CmdRunner.Show(rt.MakepkgBuilder.Build(dir, args...)); err != nil {
 			return errors.New(text.Tf("error making: %s", base.String()))
 		}
 
-		pkgdests, pkgVersion, errList := parsePackageList(dir, buildRun{rt.CmdBuilder, rt.CmdRunner})
+		pkgdests, pkgVersion, errList := parsePackageList(dir, rt.CmdRunner, rt.MakepkgBuilder)
 		if errList != nil {
 			return errList
 		}
@@ -1099,7 +1100,7 @@ func buildInstallPkgbuilds(
 
 			if installed {
 				err = rt.CmdRunner.Show(
-					rt.CmdBuilder.BuildMakepkgCmd(
+					rt.MakepkgBuilder.Build(
 						dir, "-c", "--nobuild", "--noextract", "--ignorearch"))
 				if err != nil {
 					return errors.New(text.Tf("error making: %s", err))
@@ -1112,7 +1113,7 @@ func buildInstallPkgbuilds(
 
 		if built {
 			err = rt.CmdRunner.Show(
-				rt.CmdBuilder.BuildMakepkgCmd(
+				rt.MakepkgBuilder.Build(
 					dir, "-c", "--nobuild", "--noextract", "--ignorearch"))
 			if err != nil {
 				return errors.New(text.Tf("error making: %s", err))
@@ -1126,7 +1127,7 @@ func buildInstallPkgbuilds(
 				args = append(args, "--ignorearch")
 			}
 
-			if errMake := rt.CmdRunner.Show(rt.CmdBuilder.BuildMakepkgCmd(dir, args...)); errMake != nil {
+			if errMake := rt.CmdRunner.Show(rt.MakepkgBuilder.Build(dir, args...)); errMake != nil {
 				return errors.New(text.Tf("error making: %s", base.String()))
 			}
 		}
