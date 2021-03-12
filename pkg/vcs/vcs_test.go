@@ -57,7 +57,7 @@ func TestParsing(t *testing.T) {
 func TestNewInfoStore(t *testing.T) {
 	type args struct {
 		filePath   string
-		runner     exe.Runner
+		runner     Capturer
 		cmdBuilder *exe.GitBuilder
 	}
 	tests := []struct {
@@ -112,7 +112,7 @@ func (r *MockRunner) Capture(cmd *exec.Cmd, timeout int64) (stdout, stderr strin
 
 func TestInfoStore_NeedsUpdate(t *testing.T) {
 	type fields struct {
-		Runner     exe.Runner
+		Runner     Capturer
 		CmdBuilder *exe.GitBuilder
 	}
 	type args struct {
@@ -247,7 +247,7 @@ func TestInfoStore_NeedsUpdate(t *testing.T) {
 func TestInfoStore_Update(t *testing.T) {
 	type fields struct {
 		OriginsByPackage map[string]OriginInfoByURL
-		Runner           exe.Runner
+		Runner           Capturer
 		CmdBuilder       *exe.GitBuilder
 	}
 	type args struct {

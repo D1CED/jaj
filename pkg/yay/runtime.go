@@ -1,6 +1,7 @@
 package yay
 
 import (
+	"os/exec"
 	"path/filepath"
 	"strings"
 
@@ -16,11 +17,28 @@ import (
 // vcsFileName holds the name of the vcs file.
 const vcsFileName = "vcs.json"
 
+type CmdBuilder interface {
+	Build(string, ...string) *exec.Cmd
+}
+
+type Runner interface {
+	Capturer
+	Shower
+}
+
+type Capturer interface {
+	Capture(cmd *exec.Cmd, timeout int64) (stdout string, stderr string, err error)
+}
+
+type Shower interface {
+	Show(cmd *exec.Cmd) error
+}
+
 type Runtime struct {
 	VCSStore       *vcs.InfoStore
-	GitBuilder     *exe.GitBuilder
-	MakepkgBuilder *exe.MakepkgBuilder
-	CmdRunner      exe.Runner
+	GitBuilder     CmdBuilder
+	MakepkgBuilder CmdBuilder
+	CmdRunner      Runner
 	DB             db.Executor
 	AUR            *query.AUR
 	Pacman         *pacmanconf.Config

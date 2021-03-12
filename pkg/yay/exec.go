@@ -7,24 +7,23 @@ import (
 	"strings"
 	"time"
 
-	"github.com/Jguer/yay/v10/pkg/exe"
 	"github.com/Jguer/yay/v10/pkg/settings"
 	"github.com/Jguer/yay/v10/pkg/text"
 )
 
-func sudoLoopBackground(cmdRunner exe.Runner, conf *settings.YayConfig) {
+func sudoLoopBackground(cmdRunner Runner, conf *settings.YayConfig) {
 	updateSudo(cmdRunner, conf)
 	go sudoLoop(cmdRunner, conf)
 }
 
-func sudoLoop(cmdRunner exe.Runner, conf *settings.YayConfig) {
+func sudoLoop(cmdRunner Runner, conf *settings.YayConfig) {
 	for {
 		updateSudo(cmdRunner, conf)
 		time.Sleep(298 * time.Second)
 	}
 }
 
-func updateSudo(cmdRunner exe.Runner, conf *settings.YayConfig) {
+func updateSudo(cmdRunner Runner, conf *settings.YayConfig) {
 	for {
 		mSudoFlags := strings.Fields(conf.SudoFlags)
 		mSudoFlags = append([]string{"-v"}, mSudoFlags...)

@@ -14,11 +14,6 @@ import (
 var ErrCmdTimeout = errors.New("command timed out")
 var errEmpty = errors.New("")
 
-type Runner interface {
-	Capture(cmd *exec.Cmd, timeout int64) (stdout string, stderr string, err error)
-	Show(cmd *exec.Cmd) error
-}
-
 type OSRunner struct{}
 
 func (r *OSRunner) Show(cmd *exec.Cmd) error {

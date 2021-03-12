@@ -12,7 +12,6 @@ import (
 
 	"github.com/Jguer/yay/v10/pkg/db"
 	"github.com/Jguer/yay/v10/pkg/dep"
-	"github.com/Jguer/yay/v10/pkg/exe"
 	"github.com/Jguer/yay/v10/pkg/multierror"
 	"github.com/Jguer/yay/v10/pkg/query"
 	"github.com/Jguer/yay/v10/pkg/stringset"
@@ -22,8 +21,8 @@ import (
 const gitDiffRefName = "AUR_SEEN"
 
 type buildRun struct {
-	Build *exe.GitBuilder
-	Run   exe.Runner
+	Build CmdBuilder
+	Run   Capturer
 }
 
 // Update the YAY_DIFF_REVIEW ref to HEAD. We use this ref to determine which diff were

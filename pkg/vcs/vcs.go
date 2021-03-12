@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
+	"os/exec"
 	"strings"
 	"sync"
 
@@ -13,12 +14,16 @@ import (
 	"github.com/Jguer/yay/v10/pkg/text"
 )
 
+type Capturer interface {
+	Capture(cmd *exec.Cmd, timeout int64) (stdout string, stderr string, err error)
+}
+
 // InfoStore is a collection of OriginInfoByURL by Package.
 // Containing a map of last commit SHAs of a repo
 type InfoStore struct {
 	OriginsByPackage map[string]OriginInfoByURL
 	FilePath         string
-	Runner           exe.Runner
+	Runner           Capturer
 	CmdBuilder       *exe.GitBuilder
 }
 
@@ -40,7 +45,7 @@ type OriginInfo struct {
 	SHA       string   `json:"sha"`
 }
 
-func NewInfoStore(filePath string, runner exe.Runner, cmdBuilder *exe.GitBuilder) *InfoStore {
+func NewInfoStore(filePath string, runner Capturer, cmdBuilder *exe.GitBuilder) *InfoStore {
 	infoStore := &InfoStore{
 		CmdBuilder:       cmdBuilder,
 		FilePath:         filePath,

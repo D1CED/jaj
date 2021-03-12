@@ -15,7 +15,6 @@ import (
 	"github.com/Jguer/yay/v10/pkg/completion"
 	"github.com/Jguer/yay/v10/pkg/db"
 	"github.com/Jguer/yay/v10/pkg/dep"
-	"github.com/Jguer/yay/v10/pkg/exe"
 	"github.com/Jguer/yay/v10/pkg/multierror"
 	"github.com/Jguer/yay/v10/pkg/pgp"
 	"github.com/Jguer/yay/v10/pkg/query"
@@ -274,7 +273,7 @@ func install(rt *Runtime, pacmanConf *settings.PacmanConf, sconf *settings.SConf
 		}
 
 		if len(toDiff) > 0 {
-			err = showPkgbuildDiffs(buildRun{rt.GitBuilder, rt.CmdRunner}, &rt.Config.PersistentYayConfig, toDiff, cloned)
+			err = showPkgbuildDiffs(rt.GitBuilder, rt.CmdRunner, &rt.Config.PersistentYayConfig, toDiff, cloned)
 			if err != nil {
 				return err
 			}
@@ -511,7 +510,7 @@ nextpkg:
 	return incompatible, nil
 }
 
-func parsePackageList(dir string, run exe.Runner, mkpkgBuilder *exe.MakepkgBuilder) (pkgdests map[string]string, pkgVersion string, err error) {
+func parsePackageList(dir string, run Runner, mkpkgBuilder CmdBuilder) (pkgdests map[string]string, pkgVersion string, err error) {
 
 	stdout, stderr, err := run.Capture(mkpkgBuilder.Build(dir, "--packagelist"), 0)
 	if err != nil {
@@ -746,12 +745,12 @@ func updatePkgbuildSeenRef(br buildRun, bases []dep.Base, buildDir string) error
 	return errMulti.Return()
 }
 
-func showPkgbuildDiffs(br buildRun, conf *settings.PersistentYayConfig, bases []dep.Base, cloned stringset.StringSet) error {
+func showPkgbuildDiffs(gitBuilder CmdBuilder, run Runner, conf *settings.PersistentYayConfig, bases []dep.Base, cloned stringset.StringSet) error {
 	var errMulti multierror.MultiError
 	for _, base := range bases {
 		pkg := base.Pkgbase()
 		dir := filepath.Join(conf.BuildDir, pkg)
-		start, err := getLastSeenHash(br, conf.BuildDir, pkg)
+		start, err := getLastSeenHash(buildRun{gitBuilder, run}, conf.BuildDir, pkg)
 		if err != nil {
 			errMulti.Add(err)
 			continue
@@ -760,7 +759,7 @@ func showPkgbuildDiffs(br buildRun, conf *settings.PersistentYayConfig, bases []
 		if cloned.Get(pkg) {
 			start = gitEmptyTree
 		} else {
-			hasDiff, err := gitHasDiff(br, conf.BuildDir, pkg)
+			hasDiff, err := gitHasDiff(buildRun{gitBuilder, run}, conf.BuildDir, pkg)
 			if err != nil {
 				errMulti.Add(err)
 				continue
@@ -782,7 +781,7 @@ func showPkgbuildDiffs(br buildRun, conf *settings.PersistentYayConfig, bases []
 		} else {
 			args = append(args, "--color=never")
 		}
-		_ = br.Run.Show(br.Build.Build(dir, args...))
+		_ = run.Show(gitBuilder.Build(dir, args...))
 	}
 
 	return errMulti.Return()
@@ -929,7 +928,7 @@ func downloadPkgbuilds(br buildRun, bases []dep.Base, toSkip stringset.StringSet
 	return cloned, errs.Return()
 }
 
-func downloadPkgbuildsSources(run exe.Runner, mkpkgBuilder *exe.MakepkgBuilder, bases []dep.Base, incompatible stringset.StringSet, buildDir string) (err error) {
+func downloadPkgbuildsSources(run Runner, mkpkgBuilder CmdBuilder, bases []dep.Base, incompatible stringset.StringSet, buildDir string) (err error) {
 	for _, base := range bases {
 		pkg := base.Pkgbase()
 		dir := filepath.Join(buildDir, pkg)
