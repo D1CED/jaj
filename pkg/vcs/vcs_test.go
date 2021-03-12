@@ -63,16 +63,14 @@ func TestNewInfoStore(t *testing.T) {
 	tests := []struct {
 		name string
 		args args
-	}{
-		{
-			name: "normal",
-			args: args{
-				"/tmp/a.json",
-				&exe.OSRunner{},
-				&exe.GitBuilder{GitBin: "git", GitFlags: []string{"--a", "--b"}},
-			},
+	}{{
+		name: "normal",
+		args: args{
+			"/tmp/a.json",
+			&exe.OSRunner{},
+			&exe.GitBuilder{GitBin: "git", GitFlags: []string{"--a", "--b"}},
 		},
-	}
+	}}
 
 	ebuf := &bytes.Buffer{}
 
@@ -81,8 +79,8 @@ func TestNewInfoStore(t *testing.T) {
 			t.Run(tt.name, func(t *testing.T) {
 				got := NewInfoStore(tt.args.filePath, tt.args.runner, tt.args.cmdBuilder)
 				assert.NotNil(t, got)
-				assert.Equal(t, []string{"--a", "--b"}, got.CmdBuilder.GitFlags)
-				assert.Equal(t, tt.args.cmdBuilder, got.CmdBuilder)
+				//assert.Equal(t, []string{"--a", "--b"}, got.GitBuilder.GitFlags)
+				assert.Equal(t, tt.args.cmdBuilder, got.GitBuilder)
 				assert.Equal(t, tt.args.runner, got.Runner)
 				assert.Equal(t, "/tmp/a.json", got.FilePath)
 
@@ -235,7 +233,7 @@ func TestInfoStore_NeedsUpdate(t *testing.T) {
 			t.Run(tt.name, func(t *testing.T) {
 				v := &InfoStore{
 					Runner:     tt.fields.Runner,
-					CmdBuilder: tt.fields.CmdBuilder,
+					GitBuilder: tt.fields.CmdBuilder,
 				}
 				got := v.NeedsUpdate(tt.args.infos)
 				assert.Equal(t, tt.want, got)
@@ -283,7 +281,7 @@ func TestInfoStore_Update(t *testing.T) {
 				OriginsByPackage: tt.fields.OriginsByPackage,
 				FilePath:         file.Name(),
 				Runner:           tt.fields.Runner,
-				CmdBuilder:       tt.fields.CmdBuilder,
+				GitBuilder:       tt.fields.CmdBuilder,
 			}
 			var mux sync.Mutex
 			var wg sync.WaitGroup

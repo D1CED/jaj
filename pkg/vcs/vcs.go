@@ -10,12 +10,15 @@ import (
 
 	gosrc "github.com/Morganamilo/go-srcinfo"
 
-	"github.com/Jguer/yay/v10/pkg/exe"
 	"github.com/Jguer/yay/v10/pkg/text"
 )
 
 type Capturer interface {
 	Capture(cmd *exec.Cmd, timeout int64) (stdout string, stderr string, err error)
+}
+
+type Builder interface {
+	Build(string, ...string) *exec.Cmd
 }
 
 // InfoStore is a collection of OriginInfoByURL by Package.
@@ -24,7 +27,7 @@ type InfoStore struct {
 	OriginsByPackage map[string]OriginInfoByURL
 	FilePath         string
 	Runner           Capturer
-	CmdBuilder       *exe.GitBuilder
+	GitBuilder       Builder
 }
 
 // OriginInfoByURL stores the OriginInfo of each origin URL provided
@@ -45,9 +48,9 @@ type OriginInfo struct {
 	SHA       string   `json:"sha"`
 }
 
-func NewInfoStore(filePath string, runner Capturer, cmdBuilder *exe.GitBuilder) *InfoStore {
+func NewInfoStore(filePath string, runner Capturer, cmdBuilder Builder) *InfoStore {
 	infoStore := &InfoStore{
-		CmdBuilder:       cmdBuilder,
+		GitBuilder:       cmdBuilder,
 		FilePath:         filePath,
 		OriginsByPackage: map[string]OriginInfoByURL{},
 		Runner:           runner,
@@ -61,7 +64,7 @@ func (v *InfoStore) getCommit(url, branch string, protocols []string) string {
 	if len(protocols) > 0 {
 		protocol := protocols[len(protocols)-1]
 
-		cmd := v.CmdBuilder.Build("", "ls-remote", protocol+"://"+url, branch)
+		cmd := v.GitBuilder.Build("", "ls-remote", protocol+"://"+url, branch)
 		stdout, _, err := v.Runner.Capture(cmd, 5)
 		if err != nil {
 			text.Warnln(err)

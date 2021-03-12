@@ -133,7 +133,7 @@ func Test_upDevel(t *testing.T) {
 			args: args{
 				cached: vcs.InfoStore{
 					Runner:     cmdRunner,
-					CmdBuilder: cmdBuilder,
+					GitBuilder: cmdBuilder,
 				},
 				remote: []alpm.IPackage{
 					&mock.Package{PName: "hello", PVersion: "2.0.0"},
@@ -153,7 +153,7 @@ func Test_upDevel(t *testing.T) {
 			args: args{
 				cached: vcs.InfoStore{
 					Runner:     cmdRunner,
-					CmdBuilder: cmdBuilder,
+					GitBuilder: cmdBuilder,
 					OriginsByPackage: map[string]vcs.OriginInfoByURL{
 						"hello": {
 							"github.com/Jguer/z.git": vcs.OriginInfo{
@@ -222,7 +222,7 @@ func Test_upDevel(t *testing.T) {
 			args: args{
 				cached: vcs.InfoStore{
 					Runner:     cmdRunner,
-					CmdBuilder: cmdBuilder,
+					GitBuilder: cmdBuilder,
 					OriginsByPackage: map[string]vcs.OriginInfoByURL{
 						"hello": {
 							"github.com/Jguer/d.git": vcs.OriginInfo{
@@ -244,7 +244,7 @@ func Test_upDevel(t *testing.T) {
 			args: args{
 				cached: vcs.InfoStore{
 					Runner:     cmdRunner,
-					CmdBuilder: cmdBuilder,
+					GitBuilder: cmdBuilder,
 					OriginsByPackage: map[string]vcs.OriginInfoByURL{
 						"hello": {
 							"github.com/Jguer/e.git": vcs.OriginInfo{
