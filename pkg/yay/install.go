@@ -373,7 +373,9 @@ func install(rt *Runtime, pacmanConf *settings.PacmanConf, sconf *settings.SConf
 	}
 
 	go func() {
-		_ = completion.Update(rt.DB, rt.Config.AURURL, rt.Config.CompletionPath, rt.Config.CompletionInterval, false)
+		_ = completion.Update(
+			rt.DB, rt.HttpClient, rt.Config.AURURL, rt.Config.CompletionPath,
+			rt.Config.CompletionInterval, false)
 	}()
 
 	err = downloadPkgbuildsSources(rt.CmdRunner, rt.MakepkgBuilder, do.Aur, incompatible, rt.Config.BuildDir)

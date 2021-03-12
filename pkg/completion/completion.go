@@ -20,9 +20,13 @@ type PkgSynchronizer interface {
 	SyncPackages(...string) []db.IPackage
 }
 
+type HttpGetter interface {
+	Get(string) (*http.Response, error)
+}
+
 // Show provides completion info for shells
-func Show(dbExecutor PkgSynchronizer, aurURL, completionPath string, interval int, force bool) error {
-	err := Update(dbExecutor, aurURL, completionPath, interval, force)
+func Show(dbExecutor PkgSynchronizer, httpGet HttpGetter, aurURL, completionPath string, interval int, force bool) error {
+	err := Update(dbExecutor, httpGet, aurURL, completionPath, interval, force)
 	if err != nil {
 		return err
 	}
@@ -39,7 +43,7 @@ func Show(dbExecutor PkgSynchronizer, aurURL, completionPath string, interval in
 }
 
 // Update updates completion cache to be used by Complete
-func Update(dbExecutor PkgSynchronizer, aurURL, completionPath string, interval int, force bool) error {
+func Update(dbExecutor PkgSynchronizer, httpGet HttpGetter, aurURL, completionPath string, interval int, force bool) error {
 	info, err := os.Stat(completionPath)
 
 	if os.IsNotExist(err) || (interval != -1 && time.Since(info.ModTime()).Hours() >= float64(interval*24)) || force {
@@ -52,7 +56,7 @@ func Update(dbExecutor PkgSynchronizer, aurURL, completionPath string, interval 
 			return errf
 		}
 
-		if createAURList(aurURL, out) != nil {
+		if createAURList(aurURL, httpGet, out) != nil {
 			defer os.Remove(completionPath)
 		}
 
@@ -66,17 +70,19 @@ func Update(dbExecutor PkgSynchronizer, aurURL, completionPath string, interval 
 }
 
 // CreateAURList creates a new completion file
-func createAURList(aurURL string, out io.Writer) error {
+func createAURList(aurURL string, httpGet HttpGetter, out io.Writer) error {
 	u, err := url.Parse(aurURL)
 	if err != nil {
 		return err
 	}
 	u.Path = path.Join(u.Path, "packages.gz")
-	resp, err := http.Get(u.String())
+
+	resp, err := httpGet.Get(u.String())
 	if err != nil {
 		return err
 	}
 	defer resp.Body.Close()
+
 	if resp.StatusCode != http.StatusOK {
 		return fmt.Errorf("invalid status code: %d", resp.StatusCode)
 	}
@@ -89,19 +95,19 @@ func createAURList(aurURL string, out io.Writer) error {
 		if strings.HasPrefix(text, "#") {
 			continue
 		}
-		_, err = io.WriteString(out, text+"\tAUR\n")
+		_, err = fmt.Fprintf(out, "%s\tAUR\n", text)
 		if err != nil {
 			return err
 		}
 	}
 
-	return nil
+	return scanner.Err()
 }
 
 // CreatePackageList appends Repo packages to completion cache
 func createRepoList(dbExecutor PkgSynchronizer, out io.Writer) error {
 	for _, pkg := range dbExecutor.SyncPackages() {
-		_, err := io.WriteString(out, pkg.Name()+"\t"+pkg.DB().Name()+"\n")
+		_, err := fmt.Fprintf(out, "%s\t%s\n", pkg.Name(), pkg.DB().Name())
 		if err != nil {
 			return err
 		}

@@ -29,9 +29,11 @@ func HandlePrint(cmdArgs *settings.PConf, yayVersion string, rt *Runtime) (err e
 	case cmdArgs.News:
 		double := cmdArgs.News
 		quiet := cmdArgs.Quiet
-		err = news.PrintNewsFeed(rt.DB.LastBuildTime(), rt.Config.SortMode, double, quiet)
+		err = news.PrintNewsFeed(rt.HttpClient, rt.DB.LastBuildTime(), rt.Config.SortMode, double, quiet)
 	case cmdArgs.Complete != 0:
-		err = completion.Show(rt.DB, rt.Config.AURURL, rt.Config.CompletionPath, rt.Config.CompletionInterval, cmdArgs.Complete > 1)
+		err = completion.Show(
+			rt.DB, rt.HttpClient, rt.Config.AURURL, rt.Config.CompletionPath,
+			rt.Config.CompletionInterval, cmdArgs.Complete > 1)
 	case cmdArgs.LocalStats:
 		err = localStatistics(rt.DB, rt.AUR, yayVersion, rt.Config.RequestSplitN)
 	}

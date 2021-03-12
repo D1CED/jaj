@@ -2,6 +2,7 @@ package news
 
 import (
 	"bytes"
+	"net/http"
 	"testing"
 	"time"
 
@@ -110,7 +111,7 @@ func TestPrintNewsFeed(t *testing.T) {
 
 			buf := &bytes.Buffer{}
 			text.CaptureOutput(buf, nil, func() {
-				err := PrintNewsFeed(tt.args.cutOffDate, tt.args.sortMode, tt.args.all, tt.args.quiet)
+				err := PrintNewsFeed(http.DefaultClient, tt.args.cutOffDate, tt.args.sortMode, tt.args.all, tt.args.quiet)
 				assert.NoError(t, err)
 			})
 

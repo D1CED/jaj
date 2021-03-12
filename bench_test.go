@@ -1,23 +1,33 @@
 package main_test
 
-import "testing"
+import (
+	"fmt"
+	"io"
+	"testing"
+)
 
 func BenchmarkAppend(b *testing.B) {
 
 	const c = "some constant part"
 
+	var buf = make([]byte, 0, 2000)
+
 	b.Run("two_appends", func(b *testing.B) {
-		buf := make([]byte, 0, 1000)
 		for i := 0; i < b.N; i++ {
 			buf = append(buf, c...)
 			buf = append(buf, byte(i))
+			if len(buf) > 1000 {
+				buf = buf[:0]
+			}
 		}
 	})
 
 	b.Run("single_append", func(b *testing.B) {
-		buf := make([]byte, 0, 1000)
 		for i := 0; i < b.N; i++ {
 			buf = append(buf, c+string(byte(i))...)
+			if len(buf) > 1000 {
+				buf = buf[:0]
+			}
 		}
 	})
 }
@@ -90,4 +100,23 @@ func BenchmarkChooseMany(b *testing.B) {
 	})
 
 	b.Log(val)
+}
+
+func BenchmarkConcat(b *testing.B) {
+
+	const c = "some constant part"
+
+	b.Run("WriteString", func(b *testing.B) {
+		buf := io.Discard
+		for i := 0; i < b.N; i++ {
+			io.WriteString(buf, c+string(rune(i)))
+		}
+	})
+
+	b.Run("Fprintf", func(b *testing.B) {
+		buf := io.Discard
+		for i := 0; i < b.N; i++ {
+			fmt.Fprintf(buf, "some constant part %c", rune(i))
+		}
+	})
 }

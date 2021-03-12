@@ -1,6 +1,7 @@
 package yay
 
 import (
+	"net/http"
 	"os/exec"
 	"path/filepath"
 	"strings"
@@ -41,6 +42,7 @@ type Runtime struct {
 	CmdRunner      Runner
 	DB             db.Executor
 	AUR            *query.AUR
+	HttpClient     *http.Client
 	Pacman         *pacmanconf.Config
 	Config         *settings.YayConfig
 }
@@ -68,6 +70,7 @@ func New(conf *settings.YayConfig, pac *pacmanconf.Config, db db.Executor) (*Run
 		CmdRunner:      cmdRunner,
 		DB:             db,
 		Pacman:         pac,
+		HttpClient:     http.DefaultClient,
 		Config:         conf,
 		AUR:            &query.AUR{URL: conf.AURURL + "/rpc.php?"},
 	}

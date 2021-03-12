@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"encoding/xml"
 	"html"
-	"io/ioutil"
 	"net/http"
 	"strings"
 	"time"
@@ -12,6 +11,10 @@ import (
 	"github.com/Jguer/yay/v10/pkg/settings"
 	"github.com/Jguer/yay/v10/pkg/text"
 )
+
+type HttpGetter interface {
+	Get(string) (*http.Response, error)
+}
 
 type item struct {
 	Title       string `xml:"title"`
@@ -57,22 +60,22 @@ type rss struct {
 	Channel channel `xml:"channel"`
 }
 
-func PrintNewsFeed(cutOffDate time.Time, sortMode int, all, quiet bool) error {
-	resp, err := http.Get("https://archlinux.org/feeds/news")
+func PrintNewsFeed(httpGet HttpGetter, cutOffDate time.Time, sortMode int, all, quiet bool) (err error) {
+	var resp *http.Response
+	resp, err = httpGet.Get("https://archlinux.org/feeds/news")
 	if err != nil {
 		return err
 	}
+	defer func() {
+		err2 := resp.Body.Close()
+		if err2 != nil && err == nil {
+			err = err2
+		}
+	}()
 
-	defer resp.Body.Close()
-	body, err := ioutil.ReadAll(resp.Body)
-	if err != nil {
-		return err
-	}
+	var rssGot rss
 
-	rssGot := rss{}
-
-	d := xml.NewDecoder(bytes.NewReader(body))
-	err = d.Decode(&rssGot)
+	err = xml.NewDecoder(resp.Body).Decode(&rssGot)
 	if err != nil {
 		return err
 	}
