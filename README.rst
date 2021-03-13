@@ -84,10 +84,15 @@ replace upgrade.UpSlice with []upgrade.Upgrade [done]
 
 remove stringset.MapStringSet [done]
 
+multierror add sync to Err [done]
+multierror add Is and As [done]
+
+split Runner and CmdBuilder [done]
+
+news and completion -> net/http (create a http client in main and inject it) [done]
+
 Future
 ------
-
-news and completion -> net/http (create a http client in main and inject it)
 
 More emphasis on pkg/exec. Needs to play well with pkg/text
 
@@ -95,18 +100,11 @@ go-srcinfo type alias in pgp/vcs?
 
 remove dependency on pkg/errors
 
-nicer option declaration in pkg/settings.
-currently lots of places need to be touched: crate filed in struct, create enum, declare string mapping, declare if takes argument, add in parser
-
-add default editor path (vim/nano)
-
-reduce db.Executor interface
-
-move translatable constant to the top of files
-
 add context support
 
 propagate cancellation
+
+reduce db.Executor interface
 
 add logging
 - log commands executed
@@ -114,19 +112,24 @@ add logging
 investigate required arguments of pacman options
 - search did not need an argument, was target
 
+move translatable constants to the top of files
+
+split multierror up in collector and actual multierror
+
+
+nicer option declaration in pkg/settings.
+currently lots of places need to be touched: crate filed in struct, create enum, declare string mapping, declare if takes argument, add in parser
+
+add default editor path (vim/nano)
+
 Split this content up into
 - README
 - CHANGES
 - ARCHITECTURE
 
-multierror
-- add sync to Err
-- add Is and As
+exe: use context and string Builder instead of bytes Buffer
 
-split multierror up in collector and actual multierror
-
-exe use context and string Builder instead of bytes Buffer
-split Runner and CmdBuilder
+vcs: .Update intern concurrency
 
 Coupling in yay
 ^^^^^^^^^^^^^^^
@@ -157,15 +160,15 @@ Tests
 * pkg/view            [39%]
 * pkg/upgrade         [46%]
 * pkg/text            [10%]
-* pkg/settings        [11%]
+* pkg/settings        [18%]
 * pkg/intrange        [42%]
 * pkg/completion      [37%]
 * pkg/exe             [36%]
 * pkg/query           [25%]
 * pkg/db/ialpm        [20%]
 
+* pkg/yay             [1%]
 * pkg/dep             []
-* pkg/yay             []
 
 Layers
 ------
