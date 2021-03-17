@@ -6,7 +6,7 @@ type IntRange struct {
 	max int
 }
 
-func New(min int, max int) IntRange {
+func New(min, max int) IntRange {
 	return IntRange{min, max}
 }
 
